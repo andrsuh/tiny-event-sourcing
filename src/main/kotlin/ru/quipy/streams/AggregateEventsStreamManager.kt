@@ -42,16 +42,21 @@ class AggregateEventsStreamManager {
             ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered"))
 
         val streamId = StreamId(streamName, aggregateClass)
-        eventStreams.putIfAbsent(streamId, BufferedAggregateEventsStream(
-            streamName,
-            configProperties.streamReadPeriod,
-            configProperties.streamBatchSize,
-            aggregateInfo.aggregateEventsTableName,
-            eventMapper,
-            aggregateInfo::getEventTypeByName,
-            eventStoreDbOperations,
-            eventStreamsDispatcher
-        ))
+        val existing = eventStreams.putIfAbsent(
+            streamId, BufferedAggregateEventsStream(
+                streamName,
+                configProperties.streamReadPeriod,
+                configProperties.streamBatchSize,
+                aggregateInfo.aggregateEventsTableName,
+                eventMapper,
+                aggregateInfo::getEventTypeByName,
+                eventStoreDbOperations,
+                eventStreamsDispatcher
+            )
+        )
+
+        if (existing != null)
+            throw IllegalStateException("There is already stream $streamName for aggregate ${aggregateClass.simpleName}")
 
         return eventStreams[streamId] as AggregateEventsStream<A>
     }

@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.annotation.AnnotationUtils
 import org.springframework.stereotype.Component
+import ru.quipy.streams.EventStreamSubscriber.EventStreamSubscriptionBuilder
 import javax.annotation.PreDestroy
 import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotations
@@ -69,10 +70,41 @@ class AggregateSubscriptionsManager {
         }
     }
 
+    fun <A: Aggregate> createSubscriber(
+        aggregateClass: KClass<A>,
+        subscriberName: String,
+        handlersBlock: EventHandlersRegistrar<A>.() -> Unit
+    ): EventStreamSubscriber<A> {
+        logger.info("Start creating subscription to aggregate: ${aggregateClass.simpleName}, subscriber name $subscriberName")
+
+        val subscriptionBuilder =
+            eventsStreamManager.createEventStream(subscriberName, aggregateClass).toSubscriptionBuilder()
+
+        handlersBlock.invoke(EventHandlersRegistrar(subscriptionBuilder)) // todo sukhoa maybe extension? .createRegistrar?
+
+        return subscriptionBuilder.subscribe().also {
+            subscribers.add(it)
+        }
+    }
+
     @PreDestroy
     fun destroy() {
         subscribers.forEach {
             it.stopAndDestroy()
+        }
+    }
+
+    class EventHandlersRegistrar<A: Aggregate>(
+        private val subscriptionBuilder: EventStreamSubscriptionBuilder<A>
+    ) {
+        /**
+         * todo sukhoa docs!
+         */
+        fun <E : Event<A>> `when`(
+            eventType: KClass<E>,
+            eventHandler: suspend (E) -> Unit
+        ) {
+            subscriptionBuilder.`when`(eventType, eventHandler)
         }
     }
 }

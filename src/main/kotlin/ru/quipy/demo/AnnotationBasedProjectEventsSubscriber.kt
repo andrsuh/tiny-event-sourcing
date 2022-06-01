@@ -10,12 +10,17 @@ import ru.quipy.streams.SubscribeEvent
 @AggregateSubscriber(
     aggregateClass = ProjectAggregate::class, subscriberName = "demo-subs-stream"
 )
-class ProjectEventSubscriber {
+class AnnotationBasedProjectEventsSubscriber {
 
-    val logger: Logger = LoggerFactory.getLogger(ProjectEventSubscriber::class.java)
+    val logger: Logger = LoggerFactory.getLogger(AnnotationBasedProjectEventsSubscriber::class.java)
 
     @SubscribeEvent
     fun taskCreatedSubscriber(event: TaskCreatedEvent) {
-        logger.info("Got event {}", event.taskName)
+        logger.info("Task created: {}", event.taskName)
+    }
+
+    @SubscribeEvent
+    fun tagCreatedSubscriber(event: TagCreatedEvent) {
+        logger.info("Tag created: {}", event.tagName)
     }
 }

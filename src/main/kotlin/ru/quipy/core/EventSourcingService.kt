@@ -39,7 +39,7 @@ class EventSourcingService<A : Aggregate>(
 
             newEvent applyTo aggregateState
             newEvent.version = updatedVersion
-            //newEvent.aggregateId = aggregateId todo sukhoa think of it
+            newEvent.aggregateId = aggregateId
 
             val eventRecord = EventRecord(
                 "$aggregateId-$updatedVersion",

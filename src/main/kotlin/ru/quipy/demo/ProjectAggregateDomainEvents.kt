@@ -10,12 +10,13 @@ const val TASK_CREATED_EVENT = "TASK_CREATED_EVENT"
 
 @DomainEvent(name = TAG_CREATED_EVENT)
 class TagCreatedEvent(
+    val projectId: String,
     val tagId: UUID,
     val tagName: String,
     createdAt: Long = System.currentTimeMillis(),
 ) : Event<ProjectAggregate>(
     name = TAG_CREATED_EVENT,
-    aggregateId = tagId.toString(),
+    aggregateId = projectId,
     createdAt = createdAt,
 ) {
     override fun applyTo(aggregate: ProjectAggregate) {
@@ -26,12 +27,13 @@ class TagCreatedEvent(
 
 @DomainEvent(name = TASK_CREATED_EVENT)
 class TaskCreatedEvent(
+    val projectId: String,
     val taskId: UUID,
     val taskName: String,
     createdAt: Long = System.currentTimeMillis(),
 ) : Event<ProjectAggregate>(
     name = TASK_CREATED_EVENT,
-    aggregateId = taskId.toString(),
+    aggregateId = projectId,
     createdAt = createdAt
 ) {
     override fun applyTo(aggregate: ProjectAggregate) {
@@ -42,12 +44,13 @@ class TaskCreatedEvent(
 
 @DomainEvent(name = TAG_ASSIGNED_TO_TASK_EVENT)
 class TagAssignedToTaskEvent(
+    val projectId: String,
     val taskId: UUID,
     val tagId: UUID,
     createdAt: Long = System.currentTimeMillis(),
 ) : Event<ProjectAggregate>(
     name = TAG_ASSIGNED_TO_TASK_EVENT,
-    aggregateId = taskId.toString(),
+    aggregateId = projectId,
     createdAt = createdAt
 ) {
     override fun applyTo(aggregate: ProjectAggregate) {

@@ -18,7 +18,7 @@ class EventSourcingApplicationConfiguration {
     private lateinit var subscriptionsManager: AggregateSubscriptionsManager
 
     @Autowired
-    private lateinit var projectEventSubscriber: ProjectEventSubscriber
+    private lateinit var projectEventSubscriber: AnnotationBasedProjectEventsSubscriber
 
     @Autowired
     private lateinit var eventSourcingServiceFactory: EventSourcingServiceFactory

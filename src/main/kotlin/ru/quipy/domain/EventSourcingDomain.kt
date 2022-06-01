@@ -20,7 +20,7 @@ interface Aggregate { // todo sukhoa ID should be parametrized Unique<ID>
 abstract class Event<A : Aggregate>(
     override val id: UUID = UUID.randomUUID(),
     val name: String,
-    val aggregateId: String,
+    var aggregateId: String, // todo sukhoa maybe val?
     override var version: Long = 0L, // this is aggregate version actually or the event count number
     val createdAt: Long = System.currentTimeMillis(),
 ) : Versioned, Unique<UUID> {

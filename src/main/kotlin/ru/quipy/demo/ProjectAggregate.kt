@@ -27,14 +27,14 @@ data class ProjectTag(
 )
 
 fun ProjectAggregate.addTask(name: String): TaskCreatedEvent {
-    return TaskCreatedEvent(taskId = UUID.randomUUID(), taskName = name)
+    return TaskCreatedEvent(projectId = this.aggregateId, taskId = UUID.randomUUID(), taskName = name)
 }
 
 fun ProjectAggregate.createTag(name: String): TagCreatedEvent {
     if (projectTags.values.any { it.name == name }) {
         throw IllegalArgumentException("Tag already exists: $name")
     }
-    return TagCreatedEvent(tagId = UUID.randomUUID(), tagName = name)
+    return TagCreatedEvent(projectId = this.aggregateId, tagId = UUID.randomUUID(), tagName = name)
 }
 
 fun ProjectAggregate.assignTagToTask(tagId: UUID, taskId: UUID): TagAssignedToTaskEvent {
@@ -46,5 +46,5 @@ fun ProjectAggregate.assignTagToTask(tagId: UUID, taskId: UUID): TagAssignedToTa
         throw IllegalArgumentException("Task doesn't exists: $taskId")
     }
 
-    return TagAssignedToTaskEvent(tagId = tagId, taskId = taskId)
+    return TagAssignedToTaskEvent(projectId = this.aggregateId, tagId = tagId, taskId = taskId)
 }
