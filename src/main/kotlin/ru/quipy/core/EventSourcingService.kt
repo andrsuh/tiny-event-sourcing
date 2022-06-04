@@ -4,7 +4,6 @@ import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.domain.*
 import ru.quipy.mapper.EventMapper
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
 import kotlin.reflect.KClass
 
@@ -13,7 +12,7 @@ class EventSourcingService<A : Aggregate>(
     aggregateClass: KClass<A>,
     aggregateRegistry: AggregateRegistry,
     private val eventMapper: EventMapper,
-    private val configProperties: ConfigProperties,
+    private val eventSourcingProperties: EventSourcingProperties,
     private val eventStoreDbOperations: EventStoreDbOperations
 ) {
     companion object {
@@ -60,9 +59,9 @@ class EventSourcingService<A : Aggregate>(
                 continue
             }
 
-            if (updatedVersion % configProperties.snapshotFrequency == 0L) {
+            if (updatedVersion % eventSourcingProperties.snapshotFrequency == 0L) {
                 val snapshot = Snapshot(aggregateId, aggregateState, updatedVersion)
-                eventStoreDbOperations.updateSnapshotWithLatestVersion(configProperties.snapshotTableName, snapshot) // todo sukhoa move this and frequency to aggregate-specific config
+                eventStoreDbOperations.updateSnapshotWithLatestVersion(eventSourcingProperties.snapshotTableName, snapshot) // todo sukhoa move this and frequency to aggregate-specific config
             }
 
             return newEvent
@@ -75,7 +74,7 @@ class EventSourcingService<A : Aggregate>(
         var version = 0L
 
         val aggregate =
-            eventStoreDbOperations.findSnapshotByAggregateId(configProperties.snapshotTableName, aggregateId)
+            eventStoreDbOperations.findSnapshotByAggregateId(eventSourcingProperties.snapshotTableName, aggregateId)
                 ?.let {
                     version = it.version
                     it.snapshot as A

@@ -1,7 +1,7 @@
 package ru.quipy.streams
 
 import ru.quipy.core.AggregateRegistry
-import ru.quipy.core.ConfigProperties
+import ru.quipy.core.EventSourcingProperties
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.domain.Aggregate
 import ru.quipy.mapper.EventMapper
@@ -30,7 +30,7 @@ class AggregateEventsStreamManager {
     lateinit var eventMapper: EventMapper
 
     @Autowired
-    lateinit var configProperties: ConfigProperties
+    lateinit var eventSourcingProperties: EventSourcingProperties
 
     private val eventStreams = ConcurrentHashMap<StreamId, AggregateEventsStream<*>>()
 
@@ -45,8 +45,8 @@ class AggregateEventsStreamManager {
         val existing = eventStreams.putIfAbsent(
             streamId, BufferedAggregateEventsStream(
                 streamName,
-                configProperties.streamReadPeriod,
-                configProperties.streamBatchSize,
+                eventSourcingProperties.streamReadPeriod,
+                eventSourcingProperties.streamBatchSize,
                 aggregateInfo.aggregateEventsTableName,
                 eventMapper,
                 aggregateInfo::getEventTypeByName,
