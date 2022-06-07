@@ -4,7 +4,7 @@ import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.domain.*
 import ru.quipy.mapper.EventMapper
 import org.slf4j.LoggerFactory
-import org.springframework.dao.DuplicateKeyException
+import ru.quipy.core.exceptions.DuplicateEventIdException
 import kotlin.reflect.KClass
 
 
@@ -50,8 +50,8 @@ class EventSourcingService<A : Aggregate>(
 
             try {
                 eventStoreDbOperations.insertEventRecord(aggregateInfo.aggregateEventsTableName, eventRecord)
-            } catch (e: DuplicateKeyException) {
-                logger.info("Optimistic lock exception. Failed to save event wrapper id: ${eventRecord.id}")
+            } catch (e: DuplicateEventIdException) {
+                logger.info("Optimistic lock exception. Failed to save event record id: ${eventRecord.id}")
 
                 if (numOfAttempts++ >= 20)
                     throw IllegalStateException("Too many attempts to save event record: $eventRecord, event: ${eventRecord.payload}")

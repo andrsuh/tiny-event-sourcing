@@ -1,8 +1,8 @@
 package ru.quipy.core
 
+import org.springframework.core.annotation.AnnotationUtils
 import ru.quipy.domain.Aggregate
 import ru.quipy.domain.Event
-import org.springframework.core.annotation.AnnotationUtils
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
@@ -48,7 +48,7 @@ class AggregateRegistry {
                 ?: throw IllegalArgumentException("There is no such event type $eventName for aggregate: ${aggregateClass.simpleName}")
         }
 
-        override fun <E: Event<A>> registerEvent(eventClass: KClass<E>) {
+        override fun <E : Event<A>> registerEvent(eventClass: KClass<E>) {
             val eventInfo = AnnotationUtils.findAnnotation(eventClass.java, DomainEvent::class.java)
                 ?: throw IllegalStateException("No annotation ${DomainEvent::class.simpleName} provided on domain event ${eventClass.simpleName}")
 
@@ -59,6 +59,6 @@ class AggregateRegistry {
     }
 
     interface AggregateEventRegister<A : Aggregate> {
-        fun <E: Event<A>> registerEvent(eventClass: KClass<E>)
+        fun <E : Event<A>> registerEvent(eventClass: KClass<E>)
     }
 }

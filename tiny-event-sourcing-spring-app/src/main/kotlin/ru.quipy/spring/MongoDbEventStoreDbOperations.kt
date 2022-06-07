@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.findById
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import ru.quipy.core.exceptions.DuplicateEventIdException
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.domain.*
 import ru.quipy.spring.MongoDbEventStoreDbOperations.Companion.logger
@@ -23,7 +24,11 @@ class MongoDbEventStoreDbOperations : EventStoreDbOperations {
     lateinit var mongoTemplate: MongoTemplate
 
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
-        mongoTemplate.insert(eventRecord, aggregateTableName)
+        try {
+            mongoTemplate.insert(eventRecord, aggregateTableName)
+        } catch (e: DuplicateKeyException) {
+            throw DuplicateEventIdException("There is record with such an id. Record cannot be saved $eventRecord", e)
+        }
     }
 
     override fun findEventRecordsByAggregateId(aggregateTableName: String, aggregateId: String): List<EventRecord> {

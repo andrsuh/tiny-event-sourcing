@@ -1,24 +1,19 @@
 package ru.quipy.streams
 
+import org.slf4j.LoggerFactory
+import org.springframework.core.annotation.AnnotationUtils
 import ru.quipy.domain.Aggregate
 import ru.quipy.domain.Event
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.core.annotation.AnnotationUtils
-import org.springframework.stereotype.Component
 import ru.quipy.streams.EventStreamSubscriber.EventStreamSubscriptionBuilder
-import javax.annotation.PreDestroy
 import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotations
 import kotlin.reflect.full.isSuperclassOf
 import kotlin.reflect.full.memberFunctions
 
-@Component
-class AggregateSubscriptionsManager {
+class AggregateSubscriptionsManager(
+    private val eventsStreamManager: AggregateEventsStreamManager
+) {
     private val logger = LoggerFactory.getLogger(AggregateSubscriptionsManager::class.java)
-
-    @Autowired
-    private lateinit var eventsStreamManager: AggregateEventsStreamManager
 
     private val subscribers: MutableList<EventStreamSubscriber<*>> = mutableListOf()
 
@@ -31,8 +26,10 @@ class AggregateSubscriptionsManager {
         val aggregateClass = try {
             subscriberInfo.aggregateClass as KClass<A>
         } catch (e: ClassCastException) {
-            throw IllegalArgumentException("Type parameter (aggregate type) doesn't match those provided " +
-                "in ${AggregateSubscriber::class.simpleName} annotation")
+            throw IllegalArgumentException(
+                "Type parameter (aggregate type) doesn't match those provided " +
+                        "in ${AggregateSubscriber::class.simpleName} annotation"
+            )
         }
 
         val streamName = subscriberInfo.subscriberName.ifBlank {
@@ -48,11 +45,11 @@ class AggregateSubscriptionsManager {
             it.findAnnotations(SubscribeEvent::class).size == 1
         }.filter {// method has only one arg and this is subtype of Event filter
             it.parameters.size == 2
-                && Event::class.isSuperclassOf(it.parameters[1].type.classifier as KClass<*>)
+                    && Event::class.isSuperclassOf(it.parameters[1].type.classifier as KClass<*>)
         }.filter { // event (method arg) is parametrised with correct aggregate type filter
             val eventType = it.parameters[1].type.classifier as KClass<Event<*>>
             eventType.supertypes.size == 1
-                && (eventType.supertypes[0].arguments[0].type?.classifier) == aggregateClass
+                    && (eventType.supertypes[0].arguments[0].type?.classifier) == aggregateClass
         }.map {
             it to (it.parameters[1].type.classifier as KClass<Event<A>>)
         }.forEach { (method, event) ->
@@ -61,7 +58,7 @@ class AggregateSubscriptionsManager {
             }
             logger.info(
                 "Subscribing method ${subscriberClass.simpleName}#${method.name} " +
-                    "to event ${event.simpleName} of aggregate ${aggregateClass.simpleName}"
+                        "to event ${event.simpleName} of aggregate ${aggregateClass.simpleName}"
             )
         }
 
@@ -70,7 +67,7 @@ class AggregateSubscriptionsManager {
         }
     }
 
-    fun <A: Aggregate> createSubscriber(
+    fun <A : Aggregate> createSubscriber(
         aggregateClass: KClass<A>,
         subscriberName: String,
         handlersBlock: EventHandlersRegistrar<A>.() -> Unit
@@ -87,14 +84,13 @@ class AggregateSubscriptionsManager {
         }
     }
 
-    @PreDestroy
     fun destroy() {
         subscribers.forEach {
             it.stopAndDestroy()
         }
     }
 
-    class EventHandlersRegistrar<A: Aggregate>(
+    class EventHandlersRegistrar<A : Aggregate>(
         private val subscriptionBuilder: EventStreamSubscriptionBuilder<A>
     ) {
         /**

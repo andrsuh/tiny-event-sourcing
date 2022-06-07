@@ -1,42 +1,29 @@
 package ru.quipy.streams
 
+import kotlinx.coroutines.asCoroutineDispatcher
 import ru.quipy.core.AggregateRegistry
 import ru.quipy.core.EventSourcingProperties
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.domain.Aggregate
 import ru.quipy.mapper.EventMapper
-import kotlinx.coroutines.asCoroutineDispatcher
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
-import javax.annotation.PreDestroy
 import kotlin.reflect.KClass
 
 
 // strategy - on fail - retry / stop / continue
-@Component
-class AggregateEventsStreamManager {
-
+class AggregateEventsStreamManager(
+    private val aggregateRegistry: AggregateRegistry,
+    private val eventStoreDbOperations: EventStoreDbOperations,
+    private val eventMapper: EventMapper,
+    private val eventSourcingProperties: EventSourcingProperties
+) {
     val eventStreamsDispatcher = Executors.newFixedThreadPool(16).asCoroutineDispatcher() // todo sukhoa fix
-
-    @Autowired
-    lateinit var aggregateRegistry: AggregateRegistry
-
-    @Autowired
-    lateinit var eventStoreDbOperations: EventStoreDbOperations
-
-    @Autowired
-    lateinit var eventMapper: EventMapper
-
-    @Autowired
-    lateinit var eventSourcingProperties: EventSourcingProperties
 
     private val eventStreams = ConcurrentHashMap<StreamId, AggregateEventsStream<*>>()
 
     fun <A : Aggregate> createEventStream(
-        streamName: String,
-        aggregateClass: KClass<A>
+        streamName: String, aggregateClass: KClass<A>
     ): AggregateEventsStream<A> {
         val aggregateInfo = (aggregateRegistry.getAggregateInfo(aggregateClass)
             ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered"))
@@ -55,13 +42,11 @@ class AggregateEventsStreamManager {
             )
         )
 
-        if (existing != null)
-            throw IllegalStateException("There is already stream $streamName for aggregate ${aggregateClass.simpleName}")
+        if (existing != null) throw IllegalStateException("There is already stream $streamName for aggregate ${aggregateClass.simpleName}")
 
         return eventStreams[streamId] as AggregateEventsStream<A>
     }
 
-    @PreDestroy
     fun destroy() {
         eventStreams.values.forEach {
             it.stopAndDestroy()
@@ -69,7 +54,6 @@ class AggregateEventsStreamManager {
     }
 
     private data class StreamId(
-        val streamName:String,
-        val aggregateClass: KClass<*>
+        val streamName: String, val aggregateClass: KClass<*>
     )
 }

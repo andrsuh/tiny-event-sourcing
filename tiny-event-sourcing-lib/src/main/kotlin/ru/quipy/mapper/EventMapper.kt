@@ -3,8 +3,6 @@ package ru.quipy.mapper
 import com.fasterxml.jackson.databind.ObjectMapper
 import ru.quipy.domain.Aggregate
 import ru.quipy.domain.Event
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
 import kotlin.reflect.KClass
 
 interface EventMapper {
