@@ -17,20 +17,10 @@
     <description>Tiny event sourcing framework</description>
     <properties>
         <java.version>11</java.version>
+        <git.username>andrsuh</git.username>
+        <git.repo>tiny-event-sourcing</git.repo>
 
-<!--        todo sukhoa where to leave properties?-->
-        <!-- build deps -->
-<!--        <spring.boot.version>2.6.6</spring.boot.version>-->
         <kotlin.version>1.6.10</kotlin.version>
-<!--        <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>-->
-<!--        <mongock.community.version>5.0.36</mongock.community.version>-->
-<!--        <awaitility.version>4.2.0</awaitility.version>-->
-
-        <!-- maven plugins-->
-<!--        <buildnumber-maven-plugin.version>1.4</buildnumber-maven-plugin.version>-->
-<!--        <dockerfile-maven-plugin.version>1.4.13</dockerfile-maven-plugin.version>-->
-
-        <github>andrsuh/soup-server</github>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
     </properties>
 
@@ -49,4 +39,36 @@
             <url>https://repo1.maven.org/maven2/</url>
         </repository>
     </repositories>
+
+    <profiles>
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <!-- Нужен для пуша jar в репозиторий libs-snapshot-local в jfrog artifactory -->
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>snapshots</id>
+                    <url>http://artifactory:8081/artifactory/libs-snapshot-local</url>
+                </snapshotRepository>
+            </distributionManagement>
+        </profile>
+        <profile>
+            <id>github</id>
+            <distributionManagement>
+                <repository>
+                    <id>github</id>
+                    <name>GitHub Packages</name>
+                    <url>https://maven.pkg.github.com/${git.username}/${git.repo}</url>
+                </repository>
+                <snapshotRepository>
+                    <id>github</id>
+                    <name>GitHub Packages</name>
+                    <url>https://maven.pkg.github.com/${git.username}/${git.repo}</url>
+                </snapshotRepository>
+            </distributionManagement>
+        </profile>
+    </profiles>
+
 </project>
