@@ -28,6 +28,6 @@ jobs:
           cache: 'maven'
  
       - name: Deploy
-        run: mvn -B -Pgithub deploy
+        run: mvn -f tiny-event-sourcing-lib/pom.xml -B -Pgithub deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
