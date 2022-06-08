@@ -11,7 +11,7 @@ To add library to your project put the following dependency in your `pom.xml`:
 </dependency>
 ```
 
-Also you have to configure the `github` maven repository. You can wither include it to your `settings.xml` or just put the following lines to your `pom.xml`: 
+Also you have to configure the `github` maven repository. You can either include it to your `settings.xml` or just put the following lines to your `pom.xml`: 
 
 ```
 <repository>
