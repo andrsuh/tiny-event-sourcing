@@ -17,7 +17,7 @@
         <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
         <jackson-module-kotlin.version>2.12.2</jackson-module-kotlin.version>
         <git.username>andrsuh</git.username>
-        <git.repo>tiny-event-sourcing-lib</git.repo>
+        <git.repo>tiny-event-sourcing</git.repo>
     </properties>
     <dependencies>
         <dependency>
