@@ -16,6 +16,8 @@
         <jackson-core.version>2.13.3</jackson-core.version>
         <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
         <jackson-module-kotlin.version>2.12.2</jackson-module-kotlin.version>
+        <git.username>andrsuh</git.username>
+        <git.repo>tiny-event-sourcing-lib</git.repo>
     </properties>
     <dependencies>
         <dependency>
@@ -92,4 +94,36 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <!-- Нужен для пуша jar в репозиторий libs-snapshot-local в jfrog artifactory -->
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>snapshots</id>
+                    <url>http://artifactory:8081/artifactory/libs-snapshot-local</url>
+                </snapshotRepository>
+            </distributionManagement>
+        </profile>
+        <profile>
+            <id>github</id>
+            <distributionManagement>
+                <repository>
+                    <id>github</id>
+                    <name>GitHub Packages</name>
+                    <url>https://maven.pkg.github.com/${git.username}/${git.repo}</url>
+                </repository>
+                <snapshotRepository>
+                    <id>github</id>
+                    <name>GitHub Packages</name>
+                    <url>https://maven.pkg.github.com/${git.username}/${git.repo}</url>
+                </snapshotRepository>
+            </distributionManagement>
+        </profile>
+    </profiles>
+
 </project>
