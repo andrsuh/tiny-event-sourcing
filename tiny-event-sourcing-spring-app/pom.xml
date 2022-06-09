@@ -8,11 +8,11 @@
     <parent>
         <groupId>ru.quipy</groupId>
         <artifactId>tiny-event-sourcing</artifactId>
-        <version>0.0.2-SNAPSHOT</version>
+        <version>0.1.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>tiny-event-sourcing-spring-app</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
     <name>tiny-event-sourcing-spring-app</name>
     <description>Tiny event sourcing framework</description>
     <properties>
@@ -39,7 +39,7 @@
         <dependency>
             <artifactId>tiny-event-sourcing-lib</artifactId>
             <groupId>ru.quipy</groupId>
-            <version>0.0.2-SNAPSHOT</version>
+            <version>0.1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -107,6 +107,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito.kotlin</groupId>
+            <artifactId>mockito-kotlin</artifactId>
+            <version>4.0.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

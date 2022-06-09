@@ -9,6 +9,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import org.slf4j.LoggerFactory
+import ru.quipy.streams.RetryFailedStrategy.SKIP_EVENT
+import ru.quipy.streams.RetryFailedStrategy.SUSPEND
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.reflect.KClass
 
@@ -20,6 +22,7 @@ class BufferedAggregateEventsStream<A : Aggregate>(
     private val tableName: String,
     private val eventMapper: EventMapper,
     private val nameToEventClassFunc: (String) -> KClass<Event<A>>,
+    private val retryConfig: RetryConf,
     private val eventStoreDbOperations: EventStoreDbOperations,
     private val dispatcher: CoroutineDispatcher
 ) : AggregateEventsStream<A> {
@@ -28,7 +31,7 @@ class BufferedAggregateEventsStream<A : Aggregate>(
         private val NO_RESET_REQUIRED = ResetInfo(-1)
     }
 
-    private val eventsChannel: Channel<EventForProcessing<A>> = Channel(
+    private val eventsChannel: Channel<EventForHandling<A>> = Channel(
         capacity = Channel.RENDEZVOUS,
         onBufferOverflow = BufferOverflow.SUSPEND
     )
@@ -89,8 +92,7 @@ class BufferedAggregateEventsStream<A : Aggregate>(
 
                     val event = payloadToEvent(it.payload, it.eventTitle)
 
-                    eventsChannel.send(EventForProcessing(readingIndex, event))
-                    if (acknowledgesChannel.receive().processed) {
+                    feedToHandling(readingIndex, event) {
                         readingIndex = processingRecordTimestamp
 
                         if (processedRecords++ % 10 == 0L) {
@@ -102,6 +104,30 @@ class BufferedAggregateEventsStream<A : Aggregate>(
         }.also {
             it.invokeOnCompletion(eventStreamCompletionHandler)
         }
+
+    private suspend fun feedToHandling(readingIndex: Long, event: Event<A>, beforeNextPerform: () -> Unit) {
+        for (attemptNum in 1 .. retryConfig.maxAttempts) {
+            eventsChannel.send(EventForHandling(readingIndex, event))
+            if (acknowledgesChannel.receive().successful) {
+                beforeNextPerform()
+                return
+            }
+
+            if (attemptNum == retryConfig.maxAttempts) {
+                when (retryConfig.lastAttemptFailedStrategy) {
+                    SKIP_EVENT -> {
+                        logger.error("Event stream: $streamName. Retry attempts failed $attemptNum times. SKIPPING...")
+                        beforeNextPerform()
+                        return
+                    }
+                    SUSPEND -> {
+                        logger.error("Event stream: $streamName. Retry attempts failed $attemptNum times. SUSPENDING THE HOLE STREAM...")
+                        delay(Long.MAX_VALUE) // todo sukhoa find the way better
+                    }
+                }
+            }
+        }
+    }
 
     private suspend fun suspendTillTableExists() {
         while (!eventStoreDbOperations.tableExists(tableName)) {
@@ -171,10 +197,10 @@ class BufferedAggregateEventsStream<A : Aggregate>(
 
     class EventConsumedAck(
         val readIndex: Long,
-        val processed: Boolean,
+        val successful: Boolean,
     )
 
-    class EventForProcessing<A : Aggregate>(
+    class EventForHandling<A : Aggregate>(
         val readIndex: Long,
         val event: Event<A>,
     )

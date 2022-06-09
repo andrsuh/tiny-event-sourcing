@@ -14,7 +14,7 @@ interface AggregateEventsStream<A : Aggregate> {
     val streamName: String
 
     /**
-     * Allows to handle next event
+     * Allows to handle next event. Suspends until event is supplied.
      */
     suspend fun handleEvent(eventProcessingFunction: suspend (Event<A>) -> Boolean)
 

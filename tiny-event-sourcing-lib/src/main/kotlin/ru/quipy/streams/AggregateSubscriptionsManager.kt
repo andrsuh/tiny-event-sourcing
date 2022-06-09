@@ -39,7 +39,8 @@ class AggregateSubscriptionsManager(
         logger.info("Start creating subscription to aggregate: ${aggregateClass.simpleName} for ${subscriberClass.simpleName}")
 
         val subscriptionBuilder =
-            eventsStreamManager.createEventStream(streamName, aggregateClass).toSubscriptionBuilder()
+            eventsStreamManager.createEventStream(streamName, aggregateClass, subscriberInfo.retry)
+                .toSubscriptionBuilder()
 
         subscriberClass.memberFunctions.filter { // method has annotation filter
             it.findAnnotations(SubscribeEvent::class).size == 1
@@ -70,12 +71,13 @@ class AggregateSubscriptionsManager(
     fun <A : Aggregate> createSubscriber(
         aggregateClass: KClass<A>,
         subscriberName: String,
+        retryConf: RetryConf = RetryConf(3, RetryFailedStrategy.SKIP_EVENT),
         handlersBlock: EventHandlersRegistrar<A>.() -> Unit
     ): EventStreamSubscriber<A> {
         logger.info("Start creating subscription to aggregate: ${aggregateClass.simpleName}, subscriber name $subscriberName")
 
         val subscriptionBuilder =
-            eventsStreamManager.createEventStream(subscriberName, aggregateClass).toSubscriptionBuilder()
+            eventsStreamManager.createEventStream(subscriberName, aggregateClass, retryConf).toSubscriptionBuilder()
 
         handlersBlock.invoke(EventHandlersRegistrar(subscriptionBuilder)) // todo sukhoa maybe extension? .createRegistrar?
 

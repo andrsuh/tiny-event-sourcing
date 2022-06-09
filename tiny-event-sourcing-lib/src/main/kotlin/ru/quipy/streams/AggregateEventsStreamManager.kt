@@ -11,19 +11,20 @@ import java.util.concurrent.Executors
 import kotlin.reflect.KClass
 
 
-// strategy - on fail - retry / stop / continue
 class AggregateEventsStreamManager(
     private val aggregateRegistry: AggregateRegistry,
     private val eventStoreDbOperations: EventStoreDbOperations,
     private val eventMapper: EventMapper,
     private val eventSourcingProperties: EventSourcingProperties
 ) {
-    val eventStreamsDispatcher = Executors.newFixedThreadPool(16).asCoroutineDispatcher() // todo sukhoa fix
+    private val eventStreamsDispatcher = Executors.newFixedThreadPool(16).asCoroutineDispatcher() // todo sukhoa fix
 
     private val eventStreams = ConcurrentHashMap<StreamId, AggregateEventsStream<*>>()
 
     fun <A : Aggregate> createEventStream(
-        streamName: String, aggregateClass: KClass<A>
+        streamName: String,
+        aggregateClass: KClass<A>,
+        retryConfig: RetryConf
     ): AggregateEventsStream<A> {
         val aggregateInfo = (aggregateRegistry.getAggregateInfo(aggregateClass)
             ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered"))
@@ -37,6 +38,7 @@ class AggregateEventsStreamManager(
                 aggregateInfo.aggregateEventsTableName,
                 eventMapper,
                 aggregateInfo::getEventTypeByName,
+                retryConfig,
                 eventStoreDbOperations,
                 eventStreamsDispatcher
             )
