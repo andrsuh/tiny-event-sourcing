@@ -1,14 +1,15 @@
 package ru.quipy.streams
 
-import ru.quipy.database.EventStoreDbOperations
-import ru.quipy.domain.Aggregate
-import ru.quipy.domain.Event
-import ru.quipy.domain.EventStreamReadIndex
-import ru.quipy.mapper.EventMapper
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import org.slf4j.LoggerFactory
+import ru.quipy.database.EventStoreDbOperations
+import ru.quipy.domain.Aggregate
+import ru.quipy.domain.Event
+import ru.quipy.domain.EventRecord
+import ru.quipy.domain.EventStreamReadIndex
+import ru.quipy.mapper.EventMapper
 import ru.quipy.streams.RetryFailedStrategy.SKIP_EVENT
 import ru.quipy.streams.RetryFailedStrategy.SUSPEND
 import java.util.concurrent.atomic.AtomicBoolean
@@ -20,8 +21,6 @@ class BufferedAggregateEventsStream<A : Aggregate>(
     private val streamReadPeriod: Long, // todo sukhoa wrong naming
     private val streamBatchSize: Int,
     private val tableName: String,
-    private val eventMapper: EventMapper,
-    private val nameToEventClassFunc: (String) -> KClass<Event<A>>,
     private val retryConfig: RetryConf,
     private val eventStoreDbOperations: EventStoreDbOperations,
     private val dispatcher: CoroutineDispatcher
@@ -31,7 +30,7 @@ class BufferedAggregateEventsStream<A : Aggregate>(
         private val NO_RESET_REQUIRED = ResetInfo(-1)
     }
 
-    private val eventsChannel: Channel<EventForHandling<A>> = Channel(
+    private val eventsChannel: Channel<EventRecordForHandling> = Channel(
         capacity = Channel.RENDEZVOUS,
         onBufferOverflow = BufferOverflow.SUSPEND
     )
@@ -87,12 +86,10 @@ class BufferedAggregateEventsStream<A : Aggregate>(
                 }
 
                 var processingRecordTimestamp: Long
-                eventsBatch.forEach {
-                    processingRecordTimestamp = it.createdAt
+                eventsBatch.forEach { eventRecord ->
+                    processingRecordTimestamp = eventRecord.createdAt
 
-                    val event = payloadToEvent(it.payload, it.eventTitle)
-
-                    feedToHandling(readingIndex, event) {
+                    feedToHandling(readingIndex, eventRecord) {
                         readingIndex = processingRecordTimestamp
 
                         if (processedRecords++ % 10 == 0L) {
@@ -105,9 +102,9 @@ class BufferedAggregateEventsStream<A : Aggregate>(
             it.invokeOnCompletion(eventStreamCompletionHandler)
         }
 
-    private suspend fun feedToHandling(readingIndex: Long, event: Event<A>, beforeNextPerform: () -> Unit) {
-        for (attemptNum in 1 .. retryConfig.maxAttempts) {
-            eventsChannel.send(EventForHandling(readingIndex, event))
+    private suspend fun feedToHandling(readingIndex: Long, event: EventRecord, beforeNextPerform: () -> Unit) {
+        for (attemptNum in 1..retryConfig.maxAttempts) {
+            eventsChannel.send(EventRecordForHandling(readingIndex, event))
             if (acknowledgesChannel.receive().successful) {
                 beforeNextPerform()
                 return
@@ -136,11 +133,6 @@ class BufferedAggregateEventsStream<A : Aggregate>(
         }
     }
 
-    private fun payloadToEvent(payload: String, eventTitle: String): Event<A> = eventMapper.toEvent(
-        payload,
-        nameToEventClassFunc(eventTitle)
-    )
-
     private fun syncReaderIndex() {
         eventStoreDbOperations.findStreamReadIndex(streamName)?.also {
             readingIndex = it.readIndex
@@ -165,16 +157,16 @@ class BufferedAggregateEventsStream<A : Aggregate>(
         }
     }
 
-    override suspend fun handleEvent(eventProcessingFunction: suspend (Event<A>) -> Boolean) {
+    override suspend fun handleNextRecord(eventProcessingFunction: suspend (EventRecord) -> Boolean) {
         val receive = eventsChannel.receive()
         try {
-            eventProcessingFunction(receive.event).also {
-                if (!it) logger.info("Processing function return false for event: ${receive.event} at index: ${receive.readIndex}`")
+            eventProcessingFunction(receive.record).also {
+                if (!it) logger.info("Processing function return false for event record: ${receive.record} at index: ${receive.readIndex}`")
                 acknowledgesChannel.send(EventConsumedAck(receive.readIndex, it))
             }
         } catch (e: Exception) {
             logger.error(
-                "Error while invoking event processing function at index: ${receive.readIndex} event: ${receive.event}",
+                "Error while invoking event handling function at index: ${receive.readIndex} event record: ${receive.record}",
                 e
             )
             acknowledgesChannel.send(EventConsumedAck(receive.readIndex, false))
@@ -190,7 +182,7 @@ class BufferedAggregateEventsStream<A : Aggregate>(
         }
     }
 
-    override fun resetToAggregateVersion(version: Long) {
+    override fun resetToReadingIndex(version: Long) {
         if (version < 1) throw IllegalArgumentException("Can't reset to non existing version: $version")
         resetInfo = ResetInfo(version)
     }
@@ -200,9 +192,9 @@ class BufferedAggregateEventsStream<A : Aggregate>(
         val successful: Boolean,
     )
 
-    class EventForHandling<A : Aggregate>(
+    class EventRecordForHandling(
         val readIndex: Long,
-        val event: Event<A>,
+        val record: EventRecord,
     )
 
     class ResetInfo(

@@ -1,15 +1,18 @@
 package ru.quipy.streams
 
-import ru.quipy.domain.Aggregate
-import ru.quipy.domain.Event
 import kotlinx.coroutines.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import ru.quipy.domain.Aggregate
+import ru.quipy.domain.Event
+import ru.quipy.mapper.EventMapper
 import java.util.concurrent.Executors
 import kotlin.reflect.KClass
 
 class EventStreamSubscriber<A : Aggregate>(
     private val aggregateEventsStream: AggregateEventsStream<A>,
+    private val eventMapper: EventMapper,
+    private val nameToEventClassFunc: (String) -> KClass<Event<A>>,
     private val handlers: Map<KClass<out Event<A>>, suspend (Event<A>) -> Unit>
 ) {
     @Volatile
@@ -22,17 +25,23 @@ class EventStreamSubscriber<A : Aggregate>(
             .asCoroutineDispatcher() // todo sukhoa customize
     ).launch {
         while (active) {
-            aggregateEventsStream.handleEvent { event ->
+            aggregateEventsStream.handleNextRecord { eventRecord ->
                 try {
+                    val event = payloadToEvent(eventRecord.payload, eventRecord.eventTitle)
                     handlers[event::class]?.invoke(event)
                     true
-                } catch(e: Exception) {
-                    logger.error("Unexpected exception while handling event in subscriber. Stream: ${aggregateEventsStream.streamName}, event: $event")
+                } catch (e: Exception) {
+                    logger.error("Unexpected exception while handling event in subscriber. Stream: ${aggregateEventsStream.streamName}, event record: $eventRecord")
                     false
                 }
             }
         }
     }
+
+    private fun payloadToEvent(payload: String, eventTitle: String): Event<A> = eventMapper.toEvent(
+        payload,
+        nameToEventClassFunc(eventTitle)
+    )
 
     /**
      * Stops both the consuming process and the underlying event stream process
@@ -45,6 +54,8 @@ class EventStreamSubscriber<A : Aggregate>(
 
     class EventStreamSubscriptionBuilder<A : Aggregate>(
         private val wrapped: AggregateEventsStream<A>,
+        private val eventMapper: EventMapper,
+        private val nameToEventClassFunc: (String) -> KClass<Event<A>>,
     ) {
         private val handlers = mutableMapOf<KClass<out Event<A>>, suspend (Event<A>) -> Unit>()
 
@@ -56,14 +67,11 @@ class EventStreamSubscriber<A : Aggregate>(
             return this
         }
 
-        fun subscribe() = EventStreamSubscriber(wrapped, handlers)
+        fun subscribe() = EventStreamSubscriber(wrapped, eventMapper, nameToEventClassFunc, handlers)
     }
 }
 
-fun <A : Aggregate, E : Event<A>> AggregateEventsStream<A>.`when`(
-    eventType: KClass<E>,
-    eventHandler: suspend (E) -> Unit
-) = EventStreamSubscriber.EventStreamSubscriptionBuilder(this).`when`(eventType, eventHandler)
-
-fun <A : Aggregate> AggregateEventsStream<A>.toSubscriptionBuilder() =
-    EventStreamSubscriber.EventStreamSubscriptionBuilder(this)
+fun <A : Aggregate> AggregateEventsStream<A>.toSubscriptionBuilder(
+    eventMapper: EventMapper,
+    nameToEventClassFunc: (String) -> KClass<Event<A>>
+) = EventStreamSubscriber.EventStreamSubscriptionBuilder(this, eventMapper, nameToEventClassFunc)

@@ -14,7 +14,6 @@ import kotlin.reflect.KClass
 class AggregateEventsStreamManager(
     private val aggregateRegistry: AggregateRegistry,
     private val eventStoreDbOperations: EventStoreDbOperations,
-    private val eventMapper: EventMapper,
     private val eventSourcingProperties: EventSourcingProperties
 ) {
     private val eventStreamsDispatcher = Executors.newFixedThreadPool(16).asCoroutineDispatcher() // todo sukhoa fix
@@ -31,13 +30,11 @@ class AggregateEventsStreamManager(
 
         val streamId = StreamId(streamName, aggregateClass)
         val existing = eventStreams.putIfAbsent(
-            streamId, BufferedAggregateEventsStream(
+            streamId, BufferedAggregateEventsStream<A>(
                 streamName,
                 eventSourcingProperties.streamReadPeriod,
                 eventSourcingProperties.streamBatchSize,
                 aggregateInfo.aggregateEventsTableName,
-                eventMapper,
-                aggregateInfo::getEventTypeByName,
                 retryConfig,
                 eventStoreDbOperations,
                 eventStreamsDispatcher
