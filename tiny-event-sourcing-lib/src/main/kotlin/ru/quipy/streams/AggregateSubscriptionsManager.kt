@@ -2,8 +2,10 @@ package ru.quipy.streams
 
 import org.slf4j.LoggerFactory
 import org.springframework.core.annotation.AnnotationUtils
+import ru.quipy.core.AggregateRegistry
 import ru.quipy.domain.Aggregate
 import ru.quipy.domain.Event
+import ru.quipy.mapper.EventMapper
 import ru.quipy.streams.EventStreamSubscriber.EventStreamSubscriptionBuilder
 import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotations
@@ -11,7 +13,9 @@ import kotlin.reflect.full.isSuperclassOf
 import kotlin.reflect.full.memberFunctions
 
 class AggregateSubscriptionsManager(
-    private val eventsStreamManager: AggregateEventsStreamManager
+    private val eventsStreamManager: AggregateEventsStreamManager,
+    private val aggregateRegistry: AggregateRegistry,
+    private val eventMapper: EventMapper
 ) {
     private val logger = LoggerFactory.getLogger(AggregateSubscriptionsManager::class.java)
 
@@ -32,6 +36,9 @@ class AggregateSubscriptionsManager(
             )
         }
 
+        val aggregateInfo = aggregateRegistry.getAggregateInfo(aggregateClass)
+            ?: throw IllegalArgumentException("Couldn't find aggregate class ${aggregateClass.simpleName} in registry")
+
         val streamName = subscriberInfo.subscriberName.ifBlank {
             throw IllegalStateException("There is no name for subscriber provided in ${AggregateSubscriber::class.simpleName} annotation")
         }
@@ -40,7 +47,7 @@ class AggregateSubscriptionsManager(
 
         val subscriptionBuilder =
             eventsStreamManager.createEventStream(streamName, aggregateClass, subscriberInfo.retry)
-                .toSubscriptionBuilder()
+                .toSubscriptionBuilder(eventMapper, aggregateInfo::getEventTypeByName)
 
         subscriberClass.memberFunctions.filter { // method has annotation filter
             it.findAnnotations(SubscribeEvent::class).size == 1
@@ -76,8 +83,12 @@ class AggregateSubscriptionsManager(
     ): EventStreamSubscriber<A> {
         logger.info("Start creating subscription to aggregate: ${aggregateClass.simpleName}, subscriber name $subscriberName")
 
+        val aggregateInfo = aggregateRegistry.getAggregateInfo(aggregateClass)
+            ?: throw IllegalArgumentException("Couldn't find aggregate class ${aggregateClass.simpleName} in registry")
+
         val subscriptionBuilder =
-            eventsStreamManager.createEventStream(subscriberName, aggregateClass, retryConf).toSubscriptionBuilder()
+            eventsStreamManager.createEventStream(subscriberName, aggregateClass, retryConf)
+                .toSubscriptionBuilder(eventMapper, aggregateInfo::getEventTypeByName)
 
         handlersBlock.invoke(EventHandlersRegistrar(subscriptionBuilder)) // todo sukhoa maybe extension? .createRegistrar?
 

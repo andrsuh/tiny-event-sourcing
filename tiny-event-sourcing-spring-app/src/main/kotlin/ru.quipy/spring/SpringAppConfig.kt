@@ -37,18 +37,22 @@ open class SpringAppConfig {
     fun eventStreamManager(
         eventSourcingProperties: EventSourcingProperties,
         aggregateRegistry: AggregateRegistry,
-        eventMapper: JsonEventMapper,
         eventStoreDbOperations: EventStoreDbOperations
     ) = AggregateEventsStreamManager(
         aggregateRegistry,
         eventStoreDbOperations,
-        eventMapper,
         eventSourcingProperties
     )
 
     @Bean(destroyMethod = "destroy")
-    fun subscriptionManager(eventStreamManager: AggregateEventsStreamManager) =
-        AggregateSubscriptionsManager(eventStreamManager)
+    fun subscriptionManager(
+        eventStreamManager: AggregateEventsStreamManager,
+        aggregateRegistry: AggregateRegistry,
+        eventMapper: JsonEventMapper,
+    ) = AggregateSubscriptionsManager(
+        eventStreamManager,
+        aggregateRegistry,
+        eventMapper)
 
     @Bean
     fun eventSourcingServiceFactory(
