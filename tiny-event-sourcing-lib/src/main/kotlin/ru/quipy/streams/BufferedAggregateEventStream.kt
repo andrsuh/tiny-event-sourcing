@@ -6,27 +6,26 @@ import kotlinx.coroutines.channels.Channel
 import org.slf4j.LoggerFactory
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.domain.Aggregate
-import ru.quipy.domain.Event
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
-import ru.quipy.mapper.EventMapper
-import ru.quipy.streams.RetryFailedStrategy.SKIP_EVENT
-import ru.quipy.streams.RetryFailedStrategy.SUSPEND
+import ru.quipy.streams.annotation.RetryConf
+import ru.quipy.streams.annotation.RetryFailedStrategy.SKIP_EVENT
+import ru.quipy.streams.annotation.RetryFailedStrategy.SUSPEND
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.reflect.KClass
 
 
-class BufferedAggregateEventsStream<A : Aggregate>(
+class BufferedAggregateEventStream<A : Aggregate>(
     override val streamName: String,
     private val streamReadPeriod: Long, // todo sukhoa wrong naming
     private val streamBatchSize: Int,
     private val tableName: String,
     private val retryConfig: RetryConf,
     private val eventStoreDbOperations: EventStoreDbOperations,
+    private val eventStreamNotifier: EventStreamNotifier,
     private val dispatcher: CoroutineDispatcher
-) : AggregateEventsStream<A> {
+) : AggregateEventStream<A> {
     companion object {
-        private val logger = LoggerFactory.getLogger(BufferedAggregateEventsStream::class.java)
+        private val logger = LoggerFactory.getLogger(BufferedAggregateEventStream::class.java)
         private val NO_RESET_REQUIRED = ResetInfo(-1)
     }
 
@@ -71,6 +70,8 @@ class BufferedAggregateEventsStream<A : Aggregate>(
 
     private fun launchEventStream() =
         CoroutineScope(CoroutineName("reading-$streamName-coroutine") + dispatcher).launch {
+            eventStreamNotifier.onStreamLaunched(streamName)
+
             suspendTillTableExists()
             syncReaderIndex() // todo sukhoa we don't use read index after relaunching
             logger.info("Resuming stream $streamName with reading index $readingIndex")
@@ -80,6 +81,7 @@ class BufferedAggregateEventsStream<A : Aggregate>(
 
                 val eventsBatch =
                     eventStoreDbOperations.findBatchOfEventRecordAfter(tableName, readingIndex, streamBatchSize)
+                eventStreamNotifier.onBatchRead(streamName, eventsBatch.size)
 
                 if (eventsBatch.isEmpty()) {
                     delay(streamReadPeriod)
@@ -90,6 +92,7 @@ class BufferedAggregateEventsStream<A : Aggregate>(
                     processingRecordTimestamp = eventRecord.createdAt
 
                     feedToHandling(readingIndex, eventRecord) {
+                        eventStreamNotifier.onRecordHandledSuccessfully(streamName)
                         readingIndex = processingRecordTimestamp
 
                         if (processedRecords++ % 10 == 0L) {
@@ -119,10 +122,12 @@ class BufferedAggregateEventsStream<A : Aggregate>(
                     }
                     SUSPEND -> {
                         logger.error("Event stream: $streamName. Retry attempts failed $attemptNum times. SUSPENDING THE HOLE STREAM...")
+                        eventStreamNotifier.onRecordSkipped(streamName, event.eventTitle, attemptNum)
                         delay(Long.MAX_VALUE) // todo sukhoa find the way better
                     }
                 }
             }
+            eventStreamNotifier.onRecordHandlingRetry(streamName, event.eventTitle, attemptNum)
         }
     }
 
@@ -138,6 +143,7 @@ class BufferedAggregateEventsStream<A : Aggregate>(
             readingIndex = it.readIndex
             readerIndexCommittedVersion = it.version
             logger.info("Reader index synced for $streamName. Index: $readingIndex, version: $readerIndexCommittedVersion")
+            eventStreamNotifier.onReadIndexSynced(streamName, readingIndex)
         }
     }
 
@@ -145,6 +151,7 @@ class BufferedAggregateEventsStream<A : Aggregate>(
         EventStreamReadIndex(streamName, readingIndex, readerIndexCommittedVersion + 1L).also {
             logger.info("Committing index for $streamName, index: $readingIndex, current version: $readerIndexCommittedVersion")
             eventStoreDbOperations.commitStreamReadIndex(it)
+            eventStreamNotifier.onReadIndexCommitted(streamName, it.readIndex)
         }
         syncReaderIndex()
     }
@@ -154,6 +161,7 @@ class BufferedAggregateEventsStream<A : Aggregate>(
             readingIndex = resetInfo.resetIndex
             logger.warn("Index for stream $streamName forcibly reset to $readingIndex")
             resetInfo = NO_RESET_REQUIRED
+            eventStreamNotifier.onStreamReset(streamName, readingIndex)
         }
     }
 

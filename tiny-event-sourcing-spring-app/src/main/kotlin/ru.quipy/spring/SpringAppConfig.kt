@@ -10,7 +10,7 @@ import ru.quipy.core.EventSourcingProperties
 import ru.quipy.core.EventSourcingServiceFactory
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.mapper.JsonEventMapper
-import ru.quipy.streams.AggregateEventsStreamManager
+import ru.quipy.streams.AggregateEventStreamManager
 import ru.quipy.streams.AggregateSubscriptionsManager
 
 @Configuration
@@ -38,7 +38,7 @@ open class SpringAppConfig {
         eventSourcingProperties: EventSourcingProperties,
         aggregateRegistry: AggregateRegistry,
         eventStoreDbOperations: EventStoreDbOperations
-    ) = AggregateEventsStreamManager(
+    ) = AggregateEventStreamManager(
         aggregateRegistry,
         eventStoreDbOperations,
         eventSourcingProperties
@@ -46,7 +46,7 @@ open class SpringAppConfig {
 
     @Bean(destroyMethod = "destroy")
     fun subscriptionManager(
-        eventStreamManager: AggregateEventsStreamManager,
+        eventStreamManager: AggregateEventStreamManager,
         aggregateRegistry: AggregateRegistry,
         eventMapper: JsonEventMapper,
     ) = AggregateSubscriptionsManager(

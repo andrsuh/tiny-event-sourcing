@@ -1,4 +1,4 @@
-package ru.quipy.streams
+package ru.quipy.streams.annotation
 
 import ru.quipy.domain.Aggregate
 import kotlin.reflect.KClass

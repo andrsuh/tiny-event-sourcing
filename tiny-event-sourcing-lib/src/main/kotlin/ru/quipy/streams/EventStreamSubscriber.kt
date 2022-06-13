@@ -10,7 +10,7 @@ import java.util.concurrent.Executors
 import kotlin.reflect.KClass
 
 class EventStreamSubscriber<A : Aggregate>(
-    private val aggregateEventsStream: AggregateEventsStream<A>,
+    private val aggregateEventStream: AggregateEventStream<A>,
     private val eventMapper: EventMapper,
     private val nameToEventClassFunc: (String) -> KClass<Event<A>>,
     private val handlers: Map<KClass<out Event<A>>, suspend (Event<A>) -> Unit>
@@ -25,13 +25,13 @@ class EventStreamSubscriber<A : Aggregate>(
             .asCoroutineDispatcher() // todo sukhoa customize
     ).launch {
         while (active) {
-            aggregateEventsStream.handleNextRecord { eventRecord ->
+            aggregateEventStream.handleNextRecord { eventRecord ->
                 try {
                     val event = payloadToEvent(eventRecord.payload, eventRecord.eventTitle)
                     handlers[event::class]?.invoke(event)
                     true
                 } catch (e: Exception) {
-                    logger.error("Unexpected exception while handling event in subscriber. Stream: ${aggregateEventsStream.streamName}, event record: $eventRecord")
+                    logger.error("Unexpected exception while handling event in subscriber. Stream: ${aggregateEventStream.streamName}, event record: $eventRecord")
                     false
                 }
             }
@@ -49,11 +49,11 @@ class EventStreamSubscriber<A : Aggregate>(
     fun stopAndDestroy() {
         active = false
         subscriptionCoroutine.cancel()
-        aggregateEventsStream.stopAndDestroy()
+        aggregateEventStream.stopAndDestroy()
     }
 
     class EventStreamSubscriptionBuilder<A : Aggregate>(
-        private val wrapped: AggregateEventsStream<A>,
+        private val wrapped: AggregateEventStream<A>,
         private val eventMapper: EventMapper,
         private val nameToEventClassFunc: (String) -> KClass<Event<A>>,
     ) {
@@ -71,7 +71,7 @@ class EventStreamSubscriber<A : Aggregate>(
     }
 }
 
-fun <A : Aggregate> AggregateEventsStream<A>.toSubscriptionBuilder(
+fun <A : Aggregate> AggregateEventStream<A>.toSubscriptionBuilder(
     eventMapper: EventMapper,
     nameToEventClassFunc: (String) -> KClass<Event<A>>
 ) = EventStreamSubscriber.EventStreamSubscriptionBuilder(this, eventMapper, nameToEventClassFunc)
