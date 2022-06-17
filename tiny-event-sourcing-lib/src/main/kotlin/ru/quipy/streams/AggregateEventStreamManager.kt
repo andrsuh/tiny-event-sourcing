@@ -6,6 +6,7 @@ import ru.quipy.core.EventSourcingProperties
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.domain.Aggregate
 import ru.quipy.streams.annotation.RetryConf
+import ru.quipy.streams.annotation.RetryFailedStrategy
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import kotlin.reflect.KClass
