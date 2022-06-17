@@ -5,7 +5,6 @@ import ru.quipy.core.AggregateRegistry
 import ru.quipy.core.EventSourcingProperties
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.domain.Aggregate
-import ru.quipy.mapper.EventMapper
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import kotlin.reflect.KClass
@@ -23,7 +22,7 @@ class AggregateEventsStreamManager(
     fun <A : Aggregate> createEventStream(
         streamName: String,
         aggregateClass: KClass<A>,
-        retryConfig: RetryConf
+        retryConfig: RetryConf = RetryConf(3, RetryFailedStrategy.SKIP_EVENT)
     ): AggregateEventsStream<A> {
         val aggregateInfo = (aggregateRegistry.getAggregateInfo(aggregateClass)
             ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered"))
