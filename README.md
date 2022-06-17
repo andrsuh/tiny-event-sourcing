@@ -16,6 +16,6 @@ Also you have to configure the `github` maven repository. You can either include
 ```
 <repository>
     <id>github</id>
-    <url>https://andrsuh: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@maven.pkg.github.com/andrsuh/tiny-event-sourcing</url>
+    <url>https://andrsuh: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@maven.pkg.github.com/andrsuh/tiny-event-sourcing</url>
 </repository>
 ```
