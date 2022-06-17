@@ -22,19 +22,19 @@ abstract class Event<A : Aggregate>(
     val name: String,
     var aggregateId: String, // todo sukhoa maybe val?
     override var version: Long = 0L, // this is aggregate version actually or the event count number
-    val createdAt: Long = System.currentTimeMillis(),
+    var createdAt: Long = System.currentTimeMillis(),
 ) : Versioned, Unique<UUID> {
     abstract infix fun applyTo(aggregate: A)
 }
 
 @Suppress("unused")
-class EventRecord(
+data class EventRecord(
     override val id: String,
     val aggregateId: String,
     val aggregateVersion: Long,
     val eventTitle: String,
     val payload: String,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.nanoTime()
 ) : Unique<String>
 
 @Suppress("UNCHECKED_CAST")
