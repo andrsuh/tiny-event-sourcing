@@ -44,6 +44,8 @@ class BufferedAggregateEventStream<A : Aggregate>(
 
     private var active = AtomicBoolean(true)
 
+    private var suspended = AtomicBoolean(false)
+
     @Volatile
     private var readingIndex = 0L
 
@@ -70,13 +72,19 @@ class BufferedAggregateEventStream<A : Aggregate>(
 
     private fun launchEventStream() =
         CoroutineScope(CoroutineName("reading-$streamName-coroutine") + dispatcher).launch {
+            // initial delay
+            delay(5_000)
             eventStreamNotifier.onStreamLaunched(streamName)
 
             suspendTillTableExists()
             syncReaderIndex() // todo sukhoa we don't use read index after relaunching
-            logger.info("Resuming stream $streamName with reading index $readingIndex")
 
             while (active.get()) {
+                while (suspended.get()) {
+                    delay(5_000)
+                    logger.info("Suspended stream $streamName with reading index $readingIndex")
+                }
+
                 checkAndResetIfRequired()
 
                 val eventsBatch =
@@ -188,6 +196,15 @@ class BufferedAggregateEventStream<A : Aggregate>(
         if (eventStreamJob.isActive) {
             eventStreamJob.cancel()
         }
+    }
+
+    override fun suspend() {
+        suspended.set(true)
+    }
+
+    override fun resume() {
+        logger.info("Resuming stream $streamName with reading index $readingIndex")
+        suspended.set(false)
     }
 
     override fun resetToReadingIndex(version: Long) {

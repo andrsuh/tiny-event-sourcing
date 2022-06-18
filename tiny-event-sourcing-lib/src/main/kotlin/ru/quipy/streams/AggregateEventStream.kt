@@ -27,6 +27,10 @@ interface AggregateEventStream<A : Aggregate> {
      * Stops process that reads events from DB
      */
     fun stopAndDestroy()
+
+    fun suspend()
+
+    fun resume()
 }
 
 interface EventStreamListener { // todo sukhoa better naming
