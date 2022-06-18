@@ -1,4 +1,4 @@
-package ru.quipy.streams
+package ru.quipy.streams.annotation
 
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)

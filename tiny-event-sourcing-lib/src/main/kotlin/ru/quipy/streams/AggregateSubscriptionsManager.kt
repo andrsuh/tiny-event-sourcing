@@ -7,13 +7,17 @@ import ru.quipy.domain.Aggregate
 import ru.quipy.domain.Event
 import ru.quipy.mapper.EventMapper
 import ru.quipy.streams.EventStreamSubscriber.EventStreamSubscriptionBuilder
+import ru.quipy.streams.annotation.AggregateSubscriber
+import ru.quipy.streams.annotation.RetryConf
+import ru.quipy.streams.annotation.RetryFailedStrategy
+import ru.quipy.streams.annotation.SubscribeEvent
 import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotations
 import kotlin.reflect.full.isSuperclassOf
 import kotlin.reflect.full.memberFunctions
 
 class AggregateSubscriptionsManager(
-    private val eventsStreamManager: AggregateEventsStreamManager,
+    private val eventsStreamManager: AggregateEventStreamManager,
     private val aggregateRegistry: AggregateRegistry,
     private val eventMapper: EventMapper
 ) {

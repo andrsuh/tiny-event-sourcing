@@ -19,11 +19,11 @@ import ru.quipy.core.EventSourcingService
 import ru.quipy.demo.ProjectAggregate
 import ru.quipy.demo.TaskCreatedEvent
 import ru.quipy.demo.addTask
-import ru.quipy.streams.AggregateSubscriber
+import ru.quipy.streams.annotation.AggregateSubscriber
 import ru.quipy.streams.AggregateSubscriptionsManager
-import ru.quipy.streams.RetryConf
-import ru.quipy.streams.RetryFailedStrategy.SKIP_EVENT
-import ru.quipy.streams.SubscribeEvent
+import ru.quipy.streams.annotation.RetryConf
+import ru.quipy.streams.annotation.RetryFailedStrategy.SKIP_EVENT
+import ru.quipy.streams.annotation.SubscribeEvent
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import javax.annotation.PostConstruct
