@@ -42,7 +42,7 @@ interface EventStreamListener { // todo sukhoa better naming
 
     fun onBatchRead(block: (streamName: String, batchSize: Int) -> Unit)
 
-    fun onRecordHandledSuccessfully(block: (streamName: String) -> Unit)
+    fun onRecordHandledSuccessfully(block: (streamName: String, eventName: String) -> Unit)
 
     fun onRecordHandlingRetry(block: (streamName: String, eventName: String, retryAttempt: Int) -> Unit)
 
@@ -62,7 +62,7 @@ interface EventStreamNotifier { // todo sukhoa better naming
 
     fun onBatchRead(streamName: String, batchSize: Int)
 
-    fun onRecordHandledSuccessfully(streamName: String)
+    fun onRecordHandledSuccessfully(streamName: String, eventName: String)
 
     fun onRecordHandlingRetry(streamName: String, eventName: String, retryAttempt: Int)
 
@@ -78,7 +78,7 @@ class EventStreamListenerImpl : EventStreamListener, EventStreamNotifier {
     private val onIndexSyncedHandlers: MutableList<(streamName: String, index: Long) -> Unit> = mutableListOf()
     private val onStreamResetHandlers: MutableList<(streamName: String, resetIndex: Long) -> Unit> = mutableListOf()
     private val onBatchReadHandlers: MutableList<(streamName: String, batchSize: Int) -> Unit> = mutableListOf()
-    private val onRecordHandledSuccessfullyHandlers: MutableList<(streamName: String) -> Unit> = mutableListOf()
+    private val onRecordHandledSuccessfullyHandlers: MutableList<(streamName: String, eventName: String) -> Unit> = mutableListOf()
     private val onRecordHandlingRetryHandlers: MutableList<(streamName: String, eventName: String, retryAttempt: Int) -> Unit> =
         mutableListOf()
     private val onRecordSkippedHandlers: MutableList<(streamName: String, eventName: String, retryAttempt: Int) -> Unit> =
@@ -103,7 +103,7 @@ class EventStreamListenerImpl : EventStreamListener, EventStreamNotifier {
         onBatchReadHandlers.add(block)
     }
 
-    override fun onRecordHandledSuccessfully(block: (streamName: String) -> Unit) {
+    override fun onRecordHandledSuccessfully(block: (streamName: String, eventName: String) -> Unit) {
         onRecordHandledSuccessfullyHandlers.add(block)
     }
 
@@ -147,9 +147,9 @@ class EventStreamListenerImpl : EventStreamListener, EventStreamNotifier {
         }
     }
 
-    override fun onRecordHandledSuccessfully(streamName: String) {
+    override fun onRecordHandledSuccessfully(streamName: String, eventName: String) {
         onRecordHandledSuccessfullyHandlers.forEach {
-            it.invoke(streamName)
+            it.invoke(streamName, eventName)
         }
     }
 
