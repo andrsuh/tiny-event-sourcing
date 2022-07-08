@@ -100,7 +100,7 @@ class BufferedAggregateEventStream<A : Aggregate>(
                     processingRecordTimestamp = eventRecord.createdAt
 
                     feedToHandling(readingIndex, eventRecord) {
-                        eventStreamNotifier.onRecordHandledSuccessfully(streamName)
+                        eventStreamNotifier.onRecordHandledSuccessfully(streamName, eventRecord.eventTitle)
                         readingIndex = processingRecordTimestamp
 
                         if (processedRecords++ % 10 == 0L) {

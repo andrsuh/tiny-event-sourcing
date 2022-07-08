@@ -41,8 +41,8 @@ class EventSourcingApplicationConfiguration {
         subscriptionsManager.subscribe<ProjectAggregate>(projectEventSubscriber)
 
         eventStreamManager.maintenance {
-            onRecordHandledSuccessfully {
-                logger.info("Stream $it processed record successfully")
+            onRecordHandledSuccessfully { streamName, eventName ->
+                logger.info("Stream $streamName successfully processed record of $eventName")
             }
 
             onBatchRead { streamName, batchSize ->
