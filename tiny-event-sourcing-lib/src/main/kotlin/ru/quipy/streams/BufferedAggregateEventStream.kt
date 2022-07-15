@@ -47,7 +47,8 @@ class BufferedAggregateEventStream<A : Aggregate>(
     private var suspended = AtomicBoolean(false)
 
     @Volatile
-    private var readingIndex = 0L
+    override var readingIndex = 0L
+        private set
 
     @Volatile
     private var readerIndexCommittedVersion = 0L

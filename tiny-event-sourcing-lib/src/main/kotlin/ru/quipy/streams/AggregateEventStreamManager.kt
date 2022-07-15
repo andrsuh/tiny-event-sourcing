@@ -21,7 +21,7 @@ class AggregateEventStreamManager(
 
     private val eventStreamsDispatcher = Executors.newFixedThreadPool(16).asCoroutineDispatcher() // todo sukhoa fix
 
-    private val eventStreams = ConcurrentHashMap<StreamId, AggregateEventStream<*>>()
+    private val eventStreams = ConcurrentHashMap<String, AggregateEventStream<*>>()
 
     fun <A : Aggregate> createEventStream(
         streamName: String,
@@ -31,9 +31,8 @@ class AggregateEventStreamManager(
         val aggregateInfo = (aggregateRegistry.getAggregateInfo(aggregateClass)
             ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered"))
 
-        val streamId = StreamId(streamName, aggregateClass)
         val existing = eventStreams.putIfAbsent(
-            streamId, BufferedAggregateEventStream<A>(
+            streamName, BufferedAggregateEventStream<A>(
                 streamName,
                 eventSourcingProperties.streamReadPeriod,
                 eventSourcingProperties.streamBatchSize,
@@ -47,7 +46,7 @@ class AggregateEventStreamManager(
 
         if (existing != null) throw IllegalStateException("There is already stream $streamName for aggregate ${aggregateClass.simpleName}")
 
-        return eventStreams[streamId] as AggregateEventStream<A>
+        return eventStreams[streamName] as AggregateEventStream<A>
     }
 
     fun destroy() {
@@ -60,7 +59,17 @@ class AggregateEventStreamManager(
         block(eventStreamListener)
     }
 
-    private data class StreamId(
-        val streamName: String, val aggregateClass: KClass<*>
+    fun streamsInfo() = eventStreams.map { (_, stream) ->
+        StreamInfo(
+            stream.streamName,
+            stream.readingIndex
+        )
+    }.toList()
+
+    fun getStreamByName(name: String) = eventStreams[name]
+
+    data class StreamInfo(
+        val streamName: String,
+        val readingIndex: Long
     )
 }

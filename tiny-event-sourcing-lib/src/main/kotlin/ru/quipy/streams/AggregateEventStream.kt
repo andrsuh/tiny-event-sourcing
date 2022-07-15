@@ -13,6 +13,8 @@ import ru.quipy.domain.EventRecord
 interface AggregateEventStream<A : Aggregate> {
     val streamName: String
 
+    val readingIndex: Long
+
     /**
      * Allows to handle next event. Suspends until event is supplied.
      */
@@ -27,6 +29,7 @@ interface AggregateEventStream<A : Aggregate> {
      * Stops process that reads events from DB
      */
     fun stopAndDestroy()
+
 
     fun suspend()
 
