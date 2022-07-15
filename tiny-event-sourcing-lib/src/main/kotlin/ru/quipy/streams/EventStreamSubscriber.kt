@@ -31,7 +31,7 @@ class EventStreamSubscriber<A : Aggregate>(
                     handlers[event::class]?.invoke(event)
                     true
                 } catch (e: Exception) {
-                    logger.error("Unexpected exception while handling event in subscriber. Stream: ${aggregateEventStream.streamName}, event record: $eventRecord")
+                    logger.error("Unexpected exception while handling event in subscriber. Stream: ${aggregateEventStream.streamName}, event record: $eventRecord", e)
                     false
                 }
             }

@@ -32,7 +32,7 @@ import javax.annotation.PostConstruct
 @Import(SubscriptionConfig::class)
 class EventStreamsTest {
     companion object {
-        const val testId = "1"
+        const val testId = "2"
     }
 
     @Autowired
@@ -148,7 +148,7 @@ open class TestProjectSubscriberConfig {
 @Suppress("unused")
 @AggregateSubscriber(
     aggregateClass = ProjectAggregate::class,
-    subscriberName = "test-subs-stream",
+    subscriberName = "test-subscription-stream",
     retry = RetryConf(3, SKIP_EVENT)
 )
 class TestDemoProjectSubscriber {

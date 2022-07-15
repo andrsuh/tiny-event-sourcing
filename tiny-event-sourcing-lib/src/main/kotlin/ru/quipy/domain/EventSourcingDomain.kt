@@ -34,7 +34,7 @@ data class EventRecord(
     val aggregateVersion: Long,
     val eventTitle: String,
     val payload: String,
-    val createdAt: Long = System.nanoTime()
+    val createdAt: Long = System.currentTimeMillis()
 ) : Unique<String>
 
 @Suppress("UNCHECKED_CAST")
