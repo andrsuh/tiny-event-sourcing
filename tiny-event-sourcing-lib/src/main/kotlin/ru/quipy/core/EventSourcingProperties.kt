@@ -6,4 +6,6 @@ class EventSourcingProperties {
     var snapshotTableName: String = "snapshots"
     var streamReadPeriod: Long = 1_000
     var streamBatchSize: Int = 200
+    var autoScanEnabled: Boolean = false
+    var scanPackage: String? = null
 }

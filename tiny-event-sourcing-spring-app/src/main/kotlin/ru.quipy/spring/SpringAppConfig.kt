@@ -5,9 +5,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import ru.quipy.core.AggregateRegistry
-import ru.quipy.core.EventSourcingProperties
-import ru.quipy.core.EventSourcingServiceFactory
+import ru.quipy.core.*
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.mapper.JsonEventMapper
 import ru.quipy.streams.AggregateEventStreamManager
@@ -30,8 +28,9 @@ open class SpringAppConfig {
     //@ConditionalOnBean(MongoTemplate::class)
     fun eventStoreDbOperations() = MongoDbEventStoreDbOperations()
 
-    @Bean
-    fun aggregateRegistry() = AggregateRegistry()
+    @Bean(initMethod = "init")
+    fun aggregateRegistry(eventSourcingProperties: EventSourcingProperties) =
+        SeekingForSuitableClassesAggregateRegistry(BasicAggregateRegistry(), eventSourcingProperties)
 
     @Bean(destroyMethod = "destroy")
     fun eventStreamManager(
@@ -52,7 +51,8 @@ open class SpringAppConfig {
     ) = AggregateSubscriptionsManager(
         eventStreamManager,
         aggregateRegistry,
-        eventMapper)
+        eventMapper
+    )
 
     @Bean
     fun eventSourcingServiceFactory(

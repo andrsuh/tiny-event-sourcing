@@ -16,9 +16,6 @@ class EventSourcingApplicationConfiguration {
     private val logger = LoggerFactory.getLogger(EventSourcingApplicationConfiguration::class.java)
 
     @Autowired
-    private lateinit var aggregateRegistry: AggregateRegistry
-
-    @Autowired
     private lateinit var subscriptionsManager: AggregateSubscriptionsManager
 
     @Autowired
@@ -32,11 +29,12 @@ class EventSourcingApplicationConfiguration {
 
     @PostConstruct
     fun init() {
-        aggregateRegistry.register(ProjectAggregate::class) {
-            registerEvent(TagCreatedEvent::class)
-            registerEvent(TaskCreatedEvent::class)
-            registerEvent(TagAssignedToTaskEvent::class)
-        }
+        // autoscan enabled see event.sourcing.auto-scan-enabled property
+//        aggregateRegistry.register(ProjectAggregate::class) {
+//            registerEvent(TagCreatedEvent::class)
+//            registerEvent(TaskCreatedEvent::class)
+//            registerEvent(TagAssignedToTaskEvent::class)
+//        }
 
         subscriptionsManager.subscribe<ProjectAggregate>(projectEventSubscriber)
 

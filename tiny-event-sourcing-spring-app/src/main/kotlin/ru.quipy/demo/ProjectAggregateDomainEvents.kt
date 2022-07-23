@@ -48,7 +48,7 @@ class TagAssignedToTaskEvent(
     val taskId: UUID,
     val tagId: UUID,
     createdAt: Long = System.currentTimeMillis(),
-) : Event<ProjectAggregate>(
+) : SomeBaseEventWithoutAnnotation(
     name = TAG_ASSIGNED_TO_TASK_EVENT,
     aggregateId = projectId,
     createdAt = createdAt
@@ -57,5 +57,16 @@ class TagAssignedToTaskEvent(
         aggregate.tasks[taskId]?.tagsAssigned?.add(tagId)
             ?: throw IllegalArgumentException("No such task: $taskId") // todo sukhoa exception or not?
         aggregate.updatedAt = createdAt
+    }
+}
+
+// for testing and demo purposes
+open class SomeBaseEventWithoutAnnotation (
+    name: String,
+    aggregateId: String,
+    createdAt: Long = System.currentTimeMillis(),
+) : Event<ProjectAggregate>(name = name, aggregateId = aggregateId, createdAt = createdAt) {
+    override fun applyTo(aggregate: ProjectAggregate) {
+        TODO("Not yet implemented")
     }
 }
