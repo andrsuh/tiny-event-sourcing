@@ -7,6 +7,22 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 
+/**
+ * Acts as a local storage of the aggregates and their events meta-information.
+ * Provides methods to store (register) this meta-information.
+ * All the classes that are marked with [AggregateType] and extend [Aggregate] as well as those
+ * marked with [DomainEvent] and extend [Event] should be explicitly registered here on app start up unless you're
+ * using [SeekingForSuitableClassesAggregateRegistry]. [SeekingForSuitableClassesAggregateRegistry] decorates [BasicAggregateRegistry]
+ * and provides automatic aggregates and domain events look up and registering.
+ *
+ * Used by many others libraries components to obtain necessary information about aggregates and events.
+ *
+ * For example [EventSourcingService] uses it to
+ *  - obtain aggregate DB table name
+ *  - get aggregate instantiation function (to create empty aggregate state) also [AggregateSubscriptionsManager] does that
+ *  - to get event type by it's name retrieved from DB
+ *
+ */
 interface AggregateRegistry {
 
     fun <A : Aggregate> register(
@@ -20,6 +36,9 @@ interface AggregateRegistry {
         fun <E : Event<A>> registerEvent(eventClass: KClass<E>)
     }
 
+    /**
+     * Encapsulates all the meta-information about aggregate and it's events that is needed by other library components.
+     */
     @Suppress("unused")
     class AggregateInfo<A : Aggregate>(
         val aggregateClass: KClass<in A>,

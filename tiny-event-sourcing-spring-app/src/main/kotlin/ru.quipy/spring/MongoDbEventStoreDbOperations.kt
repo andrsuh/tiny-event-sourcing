@@ -31,35 +31,19 @@ class MongoDbEventStoreDbOperations : EventStoreDbOperations {
         }
     }
 
-    override fun findEventRecordsByAggregateId(aggregateTableName: String, aggregateId: String): List<EventRecord> {
-        return mongoTemplate.find(Query.query(Criteria.where("aggregateId").`is`(aggregateId)), aggregateTableName)
-    }
-
     override fun tableExists(aggregateTableName: String) = mongoTemplate.collectionExists(aggregateTableName)
 
     override fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot) {
         mongoTemplate.updateWithLatestVersion(tableName, snapshot)
     }
 
-    override fun findOneEventRecordById(aggregateTableName: String, eventRecordId: Long): EventRecord? {
-        return mongoTemplate.findById(eventRecordId, aggregateTableName)
-    }
-
-    override fun findOneEventRecordAfter(aggregateTableName: String, readTimestamp: Long): EventRecord? {
-        val query = Query()
-            .addCriteria(Criteria.where("createdAt").gt(readTimestamp))
-            .with(Sort.by("createdAt").ascending())
-
-        return mongoTemplate.findOne(query, EventRecord::class.java, aggregateTableName)
-    }
-
     override fun findBatchOfEventRecordAfter(
         aggregateTableName: String,
-        readTimestamp: Long,
+        eventSequenceNum: Long,
         batchSize: Int
     ): List<EventRecord> {
         val query = Query()
-            .addCriteria(Criteria.where("createdAt").gt(readTimestamp))
+            .addCriteria(Criteria.where("createdAt").gt(eventSequenceNum))
             .with(Sort.by("createdAt").ascending())
             .limit(batchSize)
 
@@ -78,12 +62,6 @@ class MongoDbEventStoreDbOperations : EventStoreDbOperations {
 
         return mongoTemplate.find(Query().addCriteria(criteria), aggregateTableName)
     }
-
-    override fun findEventRecordsWithAggregateVersionGraterThan(
-        aggregateTableName: String,
-        eventRecordId: Long,
-        batchSize: Int
-    ): List<EventRecord> = TODO()
 
     override fun findSnapshotByAggregateId(snapshotsTableName: String, aggregateId: String): Snapshot? {
         return mongoTemplate.findById(aggregateId, snapshotsTableName)

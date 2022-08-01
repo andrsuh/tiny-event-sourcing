@@ -40,7 +40,7 @@ data class EventRecord(
 @Suppress("UNCHECKED_CAST")
 class Snapshot(
     override val id: String,
-    val snapshot: Any, // todo sukhoa test how it works with adding properties to snapshot.
+    val snapshot: Any,
     override var version: Long
 ) : Versioned, Unique<String>
 

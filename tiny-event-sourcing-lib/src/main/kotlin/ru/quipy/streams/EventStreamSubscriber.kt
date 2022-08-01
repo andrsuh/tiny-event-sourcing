@@ -9,6 +9,12 @@ import ru.quipy.mapper.EventMapper
 import java.util.concurrent.Executors
 import kotlin.reflect.KClass
 
+/**
+ * Wraps the instance of [AggregateEventStream] and:
+ *  - Handle event records from underlying stream, turn them into [Event] instances
+ *  - Holds the handlers map which maps some certain type of [Event] to the logic that should be performed to handle it.
+ *
+ */
 class EventStreamSubscriber<A : Aggregate>(
     private val aggregateEventStream: AggregateEventStream<A>,
     private val eventMapper: EventMapper,

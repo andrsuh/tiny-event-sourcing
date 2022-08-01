@@ -7,8 +7,16 @@ import ru.quipy.domain.EventRecord
  * Reads event records for the given type of aggregate in order they were written to DB and
  * allows to handle them one by one in same order.
  *
+ * Notice that [AggregateEventStream] knows nothing about the exact events and how they should be handled.
+ * It is more low-level structure that operates the event-records flow. It might be wrapped with [EventStreamSubscriber]
+ * which is more high level and used for mapping the payload of the records to the domain events and defining the
+ * rules of handling those events.
+ *
+ * [AggregateEventStream] takes the control over the flow speed and how the records would be read. For example some implementation
+ * can buffer some number of event records and other can read one by one. Retries is handled on [AggregateEventStream] level.
+ *
  * Regardless of implementation the event stream would not be overwhelmed by events as
- * it will be suspended in case nobody is consuming it's events. So it might be called "Lazy"
+ * it is suspended in case nobody is consuming its events. So it might be called "Lazy"
  */
 interface AggregateEventStream<A : Aggregate> {
     val streamName: String
@@ -26,10 +34,9 @@ interface AggregateEventStream<A : Aggregate> {
     fun resetToReadingIndex(version: Long)
 
     /**
-     * Stops process that reads events from DB
+     * Stops a process that reads events from DB
      */
     fun stopAndDestroy()
-
 
     fun suspend()
 
