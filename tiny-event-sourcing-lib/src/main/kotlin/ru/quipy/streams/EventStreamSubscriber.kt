@@ -6,19 +6,37 @@ import org.slf4j.LoggerFactory
 import ru.quipy.domain.Aggregate
 import ru.quipy.domain.Event
 import ru.quipy.mapper.EventMapper
+import ru.quipy.streams.EventStreamSubscriber.EventStreamSubscriptionBuilder
 import java.util.concurrent.Executors
 import kotlin.reflect.KClass
 
 /**
  * Wraps the instance of [AggregateEventStream] and:
- *  - Handle event records from underlying stream, turn them into [Event] instances
+ *  - Handles event records from underlying stream, turn them into [Event] instances
  *  - Holds the handlers map which maps some certain type of [Event] to the logic that should be performed to handle it.
  *
+ * We do not recommend to create instances of EventStreamSubscriber directly through constructor. Preferred way is to
+ * use [AggregateSubscriptionsManager] methods.
  */
 class EventStreamSubscriber<A : Aggregate>(
+    /**
+     * Wrapped [AggregateEventStream]
+     */
     private val aggregateEventStream: AggregateEventStream<A>,
+    /**
+     * Allows to map some row representation of event to instance of [Event] class
+     */
     private val eventMapper: EventMapper,
+    /**
+     * When we store event to DB we just store the row bytes of the event (most likely json representation).
+     * Also, the event meta-information is stored - id, timestamp, aggregateId and the NAME of the event.
+     * The NAME is mapped to the class of corresponding event. So we ask this function - which class is mapped to the name?
+     * to correctly deserialize the row content of the event.
+     */
     private val nameToEventClassFunc: (String) -> KClass<Event<A>>,
+    /**
+     * Maps the event classes to corresponding business logic that should be performed once the event of the class is fired.
+     */
     private val handlers: Map<KClass<out Event<A>>, suspend (Event<A>) -> Unit>
 ) {
     @Volatile
@@ -58,6 +76,9 @@ class EventStreamSubscriber<A : Aggregate>(
         aggregateEventStream.stopAndDestroy()
     }
 
+    /**
+     * Allows to build new instance of [EventStreamSubscriber].
+     */
     class EventStreamSubscriptionBuilder<A : Aggregate>(
         private val wrapped: AggregateEventStream<A>,
         private val eventMapper: EventMapper,
@@ -77,7 +98,10 @@ class EventStreamSubscriber<A : Aggregate>(
     }
 }
 
+/**
+ * Creates new [EventStreamSubscriptionBuilder] which can be used then to initialize and start [EventStreamSubscriber]
+ */
 fun <A : Aggregate> AggregateEventStream<A>.toSubscriptionBuilder(
     eventMapper: EventMapper,
     nameToEventClassFunc: (String) -> KClass<Event<A>>
-) = EventStreamSubscriber.EventStreamSubscriptionBuilder(this, eventMapper, nameToEventClassFunc)
+) = EventStreamSubscriptionBuilder(this, eventMapper, nameToEventClassFunc)

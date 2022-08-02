@@ -1,13 +1,18 @@
 package ru.quipy.core
 
-import ru.quipy.database.EventStoreDbOperations
-import ru.quipy.domain.*
-import ru.quipy.mapper.EventMapper
 import org.slf4j.LoggerFactory
 import ru.quipy.core.exceptions.DuplicateEventIdException
+import ru.quipy.database.EventStoreDbOperations
+import ru.quipy.domain.Aggregate
+import ru.quipy.domain.Event
+import ru.quipy.domain.EventRecord
+import ru.quipy.domain.Snapshot
+import ru.quipy.mapper.EventMapper
 import kotlin.reflect.KClass
 
-
+/**
+ * Allows you to update aggregates and get the last state of the aggregate instances.
+ */
 class EventSourcingService<A : Aggregate>(
     aggregateClass: KClass<A>,
     aggregateRegistry: AggregateRegistry,
@@ -19,9 +24,30 @@ class EventSourcingService<A : Aggregate>(
         private val logger = LoggerFactory.getLogger(EventSourcingService::class.java)
     }
 
-    private val aggregateInfo = aggregateRegistry.getAggregateInfo(aggregateClass) // todo sukhoa pass the only info
+    private val aggregateInfo = aggregateRegistry.getAggregateInfo(aggregateClass) // todo sukhoa pass the only info?
         ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered")
 
+    /**
+     * Allows to update aggregate by running some logic on aggregate state that results in [Event].
+     *
+     * [aggregateId] - refers to the ID of the aggregate instance for update. If no aggregate instance with
+     * given id found then will be created.
+     * [eventGenerationFunction] - method will construct the current aggregate instance state and pass it to this function.
+     * You can run any logic/validations/invariants checks on this aggregate state and return the [Event] instance if case
+     * everything is fine and update can be done. Just throw exception with a descriptive message otherwise e.g. "Name can't be empty".
+     *
+     * Your event will be applied to the aggregate to check if it is applicable indeed. Then event will be serialized to
+     * string using [EventMapper], wrapped with [EventRecord] instance containing all the necessary meta-information and
+     * sent to [EventStoreDbOperations.insertEventRecord] for string it in aggregate event log.
+     *
+     * If insertion failed with [DuplicateEventIdException], which means some other process managed to store event with same
+     * version/aggregateId first, we will repeat all the actions starting with loading and construction the freshest
+     * aggregate instance state and so on. This is how the concurrency issues are handled. This guarantees that replaying the
+     * events from log in the insertion order we will get exactly the same aggregate state as what we got before insertion.
+     *
+     * The number of attempts is limited to 20 currently.
+     *
+     */
     fun <E : Event<A>> update(aggregateId: String, eventGenerationFunction: (a: A) -> E): E {
         var numOfAttempts = 0
         while (true) { // spinlock
@@ -61,7 +87,10 @@ class EventSourcingService<A : Aggregate>(
 
             if (updatedVersion % eventSourcingProperties.snapshotFrequency == 0L) {
                 val snapshot = Snapshot(aggregateId, aggregateState, updatedVersion)
-                eventStoreDbOperations.updateSnapshotWithLatestVersion(eventSourcingProperties.snapshotTableName, snapshot) // todo sukhoa move this and frequency to aggregate-specific config
+                eventStoreDbOperations.updateSnapshotWithLatestVersion(
+                    eventSourcingProperties.snapshotTableName,
+                    snapshot
+                ) // todo sukhoa move this and frequency to aggregate-specific config
             }
 
             return newEvent
@@ -70,7 +99,7 @@ class EventSourcingService<A : Aggregate>(
 
     fun getState(aggregateId: String): A = getVersionedState(aggregateId).second
 
-    fun getVersionedState(aggregateId: String): Pair<Long, A> {
+    private fun getVersionedState(aggregateId: String): Pair<Long, A> {
         var version = 0L
 
         val aggregate =

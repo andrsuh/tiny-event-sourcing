@@ -16,6 +16,19 @@ import kotlin.reflect.full.findAnnotations
 import kotlin.reflect.full.isSuperclassOf
 import kotlin.reflect.full.memberFunctions
 
+/**
+ * Creates [EventStreamSubscriber]s holds them and allows to destroy them all.
+ *
+ * Using this class is a preferable way to create and initialize [EventStreamSubscriber]s.
+ *
+ * There are two options to do that:
+ * - Pass some [Any] object of class that is marked with [AggregateSubscriber] to [AggregateSubscriptionsManager.subscribe].
+ * [AggregateSubscriptionsManager] will create a subscriber for the class.
+ * Also, the class will be automatically scanned to find methods that are marked with [SubscribeEvent] and create handlers
+ * for subscriber to deal with events of type that matches the argument type of the method.
+ * - Use [AggregateSubscriptionsManager.createSubscriber] method which alloes you to instantiate subscriber with
+ * explicitly passed config and configure handlers.
+ */
 class AggregateSubscriptionsManager(
     private val eventsStreamManager: AggregateEventStreamManager,
     private val aggregateRegistry: AggregateRegistry,
@@ -25,6 +38,16 @@ class AggregateSubscriptionsManager(
 
     private val subscribers: MutableList<EventStreamSubscriber<*>> = mutableListOf()
 
+    /**
+     * Subscribes given object to the aggregate event stream.
+     *
+     * Automatically scans the class
+     * - Looking for [AggregateSubscriber] annotation. If not found throw the exception.
+     * - Looking for methods in class that are marked with [SubscribeEvent] and analyses its arguments that should be a
+     * type of aggregate [Event].
+     * - Creates the subscriber of the aggregate and configure the corresponding methods-handlers
+     * - Starts the subscriber
+     */
     @OptIn(ExperimentalStdlibApi::class)
     fun <A : Aggregate> subscribe(subscriberInstance: Any) {
         val subscriberClass = subscriberInstance::class
@@ -79,6 +102,24 @@ class AggregateSubscriptionsManager(
         }
     }
 
+    /**
+     * Creates the subscriber of the aggregate event stream configuring it with an explicitly passed parameters.
+     *
+     * [handlersBlock] - lambda function. Library passes the newly created object of [EventHandlersRegistrar] as a
+     * receiver of the lambda. This [EventHandlersRegistrar] contains methods that help you to define handlers for
+     * certain types of events. So that you could use following syntax to create and initialize subscribers:
+     *
+     * ```
+     * subscriptionsManager.createSubscriber(UserAggregate::class, "payment-service:user-view-subscriber") {
+     *   `when`(UserCreatedEvent::class) { event ->
+     *      logger.info("User created: {}", event.userName)
+     *    }
+     *   `when`(UserNameChanged`event::class) { event ->
+     *      logger.info("User {} name changed from {} to {} ", event.userId, event.oldName, event.updatedName)
+     *   }
+     * }
+     * ```
+     */
     fun <A : Aggregate> createSubscriber(
         aggregateClass: KClass<A>,
         subscriberName: String,
@@ -107,12 +148,17 @@ class AggregateSubscriptionsManager(
         }
     }
 
+    /**
+     * This class is used to pass as a receiver (like implicit this) to the trailing lambda parameter of the
+     * [AggregateSubscriptionsManager.createSubscriber] method. It allows the caller code to invoke its
+     * [EventHandlersRegistrar.when] method to register the handlers for the aggregate events.
+     *
+     * This class is supposed for only helping purposes. It abstracts away the process of creating the subscriber and
+     * make syntax more concise.
+     */
     class EventHandlersRegistrar<A : Aggregate>(
         private val subscriptionBuilder: EventStreamSubscriptionBuilder<A>
     ) {
-        /**
-         * todo sukhoa docs!
-         */
         fun <E : Event<A>> `when`(
             eventType: KClass<E>,
             eventHandler: suspend (E) -> Unit

@@ -14,12 +14,19 @@ import ru.quipy.domain.Snapshot
 interface EventStoreDbOperations {
 
     /**
-     * Just append event record in aggregate event log.
+     * Appends event record in aggregate event log.
      *
-     * Throws [DuplicateEventIdException] if there is already event with same (aggregateId, version) combination.
+     * Throws [DuplicateEventIdException] if there is already event with same .
+     *
      * This is used to handle concurrency If one of the insertion operation running in parallel managed to insert
-     * event then others should retry their attempt including create aggregate state again, performing validations
-     * and insertion the resulting event.
+     * event, then others should retry their attempt including create aggregate state again, performing validations
+     * and insertion the resulting event. Some kind of optimistic concurrency control.
+     *
+     * We suggest using same (aggregateId, version) combination as a sign of the event is duplicate (version is a
+     * monotonically increasing sequence always incremented by one). In this case there will be no two events with same
+     * version within single aggregate instance. That allows you to tackle concurrency issues withing same aggregate instance.
+     * So that execution will be linearized for every single aggregate instance.
+     *
      */
     @Throws(exceptionClasses = [DuplicateEventIdException::class])
     fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord)

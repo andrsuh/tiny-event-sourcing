@@ -5,6 +5,9 @@ import ru.quipy.domain.Aggregate
 import ru.quipy.domain.Event
 import kotlin.reflect.KClass
 
+/**
+ * Allows to map some row representation (json String by default) of event to instance of [Event] class and vise versa
+ */
 interface EventMapper {
 
     fun <A : Aggregate> toEvent(payload: String, eventClass: KClass<out Event<*>>): Event<A>
