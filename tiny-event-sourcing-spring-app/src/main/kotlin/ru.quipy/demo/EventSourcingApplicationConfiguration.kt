@@ -7,6 +7,7 @@ import ru.quipy.streams.AggregateSubscriptionsManager
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import ru.quipy.demo.UserAggregate
 import ru.quipy.streams.AggregateEventStreamManager
 import javax.annotation.PostConstruct
 
@@ -19,7 +20,7 @@ class EventSourcingApplicationConfiguration {
     private lateinit var subscriptionsManager: AggregateSubscriptionsManager
 
     @Autowired
-    private lateinit var projectEventSubscriber: AnnotationBasedProjectEventsSubscriber
+    private lateinit var userEventsSubscriber: AnnotationBasedUserEventsSubscriber
 
     @Autowired
     private lateinit var eventSourcingServiceFactory: EventSourcingServiceFactory
@@ -36,7 +37,7 @@ class EventSourcingApplicationConfiguration {
 //            registerEvent(TagAssignedToTaskEvent::class)
 //        }
 
-        subscriptionsManager.subscribe<ProjectAggregate>(projectEventSubscriber)
+        subscriptionsManager.subscribe<UserAggregate>(userEventsSubscriber)
 
         eventStreamManager.maintenance {
             onRecordHandledSuccessfully { streamName, eventName ->
@@ -50,6 +51,6 @@ class EventSourcingApplicationConfiguration {
     }
 
     @Bean
-    fun demoESService() = eventSourcingServiceFactory.getOrCreateService(ProjectAggregate::class)
+    fun demoESService() = eventSourcingServiceFactory.getOrCreateService(UserAggregate::class)
 
 }
