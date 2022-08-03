@@ -11,6 +11,7 @@ import ru.quipy.streams.annotation.SubscribeEvent
 @AggregateSubscriber(aggregateClass = UserAggregate::class, subscriberName = "demo-user-stream")
 class AnnotationBasedUserEventsSubscriber {
     val logger: Logger = LoggerFactory.getLogger(AnnotationBasedUserEventsSubscriber::class.java)
+
     @SubscribeEvent
     fun userCreatedSubscriber(event: UserCreatedEvent) {
         logger.info("User created {}", event.userName)

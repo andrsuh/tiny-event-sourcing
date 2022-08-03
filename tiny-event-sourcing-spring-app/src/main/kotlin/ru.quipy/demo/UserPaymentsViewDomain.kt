@@ -16,24 +16,25 @@ import javax.annotation.PostConstruct
 class UserPaymentsViewDomain {
     @Document("user-payment-view")
     data class UserPayments(
-            @Id
-            override val id: String, // userId
-            var defaultPaymentMethodId: UUID? = null, //Id of favorite payment
-            val paymentMethods: MutableMap<UUID, Payment> = mutableMapOf() // map to hold all payments
+        @Id
+        override val id: String, // userId
+        var defaultPaymentMethodId: UUID? = null, //Id of favorite payment
+        val paymentMethods: MutableMap<UUID, Payment> = mutableMapOf() // map to hold all payments
     ) : Unique<String>
 
     data class Payment(
-            val paymentId: UUID,
-            val payment: String
+        val paymentId: UUID,
+        val payment: String
     )
 }
 
 @Service
 class UserPaymentsViewService(
-        private val userPaymentsRepository: UserPaymentsRepository,
-        private val subscriptionsManager: AggregateSubscriptionsManager
+    private val userPaymentsRepository: UserPaymentsRepository,
+    private val subscriptionsManager: AggregateSubscriptionsManager
 ) {
     val logger: Logger = LoggerFactory.getLogger(UserPaymentsViewService::class.java)
+
     @PostConstruct
     fun init() {
         subscriptionsManager.createSubscriber(UserAggregate::class, "userPayments-payment-event-publisher-stream") {
@@ -54,7 +55,7 @@ class UserPaymentsViewService(
 
     private fun setDefaultPayment(userId: String, paymentMethodId: UUID) {
         val userPayments = userPaymentsRepository.findById(userId).orElse(
-                UserPaymentsViewDomain.UserPayments(userId)
+            UserPaymentsViewDomain.UserPayments(userId)
         )
         userPayments.defaultPaymentMethodId = paymentMethodId
     }
@@ -67,7 +68,7 @@ class UserPaymentsViewService(
 
     private fun addPayment(paymentMethodId: UUID, userId: String, paymentMethod: String) {
         val userPayments = userPaymentsRepository.findById(userId).orElse(
-                UserPaymentsViewDomain.UserPayments(userId)
+            UserPaymentsViewDomain.UserPayments(userId)
         )
         userPayments.paymentMethods.put(paymentMethodId, UserPaymentsViewDomain.Payment(paymentMethodId, paymentMethod))
     }

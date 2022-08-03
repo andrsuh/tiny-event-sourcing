@@ -1,4 +1,5 @@
 package ru.quipy.demo
+
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
@@ -32,8 +33,9 @@ class UserCommandsController {
 
     @GetMapping("/User/{userId}/SetAddress/{addressId}")
     fun setDefaultAddress(
-            @PathVariable addressId: UUID,
-            @PathVariable userId: String) {
+        @PathVariable addressId: UUID,
+        @PathVariable userId: String
+    ) {
         this.demoESService.update(userId) {
             it.setDefaultAddressCommand(addressId)
         }
@@ -41,8 +43,8 @@ class UserCommandsController {
 
     @GetMapping("/User/{userId}/address")
     fun addAddress(
-            @RequestBody body: AddAddressDTO,
-            @PathVariable userId: String
+        @RequestBody body: AddAddressDTO,
+        @PathVariable userId: String
     ) {
         this.demoESService.update(userId) {
             it.addAddressCommand(body.address)

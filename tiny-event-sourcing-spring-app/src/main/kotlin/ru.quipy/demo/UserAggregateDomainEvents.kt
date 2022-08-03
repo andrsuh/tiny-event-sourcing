@@ -13,15 +13,15 @@ const val USER_SET_DEFAULT_PAYMENT_EVENT = "USER_SET_DEFAULT_PAYMENT_EVENT"
 
 @DomainEvent(name = USER_CREATED_EVENT)
 class UserCreatedEvent(
-        val userLogin: String,
-        val userPassword: String,
-        val userName: String,
-        val userId: String,
-        createdAt: Long = System.currentTimeMillis(),
+    val userLogin: String,
+    val userPassword: String,
+    val userName: String,
+    val userId: String,
+    createdAt: Long = System.currentTimeMillis(),
 ) : Event<UserAggregate>(
-        name = USER_CREATED_EVENT,
-        createdAt = createdAt,
-        aggregateId = userId,
+    name = USER_CREATED_EVENT,
+    createdAt = createdAt,
+    aggregateId = userId,
 ) {
     override fun applyTo(aggregate: UserAggregate) {
         aggregate.userLogin = userLogin
@@ -32,12 +32,12 @@ class UserCreatedEvent(
 
 @DomainEvent(name = USER_ADDED_PAYMENT_EVENT)
 class UserAddedPaymentEvent(
-        val paymentMethod: String,
-        val paymentMethodId: UUID,
-        val userId: String
+    val paymentMethod: String,
+    val paymentMethodId: UUID,
+    val userId: String
 ) : Event<UserAggregate>(
-        name = USER_ADDED_PAYMENT_EVENT,
-        aggregateId = userId
+    name = USER_ADDED_PAYMENT_EVENT,
+    aggregateId = userId
 ) {
     override fun applyTo(aggregate: UserAggregate) {
         aggregate.paymentMethods[paymentMethodId] = PaymentMethod(paymentMethodId, paymentMethod)
@@ -46,12 +46,12 @@ class UserAddedPaymentEvent(
 
 @DomainEvent(name = USER_ADDED_ADDRESS_EVENT)
 class UserAddedAddressEvent(
-        val address: String,
-        val addressId: UUID,
-        val userId: String
+    val address: String,
+    val addressId: UUID,
+    val userId: String
 ) : Event<UserAggregate>(
-        name = USER_ADDED_ADDRESS_EVENT,
-        aggregateId = userId
+    name = USER_ADDED_ADDRESS_EVENT,
+    aggregateId = userId
 ) {
     override fun applyTo(aggregate: UserAggregate) {
         aggregate.paymentMethods[addressId] = PaymentMethod(addressId, address)
@@ -60,11 +60,11 @@ class UserAddedAddressEvent(
 
 @DomainEvent(name = USER_CHANGED_PASSWORD_EVENT)
 class UserChangedPasswordEvent(
-        val password: String,
-        val userId: String
+    val password: String,
+    val userId: String
 ) : Event<UserAggregate>(
-        name = USER_CHANGED_PASSWORD_EVENT,
-        aggregateId = userId
+    name = USER_CHANGED_PASSWORD_EVENT,
+    aggregateId = userId
 ) {
     override fun applyTo(aggregate: UserAggregate) {
         aggregate.userPassword = password
@@ -73,11 +73,11 @@ class UserChangedPasswordEvent(
 
 @DomainEvent(name = USER_SET_DEFAULT_ADDRESS_EVENT)
 class UserSetDefaultAddressEvent(
-        val addressId: UUID,
-        val userId: String
+    val addressId: UUID,
+    val userId: String
 ) : Event<UserAggregate>(
-        name = USER_SET_DEFAULT_ADDRESS_EVENT,
-        aggregateId = userId
+    name = USER_SET_DEFAULT_ADDRESS_EVENT,
+    aggregateId = userId
 ) {
     override fun applyTo(aggregate: UserAggregate) {
         aggregate.defaultAddressId = addressId
@@ -86,11 +86,11 @@ class UserSetDefaultAddressEvent(
 
 @DomainEvent(name = USER_SET_DEFAULT_PAYMENT_EVENT)
 class UserSetDefaultPaymentEvent(
-        val paymentMethodId: UUID,
-        val userId: String
+    val paymentMethodId: UUID,
+    val userId: String
 ) : Event<UserAggregate>(
-        name = USER_SET_DEFAULT_PAYMENT_EVENT,
-        aggregateId = userId
+    name = USER_SET_DEFAULT_PAYMENT_EVENT,
+    aggregateId = userId
 ) {
     override fun applyTo(aggregate: UserAggregate) {
         aggregate.defaultPaymentId = paymentMethodId
