@@ -26,6 +26,18 @@ https://microservices.io/patterns/data/cqrs.html -  CQRS.
 In short, CQRS stands for Command and Query Responsibility Segregation, a pattern that separates read and update operations for a data store.
 
 ## Example
+# Config 
+In order to use our library we have to set up config. This can be done 2 ways:
+First one is used with Spring:
+We have to subscribe our aggregate to subscription manager, and create beans of the services we're using:
+```kotlin
+  subscriptionsManager.subscribe<UserAggregate>(userEventsSubscriber)
+```
+```kotlin
+  @Bean
+fun userEventSourcingService() = eventSourcingServiceFactory.getOrCreateService(UserAggregate::class)
+```
+Then we have to write EventStoreDbOperations or we can just take the one that is written in this example. Then we have to add SpringAppConfig the way it works here.
 # Our example uses both CQRS and Event Sourcing.
 First, when we implement events sourcing pattern we have to define aggregates. In this example we will be having user aggregate.
 ```kotlin

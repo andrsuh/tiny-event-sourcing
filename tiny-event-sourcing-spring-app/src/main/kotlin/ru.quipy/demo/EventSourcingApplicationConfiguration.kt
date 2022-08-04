@@ -51,6 +51,6 @@ class EventSourcingApplicationConfiguration {
     }
 
     @Bean
-    fun demoESService() = eventSourcingServiceFactory.getOrCreateService(UserAggregate::class)
+    fun userEventSourcingService() = eventSourcingServiceFactory.getOrCreateService(UserAggregate::class)
 
 }
