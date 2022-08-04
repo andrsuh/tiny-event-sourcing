@@ -108,7 +108,8 @@ class AnnotationBasedUserEventsSubscriber {
 }
 ```
 As can be seen from the name of the class, it's annotation based. 
-It uses @AggregateSubscriber annotation, and listens to specific aggregate type catching it events.
+It uses @AggregateSubscriber annotation, and listens to specific aggregate type catching it events. 
+library's subscription manager searches for this annotation. After it has found it, it looks for Subscribe event annotated method and analyzes the Event it returns.
 In the example we catch UserCreatedEvent and write it down in the logger.
 The second way of doing subscriptions will be shown in the next chapter that is about Projections.
 
