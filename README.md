@@ -1,6 +1,7 @@
 # Tiny event sourcing library
 
 ## Installation
+Sadly, but right now we don't have any publicly available repositories to download from, so in order to use the library you'll have to download and install it manually.
 
 To add library to your project put the following dependency in your `pom.xml`:
 ```
@@ -11,14 +12,6 @@ To add library to your project put the following dependency in your `pom.xml`:
 </dependency>
 ```
 
-Also you have to configure the `github` maven repository. You can either include it to your `settings.xml` or just put the following lines to your `pom.xml`: 
-
-```
-<repository>
-    <id>github</id>
-    <url>https://andrsuh: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@maven.pkg.github.com/andrsuh/tiny-event-sourcing</url>
-</repository>
-```
 # Example of how to use library
 ## Theory
 https://www.eventstore.com/event-sourcing - a good source of information about event sourcing.
@@ -57,7 +50,8 @@ data class UserAggregate(
     var deliveryAddresses = mutableMapOf<UUID, DeliveryAddress>()
 }
 ```
-@AggregateType annotations extends aggregate and stores MetaInformation about aggregate recognisable by library.
+@AggregateType annotation stores MetaInformation about aggregate recognisable by library.
+User written Aggregate class has to extend Aggregate class from the library.
 Each aggregate has its own domain events. They're written in UserAggregateDomainEvents.kt.
 This is the example of one of the events:
 ```kotlin
@@ -86,9 +80,9 @@ override fun applyTo(aggregate){
     
 }
 ```
-The applyTo method contains logs that of applying the changes that the event describes (because the event describes the fact of the change). 
+The applyTo method contains logic of applying the changes that the event describes (because the event describes the fact of the change). 
 It transits the aggregate state from state A (before the change) to the state B (after the change).
-If we take all the events (N events) from aggregate event log and iteratively call applyTo method starting with an empty aggregate state, it will go over N state transitions and will be in a most actual state.
+If we take all the events (N events) from aggregate event log and iteratively call applyTo method starting with an empty aggregate state, it will go over N state transitions and will end up in the most actual state.
 It must be implemented by the user.
 
 @DomainEvent annotation is also from the library. It accepts name of the event.
