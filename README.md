@@ -21,8 +21,12 @@ Also you have to configure the `github` maven repository. You can either include
 ```
 # Example of how to use library
 ## Theory
-https://www.eventstore.com/event-sourcing - a good source of information about event sourcing and CQRS.
+https://www.eventstore.com/event-sourcing - a good source of information about event sourcing.
+https://microservices.io/patterns/data/cqrs.html -  CQRS. 
+In short, CQRS stands for Command and Query Responsibility Segregation, a pattern that separates read and update operations for a data store.
+
 ## Example
+# Our example uses both CQRS and Event Sourcing.
 First, when we implement events sourcing pattern we have to define aggregates. In this example we will be having user aggregate.
 ```kotlin
 @AggregateType(aggregateEventsTableName = "aggregate-user")
@@ -41,7 +45,7 @@ data class UserAggregate(
     var deliveryAddresses = mutableMapOf<UUID, DeliveryAddress>()
 }
 ```
-@AggregateType annotations makes library understand that this is the aggregate recognisable by library.
+@AggregateType annotations extends aggregate and stores MetaInformation about aggregate recognisable by library.
 Each aggregate has its own domain events. They're written in UserAggregateDomainEvents.kt.
 This is the example of one of the events:
 ```kotlin
@@ -64,12 +68,23 @@ class UserCreatedEvent(
     }
 }
 ```
+I want to highlight why we need to use
+```kotlin
+override fun applyTo(aggregate){
+    
+}
+```
+The applyTo method contains logs that of applying the changes that the event describes (because the event describes the fact of the change). 
+It transits the aggregate state from state A (before the change) to the state B (after the change).
+If we take all the events (N events) from aggregate event log and iteratively call applyTo method starting with an empty aggregate state, it will go over N state transitions and will be in a most actual state.
+It must be implemented by the user.
+
 @DomainEvent annotation is also from the library. It accepts name of the event.
 Each event accepts some parameters from the constructor, returns event that belongs to the aggregate:
 ```kotlin
 Event<UserAggregate>
 ```
-and has override method applyTo that does manipulations with aggregate state.
+
 This is how this event looks in database:
 ![](Example1.png)
 Second important concept of this example are subscribers. We can do subscriptions 2 ways.
@@ -78,7 +93,7 @@ First one is this:
 @Service
 @AggregateSubscriber(aggregateClass = UserAggregate::class, subscriberName = "demo-user-stream")
 class AnnotationBasedUserEventsSubscriber {
-    val logger: Logger = LoggerFactory.getLogger(AnnotationBasedUserEventsSubscriber::class.java)
+    private val logger: Logger = LoggerFactory.getLogger(AnnotationBasedUserEventsSubscriber::class.java)
 
     @SubscribeEvent
     fun userCreatedSubscriber(event: UserCreatedEvent) {
@@ -91,8 +106,12 @@ It uses @AggregateSubscriber annotation, and listens to specific aggregate type 
 In the example we catch UserCreatedEvent and write it down in the logger.
 The second way of doing subscriptions will be shown in the next chapter that is about Projections.
 
-Another important aspect of example is projections usage. 
-Aggregates are mostly used for writing and changing information. In order to present information we use concept of projections.
+Another important aspect of example is projections/views usage. 
+Aggregates are mostly used for writing and changing information. 
+In order to present information we use concept of projections/views. 
+Briefly speaking, projections/views are slices of some aggregates tailored for some usage. 
+In the example we're using projections for payments.
+Hence, we take from aggregate only the information we need for payments
 ```kotlin
 class UserPaymentsViewDomain {
     @Document("user-payment-view")
@@ -116,7 +135,7 @@ class UserPaymentsViewService(
     private val userPaymentsRepository: UserPaymentsRepository,
     private val subscriptionsManager: AggregateSubscriptionsManager
 ) {
-    val logger: Logger = LoggerFactory.getLogger(UserPaymentsViewService::class.java)
+    private val logger: Logger = LoggerFactory.getLogger(UserPaymentsViewService::class.java)
 
     @PostConstruct
     fun init() {

@@ -1,7 +1,7 @@
 package ru.quipy.demo
 
 
-data class UserCreatedDTO(
+data class UserCreateDTO(
     val userLogin: String,
     val userPassword: String,
     val userName: String

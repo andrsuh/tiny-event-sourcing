@@ -35,7 +35,18 @@ fun UserAggregate.createUserCommand(
     password: String,
     login: String
 ): UserCreatedEvent {
-
+    if (name.length<3) {
+        throw IllegalArgumentException("name is too small")
+    }
+    if (login.length<3) {
+        throw IllegalArgumentException("login is too small")
+    }
+    if (password.isBlank()) {
+        throw IllegalArgumentException("Can't change password: empty provided")
+    }
+    if (password.length < 8) {
+        throw IllegalArgumentException("Password is too weak")
+    }
     return UserCreatedEvent(
         userId = aggregateId,
         userLogin = login,
@@ -47,7 +58,12 @@ fun UserAggregate.createUserCommand(
 fun UserAggregate.addAddressCommand(
     address: String,
 ): UserAddedAddressEvent {
-
+    if (address.isBlank()) {
+        throw IllegalArgumentException("Can't add address: blank provided")
+    }
+    if (address.isEmpty()) {
+        throw IllegalArgumentException("Can't add address: empty provided")
+    }
     return UserAddedAddressEvent(
         address = address,
         addressId = UUID.randomUUID(),
@@ -77,7 +93,7 @@ fun UserAggregate.setDefaultAddressCommand(
     addressId: UUID,
 ): UserSetDefaultAddressEvent {
     if (!this.deliveryAddresses.contains(addressId)) {
-        throw IllegalArgumentException("There is no such address")
+        throw IllegalArgumentException(String.format("There is no such address{} {}",addressId, this.aggregateId))
     }
     return UserSetDefaultAddressEvent(
         addressId = addressId,
@@ -89,7 +105,7 @@ fun UserAggregate.setDefaultPaymentCommand(
     paymentMethodId: UUID,
 ): UserSetDefaultPaymentEvent {
     if (!this.deliveryAddresses.contains(paymentMethodId)) {
-        throw IllegalArgumentException("There is no such address")
+        throw IllegalArgumentException(String.format("There is no such payment{} {}",paymentMethodId, this.aggregateId))
     }
     return UserSetDefaultPaymentEvent(
         paymentMethodId = paymentMethodId,

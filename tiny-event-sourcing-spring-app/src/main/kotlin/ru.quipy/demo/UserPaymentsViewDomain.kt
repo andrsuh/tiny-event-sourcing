@@ -33,7 +33,7 @@ class UserPaymentsViewService(
     private val userPaymentsRepository: UserPaymentsRepository,
     private val subscriptionsManager: AggregateSubscriptionsManager
 ) {
-    val logger: Logger = LoggerFactory.getLogger(UserPaymentsViewService::class.java)
+    private val logger: Logger = LoggerFactory.getLogger(UserPaymentsViewService::class.java)
 
     @PostConstruct
     fun init() {
