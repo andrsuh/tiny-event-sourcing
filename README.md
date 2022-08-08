@@ -170,3 +170,10 @@ class UserPaymentsViewService(
 This is service that works with this projection. Whenever a UserCreatedEvent is emitted by  UserAggregate it catches it,
 and creates a userpayment entity of this user. Also here you can see a second way to create subscriptions using subscription manager and `when`
 
+# Example description 
+This example works such way:
+We have one UserAggregate. It's responsible for the user entity.
+UserCommandsController uses eventssourcingservice to execute commands on the user aggregate.
+The user Aggregate can be created. We can add both payments methods and delivery addresses and also change default address and payment.
+Also you can change the password of the user there. Then we have UserPaymentsViewDomain that is responsible for creating payment projection.
+It catches the events emmited by UserAggregate, and creates projection based on them.
