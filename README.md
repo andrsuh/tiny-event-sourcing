@@ -1,7 +1,10 @@
 # Tiny event sourcing library
 
 ## Installation
-Sadly, but right now we don't have any publicly available repositories to download from, so in order to use the library you'll have to download and install it manually.
+Sadly, but right now we don't have any publicly available repositories to download from, so in order to use the library you'll have to clone the repository to your machine and perform from the repository's root directory:
+```
+mvn clean install
+```
 
 To add library to your project put the following dependency in your `pom.xml`:
 ```
@@ -15,24 +18,13 @@ To add library to your project put the following dependency in your `pom.xml`:
 # Example of how to use library
 ## Theory
 https://www.eventstore.com/event-sourcing - a good source of information about event sourcing.
-https://microservices.io/patterns/data/cqrs.html -  CQRS. 
+https://microservices.io/patterns/data/cqrs.html -CQRS. 
 In short, CQRS stands for Command and Query Responsibility Segregation, a pattern that separates read and update operations for a data store.
 
 ## Example
-# Config 
-In order to use our library we have to set up config. This can be done 2 ways:
-First one is used with Spring:
-We have to subscribe our aggregate to subscription manager, and create beans of the services we're using:
-```kotlin
-  subscriptionsManager.subscribe<UserAggregate>(userEventsSubscriber)
-```
-```kotlin
-  @Bean
-fun userEventSourcingService() = eventSourcingServiceFactory.getOrCreateService(UserAggregate::class)
-```
-Then we have to write EventStoreDbOperations or we can just take the one that is written in this example. Then we have to add SpringAppConfig the way it works here.
+
 # Our example uses both CQRS and Event Sourcing.
-First, when we implement events sourcing pattern we have to define aggregates. In this example we will be having user aggregate.
+First, when we implement events sourcing based system we have to define aggregates. In this example we will be having user aggregate.
 ```kotlin
 @AggregateType(aggregateEventsTableName = "aggregate-user")
 data class UserAggregate(
@@ -177,3 +169,17 @@ UserCommandsController uses eventssourcingservice to execute commands on the use
 The user Aggregate can be created. We can add both payments methods and delivery addresses and also change default address and payment.
 Also you can change the password of the user there. Then we have UserPaymentsViewDomain that is responsible for creating payment projection.
 It catches the events emmited by UserAggregate, and creates projection based on them.
+
+
+# Config
+In order to use our library we have to set up config. This can be done 2 ways:
+First one is used with Spring:
+We have to subscribe our aggregate to subscription manager, and create beans of the services we're using:
+```kotlin
+  subscriptionsManager.subscribe<UserAggregate>(userEventsSubscriber)
+```
+```kotlin
+  @Bean
+fun userEventSourcingService() = eventSourcingServiceFactory.getOrCreateService(UserAggregate::class)
+```
+Then we have to write EventStoreDbOperations or we can just take the one that is written in this example. Then we have to add SpringAppConfig the way it works here.
