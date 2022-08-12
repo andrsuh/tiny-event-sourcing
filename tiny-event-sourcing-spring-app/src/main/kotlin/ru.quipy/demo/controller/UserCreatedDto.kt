@@ -1,4 +1,4 @@
-package ru.quipy.demo
+package ru.quipy.demo.controller
 
 
 data class UserCreateDTO(

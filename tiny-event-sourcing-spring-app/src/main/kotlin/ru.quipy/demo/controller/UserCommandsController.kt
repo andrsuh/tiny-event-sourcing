@@ -1,14 +1,12 @@
-package ru.quipy.demo
+package ru.quipy.demo.controller
 
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import ru.quipy.core.EventSourcingService
+import ru.quipy.demo.domain.UserAggregate
+import ru.quipy.demo.domain.addAddressCommand
+import ru.quipy.demo.domain.createUserCommand
+import ru.quipy.demo.domain.setDefaultAddressCommand
 import java.util.*
 
 @RestController
@@ -19,7 +17,7 @@ class UserCommandsController {
 
     @PostMapping
     fun createUser(user: UserCreateDTO) {
-        this.userEventSourcingService.update(UUID.randomUUID().toString()) {
+        userEventSourcingService.update(UUID.randomUUID().toString()) {
             it.createUserCommand(user.userName, user.userPassword, user.userLogin)
         }
     }
@@ -29,7 +27,7 @@ class UserCommandsController {
         @PathVariable addressId: UUID,
         @PathVariable userId: String
     ) {
-        this.userEventSourcingService.update(userId) {
+        userEventSourcingService.update(userId) {
             it.setDefaultAddressCommand(addressId)
         }
     }
@@ -39,7 +37,7 @@ class UserCommandsController {
         @RequestBody body: AddAddressDTO,
         @PathVariable userId: String
     ) {
-        this.userEventSourcingService.update(userId) {
+        userEventSourcingService.update(userId) {
             it.addAddressCommand(body.address)
         }
     }

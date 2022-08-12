@@ -1,9 +1,10 @@
 package ru.quipy.demo
 
-import org.slf4j.*
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import ru.quipy.demo.UserAggregate
-import ru.quipy.demo.UserCreatedEvent
+import ru.quipy.demo.domain.UserAggregate
+import ru.quipy.demo.domain.UserCreatedEvent
 import ru.quipy.streams.annotation.AggregateSubscriber
 import ru.quipy.streams.annotation.SubscribeEvent
 

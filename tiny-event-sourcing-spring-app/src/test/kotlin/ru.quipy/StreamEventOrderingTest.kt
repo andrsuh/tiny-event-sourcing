@@ -9,7 +9,9 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import ru.quipy.core.EventSourcingService
-import ru.quipy.demo.*
+import ru.quipy.demo.domain.UserAddedAddressEvent
+import ru.quipy.demo.domain.UserAggregate
+import ru.quipy.demo.domain.addAddressCommand
 import ru.quipy.streams.AggregateSubscriptionsManager
 import java.util.concurrent.TimeUnit
 

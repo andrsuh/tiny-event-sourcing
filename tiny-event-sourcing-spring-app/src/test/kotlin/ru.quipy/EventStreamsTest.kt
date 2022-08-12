@@ -16,9 +16,12 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import ru.quipy.core.EventSourcingService
-import ru.quipy.demo.*
-import ru.quipy.streams.annotation.AggregateSubscriber
+import ru.quipy.demo.domain.UserAddedAddressEvent
+import ru.quipy.demo.domain.UserAggregate
+import ru.quipy.demo.domain.addAddressCommand
+import ru.quipy.demo.domain.createUserCommand
 import ru.quipy.streams.AggregateSubscriptionsManager
+import ru.quipy.streams.annotation.AggregateSubscriber
 import ru.quipy.streams.annotation.RetryConf
 import ru.quipy.streams.annotation.RetryFailedStrategy.SKIP_EVENT
 import ru.quipy.streams.annotation.SubscribeEvent
@@ -55,8 +58,8 @@ class EventStreamsTest {
     @Test
     fun successFlow() {
         Mockito.doNothing().`when`(tested.someMockedService).act(any())
-        demoESService.update(testId){
-            it.createUserCommand("Vanya","123456789","Vanya242")
+        demoESService.update(testId) {
+            it.createUserCommand("Vanya", "123456789", "Vanya242")
         }
         val succeededBefore = tested.testStats.success.get()
         demoESService.update(testId) {
@@ -72,8 +75,8 @@ class EventStreamsTest {
     fun errorFlow() {
         Mockito.`when`(tested.someMockedService.act(any()))
             .thenThrow(IllegalArgumentException("12345"))
-        demoESService.update(testId){
-            it.createUserCommand("Vanya","123456789","Vanya242")
+        demoESService.update(testId) {
+            it.createUserCommand("Vanya", "123456789", "Vanya242")
         }
         val failuresBefore = tested.testStats.failure.get()
         demoESService.update(testId) {

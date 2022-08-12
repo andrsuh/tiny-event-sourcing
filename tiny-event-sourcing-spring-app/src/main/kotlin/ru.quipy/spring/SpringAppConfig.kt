@@ -11,6 +11,10 @@ import ru.quipy.mapper.JsonEventMapper
 import ru.quipy.streams.AggregateEventStreamManager
 import ru.quipy.streams.AggregateSubscriptionsManager
 
+
+/**
+ * Precreated configuration for spring apps. Will be moved to fair spring-boot starter.
+ */
 @Configuration
 open class SpringAppConfig {
     @Bean
