@@ -21,20 +21,20 @@ All the terms and technics described in this documentation are part of the Domai
 
 ## The short definition of **Event Sourcing** and **Domain events**
 
-   Event sourcing implies the storing an entity as a set of its changes. In order to get the entity you have to obtain all the changes and “apply” them all in order they were made. This approach can give you many benefits:
+Event sourcing implies the storing an entity as a set of its changes. In order to get the entity you have to obtain all the changes and “apply” them all in order they were made. This approach can give you many benefits:
 
-    - You can have full log of changes with an authorID/timestamps
-    - You can get the state of any entity at any point of time
-    - Other services can listen to the changes and maintain its own local projection of the data they need
-    - Any of such listeners may be embedded in your system at any point of time and just “read” all the changes from scratch to initialize their local storages. Or they can just replay all the changes in order to migrate their schema for example
+- You can have full log of changes with an authorID/timestamps
+- You can get the state of any entity at any point of time
+- Other services can listen to the changes and maintain its own local projection of the data they need
+- Any of such listeners may be embedded in your system at any point of time and just “read” all the changes from scratch to initialize their local storages. Or they can just replay all the changes in order to migrate their schema for example
 
-   These “changes” may have arbitrary structure - you can put there anything you wish to have a comprehensive description of what / where / why / when / by whom was changed.
+These “changes” may have arbitrary structure - you can put there anything you wish to have a comprehensive description of what / where / why / when / by whom was changed.
 
-   Since a change describes the *fact* of changing and its details, describes what happened with the entity (Past tense) it’s called **Event** and since it’s something important that happened with some entity within your *domain* it’s called **Domain Event**
+Since a change describes the *fact* of changing and its details, describes what happened with the entity (Past tense) it’s called **Event** and since it’s something important that happened with some entity within your *domain* it’s called **Domain Event**
 
-   **Domain Event** is a central concept of Event sourcing approach. Because each entity is persisted as a set of **Domain Events** and each update/write operation to your system results in a **Domain Event.**
+**Domain Event** is a central concept of Event sourcing approach. Because each entity is persisted as a set of **Domain Events** and each update/write operation to your system results in a **Domain Event.**
 
-   In order to designate that the class is an event of your domain you should mark it with `@DomainEvent` annotation and extend `Event` base class. See the [example](#Define Aggregates).
+In order to designate that the class is an event of your domain you should mark it with `@DomainEvent` annotation and extend `Event` base class. See the [example](#-define-aggregates).
 
 ## **Entities** and **Aggregates**
 
@@ -54,7 +54,7 @@ All the terms and technics described in this documentation are part of the Domai
 
    Aggregate cannot be nested in some other aggregate because by definition it would become a single aggregate in this case. But you can easily connect aggregates with each other by referencing them by ID.
 
-   In order to designate that the class is an aggregate of your domain you should mark it with `@AggregateType` annotation and extend `Aggregate` base class. See the [example](#Define Domain events).
+   In order to designate that the class is an aggregate of your domain you should mark it with `@AggregateType` annotation and extend `Aggregate` base class. See the [example](#-define-domain-events).
 
 ## **Commands**
 
@@ -64,26 +64,26 @@ All the terms and technics described in this documentation are part of the Domai
 
    In event sourcing the command itself doesn’t make any changes (I mean in DB, because it’s events responsibility), but logic behind command should check the **possibility** of the change, check aggregates **invariants** after the change is applied etc. If change is legal then we can construct the corresponding event and try to save it to DB. Once the event is persisted we can say that command succeeded
 
-   In our library the command of `Aggregate` N can be any function that takes instance of N as a receiver (takes an **aggregate state**) and returns subclass of the `Event<N>`. `N.(?) → Event<N>`. Command can take arbitrary number of parameters needed for update. Command logic might and should throw exceptions in case update fails by any reason. So you can check all business rules, perform validations, check aggregate inner invariants here. See the [example](#Define commands).
+   In our library the command of `Aggregate` N can be any function that takes instance of N as a receiver (takes an **aggregate state**) and returns subclass of the `Event<N>`. `N.(?) → Event<N>`. Command can take arbitrary number of parameters needed for update. Command logic might and should throw exceptions in case update fails by any reason. So you can check all business rules, perform validations, check aggregate inner invariants here. See the [example](#-define-commands).
 
 ![CommandResultsInEvent](images/CommandResultsInEvent.png)
 
 ## **Aggregate state**
 
-   Aggregate state represents the state of an aggregate instance after applying some number of changes (events).
+Aggregate state represents the state of an aggregate instance after applying some number of changes (events).
 
-   Aggregate instance has a version. It shows the number of events that was applied to the state starting with empty state.
+Aggregate instance has a version. It shows the number of events that was applied to the state starting with empty state.
 
-   Every new event (change / update) will introduce some changing in an aggregate state. So far as we persist events, not the bare aggregate we will be able to get the state of the aggregate at any point of time by getting all the events up to some version and iteratively applying all these events to the aggregate state starting from empty state.
+Every new event (change / update) will introduce some changing in an aggregate state. So far as we persist events, not the bare aggregate we will be able to get the state of the aggregate at any point of time by getting all the events up to some version and iteratively applying all these events to the aggregate state starting from empty state.
 
-   What do we mean by “applying” changes? Class `Event<A: Aggregate>`  has abstract method `applyTo(a: A)` . Each event in your domain should know what changes it should apply to the aggregate state. You have to implement the logic of applying for each event.
+What do we mean by “applying” changes? Class `Event<A: Aggregate>`  has abstract method `applyTo(a: A)` . Each event in your domain should know what changes it should apply to the aggregate state. You have to implement the logic of applying for each event.
 
-   The library code during update:
+The library code during update:
 
-    - Retrieves all the aggregate’s instance events from DB
-    - Build the current aggregate state by creating the empty aggregate state and iteratively applying all the event in the insertion order to it. (snapshots optimization is available)
-    - Tries to apply new event to the current state to check if it is applicable indeed
-    - If some parallel process managed to update aggregate earlier than process ran by you (read: they were running simultaneously, but not yours won) you have to repeat your attempt. Just because the state of the aggregate changed and now some of the validations may fail or some invariants may be breached. Library takes care of such cases. You may not to think about the concurrency troubles - your responsibility is just define aggregates, events and business logic - commands with validations and other checks and events with how they should be applied to an aggregate state.
+- Retrieves all the aggregate’s instance events from DB
+- Build the current aggregate state by creating the empty aggregate state and iteratively applying all the event in the insertion order to it. (snapshots optimization is available)
+- Tries to apply new event to the current state to check if it is applicable indeed
+- If some parallel process managed to update aggregate earlier than process ran by you (read: they were running simultaneously, but not yours won) you have to repeat your attempt. Just because the state of the aggregate changed and now some of the validations may fail or some invariants may be breached. Library takes care of such cases. You may not to think about the concurrency troubles - your responsibility is just define aggregates, events and business logic - commands with validations and other checks and events with how they should be applied to an aggregate state.
 
 ![EventInsertion](images/EventInsertion.png)
 
@@ -96,7 +96,7 @@ Also, you have to instantiate or implement the following classes/interfaces:
   - Class `EventSourcingProperties` contains properties for event sourcing library. You can instantiate the class the default values or read some config file and initialize config with this values
   - Interface `AggregateRegistry` acts as a local storage of the aggregates and their events meta-information. Provides methods to store (register) this meta-information. Library provides two implementation of the interface: `SeekingForSuitableClassesAggregateRegistry` and `BasicAggregateRegistry` . First automatically scans the classpath (you can define the package for scan in properties) and find all the classes that are marked with `AggregateType` and extend `Aggregate` as well as those marked with `DomainEvent` and extend `Event`  and register them. `BasicAggregateRegistry` requires all the aggregates and event to be manually registered. (**Example**)
   - Interface `EventStoreDbOperations` abstracts away the DB access. Provides the operations for event sourcing functioning. You can provide your own implementation of EventStoreDbOperations and run event sourcing app working on any DB you wish under the hood. There is implementation of `EventStoreDbOperations` which uses MongoDB and can be used only for Spring apps.
-  - Class `EventSourcingService` for each of the aggregates in your domain. Allows you to update aggregates and get the last state of the aggregate instances. It's convenient to use `EventSourcingServiceFactory` for instantiation of the `EventSourcingService` instances. See [here](#Performing updates operation under the aggregates).
+  - Class `EventSourcingService` for each of the aggregates in your domain. Allows you to update aggregates and get the last state of the aggregate instances. It's convenient to use `EventSourcingServiceFactory` for instantiation of the `EventSourcingService` instances. See [here](#-performing-updates-operation-under-the-aggregates).
 
    Here is the class diagram
 ![ConfigClassDiagram](images/ConfigClassDiagramm.png)
