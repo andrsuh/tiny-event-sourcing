@@ -9,9 +9,9 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import ru.quipy.core.EventSourcingService
-import ru.quipy.demo.ProjectAggregate
-import ru.quipy.demo.TagCreatedEvent
-import ru.quipy.demo.createTag
+import ru.quipy.demo.domain.UserAddedAddressEvent
+import ru.quipy.demo.domain.UserAggregate
+import ru.quipy.demo.domain.addAddressCommand
 import ru.quipy.streams.AggregateSubscriptionsManager
 import java.util.concurrent.TimeUnit
 
@@ -22,7 +22,7 @@ class StreamEventOrderingTest {
     }
 
     @Autowired
-    private lateinit var esService: EventSourcingService<ProjectAggregate>
+    private lateinit var esService: EventSourcingService<UserAggregate>
 
     @Autowired
     private lateinit var subscriptionsManager: AggregateSubscriptionsManager
@@ -31,7 +31,7 @@ class StreamEventOrderingTest {
     lateinit var mongoTemplate: MongoTemplate
 
     fun cleanDatabase() {
-        mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testId)), "aggregate-project")
+        mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testId)), "aggregate-user")
         mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testId)), "snapshots")
     }
 
@@ -45,28 +45,28 @@ class StreamEventOrderingTest {
     @Test
     fun testEventOrder() {
         esService.update(testId) {
-            it.createTag("1")
+            it.addAddressCommand("1")
         }
         esService.update(testId) {
-            it.createTag("2")
+            it.addAddressCommand("2")
         }
         esService.update(testId) {
-            it.createTag("3")
+            it.addAddressCommand("3")
         }
         esService.update(testId) {
-            it.createTag("4")
+            it.addAddressCommand("4")
         }
         esService.update(testId) {
-            it.createTag("5")
+            it.addAddressCommand("5")
         }
         esService.update(testId) {
-            it.createTag("6")
+            it.addAddressCommand("6")
         }
 
 
-        subscriptionsManager.createSubscriber(ProjectAggregate::class, "StreamEventOrderingTest") {
-            `when`(TagCreatedEvent::class) { event ->
-                sb.append(event.tagName).also {
+        subscriptionsManager.createSubscriber(UserAggregate::class, "StreamEventOrderingTest") {
+            `when`(UserAddedAddressEvent::class) { event ->
+                sb.append(event.address).also {
                     println(sb.toString())
                 }
             }

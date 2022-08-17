@@ -16,11 +16,12 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import ru.quipy.core.EventSourcingService
-import ru.quipy.demo.ProjectAggregate
-import ru.quipy.demo.TaskCreatedEvent
-import ru.quipy.demo.addTask
-import ru.quipy.streams.annotation.AggregateSubscriber
+import ru.quipy.demo.domain.UserAddedAddressEvent
+import ru.quipy.demo.domain.UserAggregate
+import ru.quipy.demo.domain.addAddressCommand
+import ru.quipy.demo.domain.createUserCommand
 import ru.quipy.streams.AggregateSubscriptionsManager
+import ru.quipy.streams.annotation.AggregateSubscriber
 import ru.quipy.streams.annotation.RetryConf
 import ru.quipy.streams.annotation.RetryFailedStrategy.SKIP_EVENT
 import ru.quipy.streams.annotation.SubscribeEvent
@@ -36,16 +37,16 @@ class EventStreamsTest {
     }
 
     @Autowired
-    private lateinit var demoESService: EventSourcingService<ProjectAggregate>
+    private lateinit var demoESService: EventSourcingService<UserAggregate>
 
     @Autowired
-    lateinit var tested: TestDemoProjectSubscriber
+    lateinit var tested: TestDemoUserSubscriber
 
     @Autowired
     lateinit var mongoTemplate: MongoTemplate
 
     fun cleanDatabase() {
-        mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testId)), "aggregate-project")
+        mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testId)), "aggregate-user")
         mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testId)), "snapshots")
     }
 
@@ -57,10 +58,12 @@ class EventStreamsTest {
     @Test
     fun successFlow() {
         Mockito.doNothing().`when`(tested.someMockedService).act(any())
-
+        demoESService.update(testId) {
+            it.createUserCommand("Vanya", "123456789", "Vanya242")
+        }
         val succeededBefore = tested.testStats.success.get()
         demoESService.update(testId) {
-            it.addTask("task!")
+            it.addAddressCommand("Moscow!")
         }
 
         Awaitility.await().atMost(5, TimeUnit.SECONDS).until {
@@ -72,10 +75,12 @@ class EventStreamsTest {
     fun errorFlow() {
         Mockito.`when`(tested.someMockedService.act(any()))
             .thenThrow(IllegalArgumentException("12345"))
-
+        demoESService.update(testId) {
+            it.createUserCommand("Vanya", "123456789", "Vanya242")
+        }
         val failuresBefore = tested.testStats.failure.get()
         demoESService.update(testId) {
-            it.addTask("task!")
+            it.addAddressCommand("Moscow1!")
         }
 
         Awaitility.await().atMost(5, TimeUnit.SECONDS).until {
@@ -87,10 +92,9 @@ class EventStreamsTest {
     fun errorFlowRetry3TimesThenSkip() {
         Mockito.`when`(tested.someMockedService.act(any()))
             .thenThrow(IllegalArgumentException("12345"))
-
         val failuresBefore = tested.testStats.failure.get()
         demoESService.update(testId) {
-            it.addTask("task!")
+            it.addAddressCommand("Moscow!")
         }
 
         Awaitility.await().atMost(5, TimeUnit.SECONDS).until {
@@ -101,9 +105,8 @@ class EventStreamsTest {
 
         val succeededBefore = tested.testStats.success.get()
         val successEvent = demoESService.update(testId) {
-            it.addTask("task!")
+            it.addAddressCommand("Moscow!")
         }
-
         Awaitility.await().atMost(5, TimeUnit.SECONDS).until {
             tested.testStats.success.get() == succeededBefore + 1
         }
@@ -117,47 +120,47 @@ class EventStreamsTest {
     }
 
     open class TestService {
-        open fun act(event: TaskCreatedEvent) = Unit
+        open fun act(event: UserAddedAddressEvent) = Unit
     }
 }
 
 @TestConfiguration
-@Import(TestProjectSubscriberConfig::class)
+@Import(TestUserSubscriberConfig::class)
 open class SubscriptionConfig {
 
     @Autowired
     lateinit var subscriptionsManager: AggregateSubscriptionsManager
 
     @Autowired
-    lateinit var subscriber: TestDemoProjectSubscriber
+    lateinit var subscriber: TestDemoUserSubscriber
 
     @PostConstruct
     fun init() {
-        subscriptionsManager.subscribe<ProjectAggregate>(subscriber)
+        subscriptionsManager.subscribe<UserAggregate>(subscriber)
     }
 }
 
 
 @TestConfiguration
-open class TestProjectSubscriberConfig {
+open class TestUserSubscriberConfig {
 
     @Bean
-    fun testDemoProjectSubscriber() = TestDemoProjectSubscriber()
+    fun testDemoUserSubscriber() = TestDemoUserSubscriber()
 }
 
 @Suppress("unused")
 @AggregateSubscriber(
-    aggregateClass = ProjectAggregate::class,
+    aggregateClass = UserAggregate::class,
     subscriberName = "test-subscription-stream",
     retry = RetryConf(3, SKIP_EVENT)
 )
-class TestDemoProjectSubscriber {
+class TestDemoUserSubscriber {
     val someMockedService: EventStreamsTest.TestService = Mockito.mock(EventStreamsTest.TestService::class.java)
 
     val testStats = EventStreamsTest.TestStats()
 
     @SubscribeEvent
-    fun taskCreatedSubscriber(event: TaskCreatedEvent) {
+    fun userCreatedSubscriber(event: UserAddedAddressEvent) {
         try {
             someMockedService.act(event)
             if (event.aggregateId == EventStreamsTest.testId)
