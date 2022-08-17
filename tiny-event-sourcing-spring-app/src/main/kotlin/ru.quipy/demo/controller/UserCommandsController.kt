@@ -17,8 +17,8 @@ class UserCommandsController {
 
     @PostMapping
     fun createUser(user: UserCreateDTO) {
-        userEventSourcingService.update(UUID.randomUUID().toString()) {
-            it.createUserCommand(user.userName, user.userPassword, user.userLogin)
+        userEventSourcingService.update(UUID.randomUUID().toString()) { userAggregateState ->
+            userAggregateState.createUserCommand(user.userName, user.userPassword, user.userLogin)
         }
     }
 

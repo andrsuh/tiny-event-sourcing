@@ -17,9 +17,9 @@ To add library to your project put the following dependency in your `pom.xml`:
 
 # DDD, Event sourcing and library essentials
 
-All of the terms and technics described in this documentation are part of the Domain Driven design (DDD). You **don’t have to have** some specific knowledge or skills in DDD to use this library. But if you would like to get familiar with it we can recommend [Implementing Domain-Driven Design](https://www.amazon.com/Implementing-Domain-Driven-Design-Vaughn-Vernon/dp/0321834577) book by Vaughn Vernon.
+All the terms and technics described in this documentation are part of the Domain Driven design (DDD). You **don’t have to have** some specific knowledge or skills in DDD to use this library. But if you would like to get familiar with it we can recommend [Implementing Domain-Driven Design](https://www.amazon.com/Implementing-Domain-Driven-Design-Vaughn-Vernon/dp/0321834577) book by Vaughn Vernon.
 
-1. The short definition of **Event Sourcing** and **Domain events**
+## The short definition of **Event Sourcing** and **Domain events**
 
    Event sourcing implies the storing an entity as a set of its changes. In order to get the entity you have to obtain all the changes and “apply” them all in order they were made. This approach can give you many benefits:
 
@@ -34,9 +34,9 @@ All of the terms and technics described in this documentation are part of the Do
 
    **Domain Event** is a central concept of Event sourcing approach. Because each entity is persisted as a set of **Domain Events** and each update/write operation to your system results in a **Domain Event.**
 
-   In order to designate that the class is an event of your domain you should mark it with `@DomainEvent` annotation and extend `Event` base class. See the example **here**.
+   In order to designate that the class is an event of your domain you should mark it with `@DomainEvent` annotation and extend `Event` base class. See the [example](#Define Aggregates).
 
-2. Define **Entities** and **Aggregates**
+## **Entities** and **Aggregates**
 
    We’ve discussed that in the event-sourcing based systems any change is represented by domain event. Other important concepts - **Aggregates** and **Entities.** These are something that describes our data model and that might be changed. They are the *objects* of changes.
 
@@ -48,31 +48,31 @@ All of the terms and technics described in this documentation are part of the Do
 
    This property enables an aggregate to be a “transactional boundary” - something that is always be changed atomically. That also means that you can define the global invariants that should be maintained within aggregate and all of its nested entities and be sure that they are still enforced after each single update operation.
 
-   Let me give some a bit farfetched example. You may have a counter in your “shopping cart” which shows how total cost of the “items” in the cart. Each time you add the item you have to increase this total cost. If we had relational DB schema we would have to perform two SQL queries - update items table and then update shopping carts table to increase the total cost. In concurrent environment you have to perform these two queries in a DB transaction to ensure atomicity, consistency, isolation (read [ACID](https://youtu.be/cY9NaL8KT14)). The aggregates bring some kind of denormalisation, but only to the extent that is required and useful for your business, functional and non-functional requirements. As the operation under an aggregate always atomic you can just add item and increase the counter in one method and be sure that after update all the invariants will be enforced.
+   Let me give a bit farfetched example. You may have a counter in your “shopping cart” which shows how total cost of the “items” in the cart. Each time you add the item you have to increase this total cost. If we had relational DB schema we would have to perform two SQL queries - update items table and then update shopping carts table to increase the total cost. In concurrent environment you have to perform these two queries in a DB transaction to ensure atomicity, consistency, isolation (read [ACID](https://youtu.be/cY9NaL8KT14)). The aggregates bring some kind of denormalisation, but only to the extent that is required and useful for your business, functional and non-functional requirements. As the operation under an aggregate always atomic you can just add item and increase the counter in one method and be sure that after update all the invariants will be enforced.
 
    Aggregate might be a tree of entities, but doesn’t have to be. It might be represented by just a single top level entity. It’s absolutely fine and depends on your application use cases and non-functional requirements. It’s a separate art of designing your aggregates and what “size” they should be. You can find articles about how to choose right size of the aggregates, there are some approaches.
 
-   Aggregate cannot be nested in some other aggregate because by definition it would became a single aggregate in this case. But you can easily connect aggregates with each other by referencing them by ID.
+   Aggregate cannot be nested in some other aggregate because by definition it would become a single aggregate in this case. But you can easily connect aggregates with each other by referencing them by ID.
 
-   In order to designate that the class is an aggregate of your domain you should marked it with `@AggregateType` annotation and extend `Aggregate` base class. See the example **here**.
+   In order to designate that the class is an aggregate of your domain you should mark it with `@AggregateType` annotation and extend `Aggregate` base class. See the [example](#Define Domain events).
 
-3. **Commands**
+## **Commands**
 
    We already know that the **Domain Event** is a result of update and the **Aggregate** is an object of an update.
 
-   Commands serve as a trigger for update. We (as a system or system’s user) can command to the aggregate to do something. It will then results into domain event publishing if changes succeeded.
+   Commands serve as a trigger for update. We (as a system or system’s user) can command to the aggregate to do something. It will then result into domain event publishing if changes succeeded.
 
    In event sourcing the command itself doesn’t make any changes (I mean in DB, because it’s events responsibility), but logic behind command should check the **possibility** of the change, check aggregates **invariants** after the change is applied etc. If change is legal then we can construct the corresponding event and try to save it to DB. Once the event is persisted we can say that command succeeded
 
-    - In our library the command of `Aggregate` N can be any function that takes instance of N as a receiver (takes an **aggregate state**) and returns subclass of the `Event<N>`. `N.(?) → Event<N>`. Command can take arbitrary number of parameters needed for update. Command logic might and should throw exceptions in case update fails by any reason. So you can check all business rules, perform validations, check aggregate inner invariants here.
+   In our library the command of `Aggregate` N can be any function that takes instance of N as a receiver (takes an **aggregate state**) and returns subclass of the `Event<N>`. `N.(?) → Event<N>`. Command can take arbitrary number of parameters needed for update. Command logic might and should throw exceptions in case update fails by any reason. So you can check all business rules, perform validations, check aggregate inner invariants here. See the [example](#Define commands).
 
 ![CommandResultsInEvent](images/CommandResultsInEvent.png)
 
-1. **Aggregate state**
+## **Aggregate state**
 
    Aggregate state represents the state of an aggregate instance after applying some number of changes (events).
 
-   Aggregate instance has a version. It shown the number of events that was applied to the state starting with empty state.
+   Aggregate instance has a version. It shows the number of events that was applied to the state starting with empty state.
 
    Every new event (change / update) will introduce some changing in an aggregate state. So far as we persist events, not the bare aggregate we will be able to get the state of the aggregate at any point of time by getting all the events up to some version and iteratively applying all these events to the aggregate state starting from empty state.
 
@@ -85,31 +85,30 @@ All of the terms and technics described in this documentation are part of the Do
     - Tries to apply new event to the current state to check if it is applicable indeed
     - If some parallel process managed to update aggregate earlier than process ran by you (read: they were running simultaneously, but not yours won) you have to repeat your attempt. Just because the state of the aggregate changed and now some of the validations may fail or some invariants may be breached. Library takes care of such cases. You may not to think about the concurrency troubles - your responsibility is just define aggregates, events and business logic - commands with validations and other checks and events with how they should be applied to an aggregate state.
 
-
 ![EventInsertion](images/EventInsertion.png)
 
-1. Minimal library configuration
-    - First thing you have to do is to define your aggregates are their events
-    - Also you have to define or instantiate the following classes/interfaces:
-        - Interface `EventMapper` that allows to map some row representation (json String by default) of event to instance of [Event] class and vice versa. There is default implementation for event represented in json format `JsonEventMapper` .
-        - Class `EventSourcingProperties` contains properties for event sourcing library. You can instantiate the class the default values or read some config file and initialize config with this values
-        - Interface `AggregateRegistry` acts as a local storage of the aggregates and their events meta-information. Provides methods to store (register) this meta-information. Library provides two implementation of the interface: `SeekingForSuitableClassesAggregateRegistry` and `BasicAggregateRegistry` . First automatically scans the classpath (you can define the package for scan in properties) and find all the classes that are marked with `AggregateType` and extend `Aggregate` as well as those marked with `DomainEvent` and extend `Event`  and register them. `BasicAggregateRegistry` requires all the aggregates and event to be manually registered. (**Example**)
-        - Interface `EventStoreDbOperations` abstracts away the DB access. Provides the operations for event sourcing functioning. You can provide your own implementation of EventStoreDbOperations and run event sourcing app working on any DB you wish under the hood. There is implementation of `EventStoreDbOperations` which uses MongoDB and can be used only for Spring apps.
+## Minimal library configuration
 
-Here is the class diagram
+First thing you have to do is to define your aggregates, their events and commands.
 
-![ConfigClassDiagramm](images/ConfigClassDiagramm.png)
+Also, you have to instantiate or implement the following classes/interfaces:
+  - Interface `EventMapper` that allows to map some row representation (json String by default) of event to instance of [Event] class and vice versa. There is default implementation for event represented in json format `JsonEventMapper` .
+  - Class `EventSourcingProperties` contains properties for event sourcing library. You can instantiate the class the default values or read some config file and initialize config with this values
+  - Interface `AggregateRegistry` acts as a local storage of the aggregates and their events meta-information. Provides methods to store (register) this meta-information. Library provides two implementation of the interface: `SeekingForSuitableClassesAggregateRegistry` and `BasicAggregateRegistry` . First automatically scans the classpath (you can define the package for scan in properties) and find all the classes that are marked with `AggregateType` and extend `Aggregate` as well as those marked with `DomainEvent` and extend `Event`  and register them. `BasicAggregateRegistry` requires all the aggregates and event to be manually registered. (**Example**)
+  - Interface `EventStoreDbOperations` abstracts away the DB access. Provides the operations for event sourcing functioning. You can provide your own implementation of EventStoreDbOperations and run event sourcing app working on any DB you wish under the hood. There is implementation of `EventStoreDbOperations` which uses MongoDB and can be used only for Spring apps.
+  - Class `EventSourcingService` for each of the aggregates in your domain. Allows you to update aggregates and get the last state of the aggregate instances. It's convenient to use `EventSourcingServiceFactory` for instantiation of the `EventSourcingService` instances. See [here](#Performing updates operation under the aggregates).
+
+   Here is the class diagram
+![ConfigClassDiagram](images/ConfigClassDiagramm.png)
 
 # Example of how to use library
-## Theory
-https://www.eventstore.com/event-sourcing - a good source of information about event sourcing.
-https://microservices.io/patterns/data/cqrs.html -CQRS. 
-In short, CQRS stands for Command and Query Responsibility Segregation, a pattern that separates read and update operations for a data store.
 
-## Example
+First, when we implement events sourcing based system we have to define aggregates and their states. In this example we will be having user aggregate.
+It represents a user of our "Online shopping" system. We would like to know his name, login, password etc. Also, we would like to maintain the list of possible delivery addresses for the user and list of his payment methods. Let him add/remove addresses and payment methods and choose the ones that will be used by default when he makes an order.
+Each address and payment method is a separate entity with their own ID. You can see that the structure is denormolized. 
 
-# Our example uses both CQRS and Event Sourcing.
-First, when we implement events sourcing based system we have to define aggregates. In this example we will be having user aggregate.
+## Define Aggregates
+This example is farfetched a bit. Addresses and payment methods might have been separate aggregates. But it gives you benefits of atomic updates. For example, you can atomically add new delivery address and set it as default for the user.
 ```kotlin
 @AggregateType(aggregateEventsTableName = "aggregate-user")
 data class UserAggregate(
@@ -127,10 +126,12 @@ data class UserAggregate(
     var deliveryAddresses = mutableMapOf<UUID, DeliveryAddress>()
 }
 ```
-@AggregateType annotation stores MetaInformation about aggregate recognisable by library.
+@AggregateType annotation contains some meta-information about aggregate recognisable by library. For example here we define the name of the database table which stores events for aggregates of type `UserAggregate`.
 User written Aggregate class has to extend Aggregate class from the library.
-Each aggregate has its own domain events. They're written in UserAggregateDomainEvents.kt.
-This is the example of one of the events:
+
+## Define Domain events
+
+Each aggregate has a set of domain events. Events along with Aggregates are the public API of a service. Other services may import them to subscribe and listen to your services changes. This is the example of how to define an event:
 ```kotlin
 @DomainEvent(name = USER_CREATED_EVENT)
 class UserCreatedEvent(
@@ -151,26 +152,61 @@ class UserCreatedEvent(
     }
 }
 ```
-I want to highlight why we need to use
-```kotlin
-override fun applyTo(aggregate){
-    
-}
-```
-The applyTo method contains logic of applying the changes that the event describes (because the event describes the fact of the change). 
+
+The `applyTo` method of the `Event` classes contains logic of applying the changes that the event describes (because the event describes the fact of the change). 
 It transits the aggregate state from state A (before the change) to the state B (after the change).
 If we take all the events (N events) from aggregate event log and iteratively call applyTo method starting with an empty aggregate state, it will go over N state transitions and will end up in the most actual state.
 It must be implemented by the user.
 
-@DomainEvent annotation is also from the library. It accepts name of the event.
-Each event accepts some parameters from the constructor, returns event that belongs to the aggregate:
+`@DomainEvent` annotation is also from the library. It accepts name of the event. Name will be persisted to DB and used to know which class the row content of the event should be deserialized to.
+This is how this event with its meta-information looks in database:
+![](images/Example1.png)
+
+## Define commands
+Commands in our library are represented by methods that take current aggregate state, perform all checks and validations and produces event if changes is allowed and legit. For example, it may be a member function of the aggregate or extension function.
 ```kotlin
-Event<UserAggregate>
+fun UserAggregate.createUserCommand(
+   name: String,
+   password: String,
+   login: String
+): UserCreatedEvent {
+   if (name.length < 3) {
+      throw IllegalArgumentException("Name is too small aggregate id: $aggregateId")
+   }
+   if (password.isBlank()) {
+      throw IllegalArgumentException("Can't change password: empty provided. Aggregate id: $aggregateId")
+   }
+   if (password.length < 8) {
+      throw IllegalArgumentException("Password is too weak aggregate id: $aggregateId")
+   }
+   
+   return UserCreatedEvent(
+      userId = aggregateId,
+      userLogin = login,
+      userPassword = password,
+      userName = name
+   )
+}
 ```
 
-This is how this event looks in database:
-![](images/Example1.png)
-Second important concept of this example are subscribers. We can do subscriptions 2 ways.
+## Performing updates operation under the aggregates
+
+You have to use `EventSourcingService` class instance to perform updates on an aggregate. The easiest way to create it id to use `EventSourcingServiceFactory` instance.
+```kotlin
+ eventSourcingServiceFactory.getOrCreateService(UserAggregate::class)
+```
+
+Once you have the instance of `EventSourcingService<UserAggregate>` you can inject it whenever you wish and use method `update` to do some changes on aggregate. The method takes two parameters - `aggregateId` and `eventGenerationFunction`. First one doesn't require any explanations. The second parameter is a function that takes the aggregate state and returns event if change is legit. In other words - it is a command. Look at how can you use it:
+```kotlin
+userEventSourcingService.update(UUID.randomUUID().toString()) { userAggregateState ->
+    userAggregateState.createUserCommand(user.userName, user.userPassword, user.userLogin)
+}
+```
+
+## Define Subscribers
+Second important concept of this example are subscribers. You can make subscriptions in two ways.
+
+### Annotation-based subscribers
 First one is this:
 ```kotlin
 @Service
@@ -189,6 +225,14 @@ It uses @AggregateSubscriber annotation, and listens to specific aggregate type 
 library's subscription manager searches for this annotation. After it has found it, it looks for Subscribe event annotated method and analyzes the Event it returns.
 In the example we catch UserCreatedEvent and write it down in the logger.
 The second way of doing subscriptions will be shown in the next chapter that is about Projections.
+
+If you've chosen to use annotation-based subscribers you have to explicitly pass the subscriber's instance to the `AggregateSubscriptionsManager` this way:
+```kotlin
+  subscriptionsManager.subscribe<UserAggregate>(userEventsSubscriber)
+```
+If you use `Spring framework` you can do this in `@PostContruct` method of the subscriber bean.
+
+### Projections and handler-based subscribers
 
 Another important aspect of example is projections/views usage. 
 Aggregates are mostly used for writing and changing information. 
@@ -245,26 +289,12 @@ class UserPaymentsViewService(
 }
 ```
 This is service that works with this projection. Whenever a UserCreatedEvent is emitted by  UserAggregate it catches it,
-and creates a userpayment entity of this user. Also here you can see a second way to create subscriptions using subscription manager and `when`
+and creates a user payment entity of this user. Also, here you can see a second way to create subscriptions using subscription manager and `when`
 
 # Example description 
 This example works such way:
 We have one UserAggregate. It's responsible for the user entity.
 UserCommandsController uses eventssourcingservice to execute commands on the user aggregate.
 The user Aggregate can be created. We can add both payments methods and delivery addresses and also change default address and payment.
-Also you can change the password of the user there. Then we have UserPaymentsViewDomain that is responsible for creating payment projection.
-It catches the events emmited by UserAggregate, and creates projection based on them.
-
-
-# Config
-In order to use our library we have to set up config. This can be done 2 ways:
-First one is used with Spring:
-We have to subscribe our aggregate to subscription manager, and create beans of the services we're using:
-```kotlin
-  subscriptionsManager.subscribe<UserAggregate>(userEventsSubscriber)
-```
-```kotlin
-  @Bean
-fun userEventSourcingService() = eventSourcingServiceFactory.getOrCreateService(UserAggregate::class)
-```
-Then we have to write EventStoreDbOperations or we can just take the one that is written in this example. Then we have to add SpringAppConfig the way it works here.
+Also, you can change the password of the user there. Then we have UserPaymentsViewDomain that is responsible for creating payment projection.
+It catches the events emitted by UserAggregate, and creates projection based on them.
