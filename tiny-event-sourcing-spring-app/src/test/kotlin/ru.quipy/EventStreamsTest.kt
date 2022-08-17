@@ -60,8 +60,8 @@ class EventStreamsTest {
         Mockito.doNothing().`when`(tested.someMockedService).act(any())
 
         val succeededBefore = tested.testStats.success.get()
-        demoESService.update(testId) {
-            it.addTask("task!")
+        demoESService.update(testId) { project ->
+            project.addTask("task!")
         }
 
         Awaitility.await().atMost(5, TimeUnit.SECONDS).until {

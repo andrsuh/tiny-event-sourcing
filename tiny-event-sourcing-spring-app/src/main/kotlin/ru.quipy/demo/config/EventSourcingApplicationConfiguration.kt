@@ -56,7 +56,6 @@ class EventSourcingApplicationConfiguration {
     }
 
     @Bean
-    fun demoESService() = eventSourcingServiceFactory.getOrCreateService<String, ProjectAggregate, ProjectAggregateState>(
-        ProjectAggregate::class)
+    fun demoESService() = eventSourcingServiceFactory.getOrCreateService<String, ProjectAggregate, ProjectAggregateState>(ProjectAggregate::class)
 
 }
