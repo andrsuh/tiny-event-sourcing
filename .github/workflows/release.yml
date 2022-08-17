@@ -2,9 +2,9 @@ name: "Release to GitHub Maven"
 
 on:
   push:
-    branches: ["master"]
+    branches: ["master", "master-2.0"]
   pull_request:
-    branches: ["master"]
+    branches: ["master", "master-2.0"]
  
 jobs:
   build:
