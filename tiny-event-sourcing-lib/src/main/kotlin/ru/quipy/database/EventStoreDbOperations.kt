@@ -38,7 +38,7 @@ interface EventStoreDbOperations {
      */
     fun findEventRecordsWithAggregateVersionGraterThan(
         aggregateTableName: String,
-        aggregateId: String,
+        aggregateId: Any,
         aggregateVersion: Long
     ): List<EventRecord>
 
@@ -51,7 +51,7 @@ interface EventStoreDbOperations {
 
     fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot)
 
-    fun findSnapshotByAggregateId(snapshotsTableName: String, aggregateId: String): Snapshot?
+    fun findSnapshotByAggregateId(snapshotsTableName: String, aggregateId: Any): Snapshot?
 
     fun findStreamReadIndex(streamName: String): EventStreamReadIndex?
 

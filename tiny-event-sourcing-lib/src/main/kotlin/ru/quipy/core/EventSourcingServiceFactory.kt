@@ -18,13 +18,13 @@ class EventSourcingServiceFactory(
         private val logger = LoggerFactory.getLogger(EventSourcingServiceFactory::class.java)
     }
 
-    private val services = ConcurrentHashMap<KClass<*>, EventSourcingService<*>>()
+    private val services = ConcurrentHashMap<KClass<*>, EventSourcingService<*, *, *>>()
 
-    fun <A : Aggregate> getOrCreateService(aggregateType: KClass<A>): EventSourcingService<A> {
+    fun <ID : Any, A : Aggregate, S: AggregateState<ID, A>> getOrCreateService(aggregateType: KClass<A>): EventSourcingService<ID, A, S> {
         return services.computeIfAbsent(aggregateType) {
-            EventSourcingService(
+            EventSourcingService<ID, A, S>(
                 aggregateType, aggregateRegistry, eventMapper, eventSourcingProperties, eventStoreDbOperations
             )
-        } as EventSourcingService<A>
+        } as EventSourcingService<ID, A, S>
     }
 }

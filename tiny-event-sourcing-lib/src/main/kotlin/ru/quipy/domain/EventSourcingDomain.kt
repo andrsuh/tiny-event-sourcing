@@ -10,27 +10,29 @@ interface Unique<ID> { // todo sukhoa rename this stuff
     val id: ID
 }
 
-// todo sukhoa maybe AggregateState?
-interface Aggregate { // todo sukhoa ID should be parametrized Unique<ID>
-    val aggregateId: String
+interface Aggregate
+
+interface AggregateState<ID, A : Aggregate> {
+    val aggregateId: ID
     var createdAt: Long
     var updatedAt: Long
+}
+
+fun interface AggregateStateTransitionFunction<A : Aggregate, E : Event<A>, S : AggregateState<*, A>> {
+    fun performTransition(state: S, event: E)
 }
 
 abstract class Event<A : Aggregate>(
     override val id: UUID = UUID.randomUUID(),
     val name: String,
-    var aggregateId: String, // todo sukhoa maybe val?
     override var version: Long = 0L, // this is aggregate version actually or the event count number
     var createdAt: Long = System.currentTimeMillis(),
-) : Versioned, Unique<UUID> {
-    abstract infix fun applyTo(aggregate: A)
-}
+) : Versioned, Unique<UUID>
 
 @Suppress("unused")
 data class EventRecord(
     override val id: String,
-    val aggregateId: String,
+    val aggregateId: Any, // todo sukhoa weird?
     val aggregateVersion: Long,
     val eventTitle: String,
     val payload: String,
@@ -39,10 +41,10 @@ data class EventRecord(
 
 @Suppress("UNCHECKED_CAST")
 class Snapshot(
-    override val id: String,
-    val snapshot: Any,
+    override val id: Any, // todo sukhoa weird ANY, should it be parametrized?
+    val snapshot: Any, // todo sukhoa weird ANY, should it be parametrized?
     override var version: Long
-) : Versioned, Unique<String>
+) : Versioned, Unique<Any>
 
 
 class EventStreamReadIndex(

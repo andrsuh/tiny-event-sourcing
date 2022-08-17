@@ -28,7 +28,7 @@ class AggregateEventStreamManager(
         aggregateClass: KClass<A>,
         retryConfig: RetryConf = RetryConf(3, RetryFailedStrategy.SKIP_EVENT)
     ): AggregateEventStream<A> {
-        val aggregateInfo = (aggregateRegistry.getAggregateInfo(aggregateClass)
+        val eventInfo = (aggregateRegistry.getEventInfo(aggregateClass)
             ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered"))
 
         val existing = eventStreams.putIfAbsent(
@@ -36,7 +36,7 @@ class AggregateEventStreamManager(
                 streamName,
                 eventSourcingProperties.streamReadPeriod,
                 eventSourcingProperties.streamBatchSize,
-                aggregateInfo.aggregateEventsTableName,
+                eventInfo.aggregateEventsTableName,
                 retryConfig,
                 eventStoreDbOperations,
                 eventStreamListener,

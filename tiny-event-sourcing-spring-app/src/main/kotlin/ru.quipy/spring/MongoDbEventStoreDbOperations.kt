@@ -53,7 +53,7 @@ class MongoDbEventStoreDbOperations : EventStoreDbOperations {
 
     override fun findEventRecordsWithAggregateVersionGraterThan(
         aggregateTableName: String,
-        aggregateId: String,
+        aggregateId: Any,
         aggregateVersion: Long
     ): List<EventRecord> {
         val criteria = Criteria
@@ -63,7 +63,7 @@ class MongoDbEventStoreDbOperations : EventStoreDbOperations {
         return mongoTemplate.find(Query().addCriteria(criteria), aggregateTableName)
     }
 
-    override fun findSnapshotByAggregateId(snapshotsTableName: String, aggregateId: String): Snapshot? {
+    override fun findSnapshotByAggregateId(snapshotsTableName: String, aggregateId: Any): Snapshot? {
         return mongoTemplate.findById(aggregateId, snapshotsTableName)
     }
 

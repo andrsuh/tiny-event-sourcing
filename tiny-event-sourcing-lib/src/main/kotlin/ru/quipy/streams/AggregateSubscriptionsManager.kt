@@ -63,7 +63,7 @@ class AggregateSubscriptionsManager(
             )
         }
 
-        val aggregateInfo = aggregateRegistry.getAggregateInfo(aggregateClass)
+        val eventInfo = aggregateRegistry.getEventInfo(aggregateClass)
             ?: throw IllegalArgumentException("Couldn't find aggregate class ${aggregateClass.simpleName} in registry")
 
         val streamName = subscriberInfo.subscriberName.ifBlank {
@@ -74,7 +74,7 @@ class AggregateSubscriptionsManager(
 
         val subscriptionBuilder =
             eventsStreamManager.createEventStream(streamName, aggregateClass, subscriberInfo.retry)
-                .toSubscriptionBuilder(eventMapper, aggregateInfo::getEventTypeByName)
+                .toSubscriptionBuilder(eventMapper, eventInfo::getEventTypeByName)
 
         subscriberClass.memberFunctions.filter { // method has annotation filter
             it.findAnnotations(SubscribeEvent::class).size == 1
@@ -128,12 +128,12 @@ class AggregateSubscriptionsManager(
     ): EventStreamSubscriber<A> {
         logger.info("Start creating subscription to aggregate: ${aggregateClass.simpleName}, subscriber name $subscriberName")
 
-        val aggregateInfo = aggregateRegistry.getAggregateInfo(aggregateClass)
+        val eventInfo = aggregateRegistry.getEventInfo(aggregateClass)
             ?: throw IllegalArgumentException("Couldn't find aggregate class ${aggregateClass.simpleName} in registry")
 
         val subscriptionBuilder =
             eventsStreamManager.createEventStream(subscriberName, aggregateClass, retryConf)
-                .toSubscriptionBuilder(eventMapper, aggregateInfo::getEventTypeByName)
+                .toSubscriptionBuilder(eventMapper, eventInfo::getEventTypeByName)
 
         handlersBlock.invoke(EventHandlersRegistrar(subscriptionBuilder)) // todo sukhoa maybe extension? .createRegistrar?
 

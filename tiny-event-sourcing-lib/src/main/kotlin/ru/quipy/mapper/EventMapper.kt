@@ -10,7 +10,7 @@ import kotlin.reflect.KClass
  */
 interface EventMapper {
 
-    fun <A : Aggregate> toEvent(payload: String, eventClass: KClass<out Event<*>>): Event<A>
+    fun <A : Aggregate> toEvent(payload: String, eventClass: KClass<out Event<A>>): Event<A>
 
     fun <A : Aggregate> eventToString(event: Event<in A>): String
 }
@@ -19,10 +19,7 @@ class JsonEventMapper(
     val jsonObjectMapper: ObjectMapper
 ) : EventMapper {
 
-    override fun <A : Aggregate> toEvent(
-        payload: String,
-        eventClass: KClass<out Event<*>>
-    ): Event<A> {
+    override fun <A : Aggregate> toEvent(payload: String, eventClass: KClass<out Event<A>>): Event<A> {
         return jsonObjectMapper.readValue(
             payload,
             eventClass.java

@@ -3,17 +3,14 @@ package ru.quipy.core
 import org.slf4j.LoggerFactory
 import ru.quipy.core.exceptions.DuplicateEventIdException
 import ru.quipy.database.EventStoreDbOperations
-import ru.quipy.domain.Aggregate
-import ru.quipy.domain.Event
-import ru.quipy.domain.EventRecord
-import ru.quipy.domain.Snapshot
+import ru.quipy.domain.*
 import ru.quipy.mapper.EventMapper
 import kotlin.reflect.KClass
 
 /**
  * Allows you to update aggregates and get the last state of the aggregate instances.
  */
-class EventSourcingService<A : Aggregate>(
+class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
     aggregateClass: KClass<A>,
     aggregateRegistry: AggregateRegistry,
     private val eventMapper: EventMapper,
@@ -24,8 +21,9 @@ class EventSourcingService<A : Aggregate>(
         private val logger = LoggerFactory.getLogger(EventSourcingService::class.java)
     }
 
-    private val aggregateInfo = aggregateRegistry.getAggregateInfo(aggregateClass) // todo sukhoa pass the only info?
-        ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered")
+    private val aggregateInfo =
+        aggregateRegistry.getStateTransitionInfo<ID, A, S>(aggregateClass) // todo sukhoa pass the only info?
+            ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered")
 
     /**
      * Allows to update aggregate by running some logic on aggregate state that results in [Event].
@@ -48,7 +46,7 @@ class EventSourcingService<A : Aggregate>(
      * The number of attempts is limited to 20 currently.
      *
      */
-    fun <E : Event<A>> update(aggregateId: String, eventGenerationFunction: (a: A) -> E): E {
+    fun <E : Event<A>> update(aggregateId: ID, eventGenerationFunction: (a: S) -> E): E {
         var numOfAttempts = 0
         while (true) { // spinlock
             val (currentVersion, aggregateState) = getVersionedState(aggregateId)
@@ -62,9 +60,11 @@ class EventSourcingService<A : Aggregate>(
                 throw e
             }
 
-            newEvent applyTo aggregateState
+            aggregateInfo
+                .getStateTransitionFunction(newEvent.name)
+                .performTransition(aggregateState, newEvent)
+
             newEvent.version = updatedVersion
-            newEvent.aggregateId = aggregateId
 
             val eventRecord = EventRecord(
                 "$aggregateId-$updatedVersion",
@@ -79,7 +79,7 @@ class EventSourcingService<A : Aggregate>(
             } catch (e: DuplicateEventIdException) {
                 logger.info("Optimistic lock exception. Failed to save event record id: ${eventRecord.id}")
 
-                if (numOfAttempts++ >= 20)
+                if (numOfAttempts++ >= 20) // todo sukhoa weird
                     throw IllegalStateException("Too many attempts to save event record: $eventRecord, event: ${eventRecord.payload}")
 
                 continue
@@ -97,18 +97,17 @@ class EventSourcingService<A : Aggregate>(
         }
     }
 
-    fun getState(aggregateId: String): A = getVersionedState(aggregateId).second
+    fun getState(aggregateId: ID): S = getVersionedState(aggregateId).second
 
-    private fun getVersionedState(aggregateId: String): Pair<Long, A> {
+    private fun getVersionedState(aggregateId: ID): Pair<Long, S> {
         var version = 0L
 
-        val aggregate =
+        val state =
             eventStoreDbOperations.findSnapshotByAggregateId(eventSourcingProperties.snapshotTableName, aggregateId)
                 ?.let {
                     version = it.version
-                    it.snapshot as A
-                }
-                ?: aggregateInfo.instantiateFunction(aggregateId)
+                    it.snapshot as S
+                } ?: aggregateInfo.instantiateFunction(aggregateId)
 
 
         eventStoreDbOperations.findEventRecordsWithAggregateVersionGraterThan(
@@ -117,15 +116,18 @@ class EventSourcingService<A : Aggregate>(
             version
         )
             .map { eventRecord ->
-                eventMapper.toEvent<A>(
+                eventMapper.toEvent(
                     eventRecord.payload,
                     aggregateInfo.getEventTypeByName(eventRecord.eventTitle)
                 )
             }.forEach { event ->
-                event applyTo aggregate
+                aggregateInfo
+                    .getStateTransitionFunction(event.name)
+                    .performTransition(state, event)
+
                 version++
             }
 
-        return version to aggregate
+        return version to state
     }
 }

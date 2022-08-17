@@ -1,13 +1,16 @@
-package ru.quipy.demo
+package ru.quipy.demo.config
 
 import org.slf4j.LoggerFactory
-import ru.quipy.core.AggregateRegistry
-import ru.quipy.core.EventSourcingServiceFactory
-import ru.quipy.streams.AggregateSubscriptionsManager
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import ru.quipy.core.AggregateRegistry
+import ru.quipy.core.EventSourcingServiceFactory
+import ru.quipy.demo.projections.AnnotationBasedProjectEventsSubscriber
+import ru.quipy.demo.api.ProjectAggregate
+import ru.quipy.demo.logic.ProjectAggregateState
 import ru.quipy.streams.AggregateEventStreamManager
+import ru.quipy.streams.AggregateSubscriptionsManager
 import javax.annotation.PostConstruct
 
 @Configuration
@@ -27,13 +30,16 @@ class EventSourcingApplicationConfiguration {
     @Autowired
     private lateinit var eventStreamManager: AggregateEventStreamManager
 
+    @Autowired
+    private lateinit var aggregateRegistry: AggregateRegistry
+
     @PostConstruct
     fun init() {
         // autoscan enabled see event.sourcing.auto-scan-enabled property
-//        aggregateRegistry.register(ProjectAggregate::class) {
-//            registerEvent(TagCreatedEvent::class)
-//            registerEvent(TaskCreatedEvent::class)
-//            registerEvent(TagAssignedToTaskEvent::class)
+//        aggregateRegistry.register(ProjectAggregate::class, ProjectAggregateState::class) {
+//            registerStateTransition(TagCreatedEvent::class, ProjectAggregateState::tagCreatedApply)
+//            registerStateTransition(TaskCreatedEvent::class, ProjectAggregateState::taskCreatedApply)
+//            registerStateTransition(TagAssignedToTaskEvent::class, ProjectAggregateState::tagAssignedApply)
 //        }
 
         subscriptionsManager.subscribe<ProjectAggregate>(projectEventSubscriber)
@@ -50,6 +56,7 @@ class EventSourcingApplicationConfiguration {
     }
 
     @Bean
-    fun demoESService() = eventSourcingServiceFactory.getOrCreateService(ProjectAggregate::class)
+    fun demoESService() = eventSourcingServiceFactory.getOrCreateService<String, ProjectAggregate, ProjectAggregateState>(
+        ProjectAggregate::class)
 
 }

@@ -16,11 +16,12 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import ru.quipy.core.EventSourcingService
-import ru.quipy.demo.ProjectAggregate
-import ru.quipy.demo.TaskCreatedEvent
 import ru.quipy.demo.addTask
-import ru.quipy.streams.annotation.AggregateSubscriber
+import ru.quipy.demo.api.ProjectAggregate
+import ru.quipy.demo.api.TaskCreatedEvent
+import ru.quipy.demo.logic.ProjectAggregateState
 import ru.quipy.streams.AggregateSubscriptionsManager
+import ru.quipy.streams.annotation.AggregateSubscriber
 import ru.quipy.streams.annotation.RetryConf
 import ru.quipy.streams.annotation.RetryFailedStrategy.SKIP_EVENT
 import ru.quipy.streams.annotation.SubscribeEvent
@@ -36,7 +37,7 @@ class EventStreamsTest {
     }
 
     @Autowired
-    private lateinit var demoESService: EventSourcingService<ProjectAggregate>
+    private lateinit var demoESService: EventSourcingService<String, ProjectAggregate, ProjectAggregateState>
 
     @Autowired
     lateinit var tested: TestDemoProjectSubscriber
@@ -160,10 +161,10 @@ class TestDemoProjectSubscriber {
     fun taskCreatedSubscriber(event: TaskCreatedEvent) {
         try {
             someMockedService.act(event)
-            if (event.aggregateId == EventStreamsTest.testId)
+            if (event.projectId == EventStreamsTest.testId)
                 testStats.success.incrementAndGet()
         } catch (e: Exception) {
-            if (event.aggregateId == EventStreamsTest.testId)
+            if (event.projectId == EventStreamsTest.testId)
                 testStats.failure.incrementAndGet()
             throw e
         }
