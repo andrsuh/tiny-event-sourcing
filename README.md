@@ -124,7 +124,7 @@ class ProjectAggregate : Aggregate
 `@AggregateType` annotation contains some meta-information about aggregate recognisable by library. For example here we define the name of the database table which stores events for aggregate of type `ProjectAggregate`.
 User written Aggregate class has to implement Aggregate interface-marker from the library.
 
-## Define ***Aggregate state***
+## Define Aggregate state
 
 Now we need some class that describes the inner state of the aggregate instance at different points of time. It's used only for your service and can be defined this way:
 ```kotlin
