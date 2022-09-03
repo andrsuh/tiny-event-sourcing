@@ -152,7 +152,7 @@ data class ProjectTag(
 )
 ```
 As you can see here we define the aggregate state with all of its internals - nested entities and any other fields you wish. It just should reflect the state of the aggregate.
-
+Note, that State should have a constructor with a single parameter - id
 
 ## Define Domain events
 
@@ -179,7 +179,7 @@ This is how this event with its meta-information looks in database:
 ## Define commands
 Commands in our library are represented by methods that take current aggregate state, perform all checks and validations and produces event if changes is allowed and legit. For example, it may be a member function of the aggregate or extension function.
 ```kotlin
-fun UserAggregate.createUserCommand(
+fun UserAggregateState.createUserCommand(
    name: String,
    password: String,
    login: String
@@ -202,7 +202,7 @@ fun UserAggregate.createUserCommand(
    )
 }
 ```
-
+Command could use State fields to perform validation, but **should not modify aggregate state**. Command should not have any side effects besides event emitting 
 ## Define aggregate State transition functions
 
 There is one thing left to do before we are able to make changes on our aggregates. We have to teach the library to construct a current state of an aggregate.
