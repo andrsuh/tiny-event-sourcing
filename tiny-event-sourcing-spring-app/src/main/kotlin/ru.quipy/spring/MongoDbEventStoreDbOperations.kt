@@ -40,7 +40,7 @@ open class MongoDbEventStoreDbOperations : EventStoreDbOperations {
                 mongoTemplate.insert(it, aggregateTableName)
             }
         } catch (e: DuplicateKeyException) {
-            throw DuplicateEventIdException("There is record with such an id. Record cannot be saved $this", e) //todo shine2
+            throw DuplicateEventIdException("There is record with such an id. Record set cannot be saved $eventRecords", e)
         }
     }
 

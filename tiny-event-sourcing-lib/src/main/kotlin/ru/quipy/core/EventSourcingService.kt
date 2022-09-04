@@ -103,15 +103,13 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
                 throw e
             }
 
+            var updatedVersion = currentVersion
+
             newEvents.forEach { newEvent ->
                 aggregateInfo
                     .getStateTransitionFunction(newEvent.name)
                     .performTransition(aggregateState, newEvent)
-            }
-
-            var updatedVersion = currentVersion
-            newEvents.forEach {
-                it.version = ++updatedVersion
+                newEvent.version = ++updatedVersion
             }
 
             val eventRecords = newEvents.map {
