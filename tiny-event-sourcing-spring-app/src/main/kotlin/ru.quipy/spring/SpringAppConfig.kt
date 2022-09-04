@@ -5,6 +5,8 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.data.mongodb.MongoDatabaseFactory
+import org.springframework.data.mongodb.MongoTransactionManager
 import ru.quipy.core.*
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.mapper.JsonEventMapper
@@ -12,7 +14,7 @@ import ru.quipy.streams.AggregateEventStreamManager
 import ru.quipy.streams.AggregateSubscriptionsManager
 
 @Configuration
-open class SpringAppConfig {
+class SpringAppConfig {
     @Bean
     fun jsonObjectMapper() = jacksonObjectMapper()
 
@@ -24,6 +26,10 @@ open class SpringAppConfig {
     @ConfigurationProperties(prefix = "event.sourcing")
     fun configProperties() = EventSourcingProperties()
 
+    @Bean
+    fun transactionManager(dbFactory: MongoDatabaseFactory): MongoTransactionManager {
+        return MongoTransactionManager(dbFactory)
+    }
     @Bean
     //@ConditionalOnBean(MongoTemplate::class)
     fun eventStoreDbOperations() = MongoDbEventStoreDbOperations()

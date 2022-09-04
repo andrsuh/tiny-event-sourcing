@@ -10,12 +10,14 @@ import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.findById
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.transaction.annotation.Transactional
 import ru.quipy.core.exceptions.DuplicateEventIdException
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.domain.*
 import ru.quipy.spring.MongoDbEventStoreDbOperations.Companion.logger
 
-class MongoDbEventStoreDbOperations : EventStoreDbOperations {
+
+open class MongoDbEventStoreDbOperations : EventStoreDbOperations {
     companion object {
         val logger = LoggerFactory.getLogger(MongoDbEventStoreDbOperations::class.java)
     }
@@ -28,6 +30,17 @@ class MongoDbEventStoreDbOperations : EventStoreDbOperations {
             mongoTemplate.insert(eventRecord, aggregateTableName)
         } catch (e: DuplicateKeyException) {
             throw DuplicateEventIdException("There is record with such an id. Record cannot be saved $eventRecord", e)
+        }
+    }
+
+    @Transactional
+    override fun insertEventRecords(aggregateTableName: String, eventRecords: List<EventRecord>) {
+        try {
+            eventRecords.forEach {
+                mongoTemplate.insert(it, aggregateTableName)
+            }
+        } catch (e: DuplicateKeyException) {
+            throw DuplicateEventIdException("There is record with such an id. Record cannot be saved $this", e) //todo shine2
         }
     }
 
