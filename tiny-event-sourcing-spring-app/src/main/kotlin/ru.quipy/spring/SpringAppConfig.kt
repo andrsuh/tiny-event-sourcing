@@ -26,7 +26,7 @@ open class SpringAppConfig {
 
     @Bean
     //@ConditionalOnBean(MongoTemplate::class)
-    fun eventStoreDbOperations() = MongoDbEventStoreDbOperations()
+    fun eventStoreDbOperations() = JalalMongoDbEventStoreDbOperations()
 
     @Bean(initMethod = "init")
     fun aggregateRegistry(eventSourcingProperties: EventSourcingProperties) =
