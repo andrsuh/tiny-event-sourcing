@@ -22,7 +22,6 @@ class MongoDbEventStoreDbOperations : EventStoreDbOperations {
 
     @Autowired
     lateinit var mongoTemplate: MongoTemplate
-
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
         try {
             mongoTemplate.insert(eventRecord, aggregateTableName)
