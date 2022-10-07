@@ -28,6 +28,9 @@ open class SpringAppConfig {
     //@ConditionalOnBean(MongoTemplate::class)
     fun eventStoreDbOperations() = JalalMongoDbEventStoreDbOperations()
 
+    @Bean
+    fun mongoEntityConverter() = MongoEntityConverter()
+
     @Bean(initMethod = "init")
     fun aggregateRegistry(eventSourcingProperties: EventSourcingProperties) =
         SeekingForSuitableClassesAggregateRegistry(BasicAggregateRegistry(), eventSourcingProperties)

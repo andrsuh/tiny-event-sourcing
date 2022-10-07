@@ -1,26 +1,20 @@
 package ru.quipy.spring
 
-import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.mongodb.MongoClientSettings
+import com.fasterxml.jackson.databind.ObjectWriter
 import com.mongodb.client.MongoClient
 import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.Filters.gt
 import com.mongodb.client.model.Sorts
-import org.bson.Document
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.findById
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.where
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.domain.*
 
 
+//TODO Change class name
 class JalalMongoDbEventStoreDbOperations : EventStoreDbOperations {
     companion object {
         val logger = LoggerFactory.getLogger(MongoDbEventStoreDbOperations::class.java)
@@ -35,53 +29,28 @@ class JalalMongoDbEventStoreDbOperations : EventStoreDbOperations {
     @Autowired
     lateinit var objectMapper: ObjectMapper
 
-    private fun objectToDocument(entity: Any) : Document {
-        val mappedObject = objectMapper.convertValue(entity, object:
-            TypeReference<Map<String, Any>>() {});
-        val document = Document(mappedObject)
-        if(!document.containsKey("_id")){
-            val id = document["id"];
-            if(id != null) {
-                document["_id"] = id
-                document.remove("id")
-            }
-        }
-        return document;
-    }
-
+    @Autowired
+    lateinit var entityConverter: MongoEntityConverter
 
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
-        val document = this.objectToDocument(eventRecord)
-        val database = mongoClient.getDatabase("tiny-es");
+        val database = mongoClient.getDatabase("tiny-es")
         val collection = database.getCollection(aggregateTableName)
-        println(document)
-        collection.insertOne(document);
-
-//        try {
-//            val database = mongoClient.getDatabase("tiny-es");
-//            val command = BsonDocument("ping", BsonInt64(1));
-//            val collection = database.getCollection(aggregateTableName);
-//            var gson = Gson()
-//            val result = collection.insertOne(Document.parse(gson.toJson(eventRecord)));
-//            val commandResult = database.runCommand(command);
-//
-//            println("Connected successfully to server.");
-//            println(commandResult)
-//            val client = KMongo.createClient("mongodb://localhost:27017") //get com.mongodb.MongoClient new instance
-//
-//        } catch (e: DuplicateKeyException) {
-//            throw DuplicateEventIdException("There is record with such an id. Record cannot be saved $eventRecord", e)
-//        }
-//        try {
-//            mongoTemplate.insert(eventRecord, aggregateTableName)
-//        } catch (e: DuplicateKeyException) {
-//            throw DuplicateEventIdException("There is record with such an id. Record cannot be saved $eventRecord", e)
-//        }
+        val document = entityConverter.convertToDocument(eventRecord)
+        collection.insertOne(document)
     }
 
     override fun tableExists(aggregateTableName: String) = mongoTemplate.collectionExists(aggregateTableName)
 
     override fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot) {
+        val database = mongoClient.getDatabase("tiny-es")
+        val collection = database.getCollection(tableName)
+        val ow: ObjectWriter = ObjectMapper().writer().withDefaultPrettyPrinter()
+        val json: String = ow.writeValueAsString(snapshot)
+        System.out.println(entityConverter.convertToDocument(snapshot))
+        System.out.println(entityConverter.convertToDocument(snapshot.snapshot))
+        collection.find(eq("_id",snapshot.id))
+        collection.insertOne(entityConverter.convertToDocument(snapshot))
+        //collection.findOneAndUpdate(eq("_id",snapshot.id), entityConverter.convertToDocument(snapshot))
         mongoTemplate.updateWithLatestVersion(tableName, snapshot)
     }
 
@@ -95,14 +64,10 @@ class JalalMongoDbEventStoreDbOperations : EventStoreDbOperations {
         val document = collection.find(gt("createdAt", eventSequenceNum))
             .sort(Sorts.ascending("createdAt"))
             .limit(batchSize).toList()
-        val list : List<EventRecord> = document
-            .map{map ->
-                println(map)
-                map.put("id", map.get("_id"))
-                map.remove("_id")
-                map
-            }
-            .map{map -> objectMapper.convertValue(map, object:TypeReference<EventRecord>() {})}
+
+        val list : List<EventRecord> = document.map{
+            entityConverter.convertToObject(it, EventRecord::class.java)
+        }
         return list
     }
 
@@ -116,18 +81,16 @@ class JalalMongoDbEventStoreDbOperations : EventStoreDbOperations {
         val collection = database.getCollection(aggregateTableName)
         val document = collection.find(eq("aggregateId",aggregateId))
             .filter(gt("aggregateVersion",aggregateVersion)).toList()
-        val list : List<EventRecord> = document
-            .map{map ->
-                println(map)
-                map.put("id", map.get("_id"))
-                map.remove("_id")
-                map
-            }
-            .map{map -> objectMapper.convertValue(map, object:TypeReference<EventRecord>() {})}
+        val list : List<EventRecord> = document.map{
+            entityConverter.convertToObject(it, EventRecord::class.java)
+        }
         return list
     }
 
     override fun findSnapshotByAggregateId(snapshotsTableName: String, aggregateId: Any): Snapshot? {
+        val database = mongoClient.getDatabase("tiny-es");
+        val collection = database.getCollection(snapshotsTableName)
+        val document = collection.find(eq("aggregateId",aggregateId))
         return mongoTemplate.findById(aggregateId, snapshotsTableName)
     }
 
@@ -142,6 +105,7 @@ class JalalMongoDbEventStoreDbOperations : EventStoreDbOperations {
     override fun commitStreamReadIndex(readIndex: EventStreamReadIndex) {
         mongoTemplate.updateWithLatestVersion("event-stream-read-index", readIndex) // todo sukhoa make configurable?
     }
+
 }
 
 //inline fun <reified E> MongoTemplate.replaceOlderEntityOrInsert(
