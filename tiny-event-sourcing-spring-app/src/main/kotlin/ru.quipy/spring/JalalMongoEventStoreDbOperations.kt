@@ -115,13 +115,15 @@ class JalalMongoDbEventStoreDbOperations : EventStoreDbOperations {
     private inline fun <reified T> replaceOlderEntityOrInsert(
         tableName: String, replacement: T
     ): T? where T : Versioned, T : Unique<*> {
-        val database = mongoClient.getDatabase("tiny-es")
-        val collection = database.getCollection(tableName)
-        val result = collection.findOneAndReplace(
-            and(eq("_id", replacement.id), lt("version", replacement.version)),
-            entityConverter.convertObjectToBsonDocument(replacement),
-            FindOneAndReplaceOptions().upsert(true).returnDocument(ReturnDocument.AFTER)
-        ) ?: return null
+        val result = getDatabase()
+            .getCollection(tableName)
+            .findOneAndReplace(
+                and(eq("_id", replacement.id), lt("version", replacement.version)),
+                entityConverter.convertObjectToBsonDocument(replacement),
+                FindOneAndReplaceOptions()
+                    .upsert(true)
+                    .returnDocument(ReturnDocument.AFTER)
+            ) ?: return null
 
         return entityConverter.convertBsonDocumentToObject(result, T::class.java)
     }
