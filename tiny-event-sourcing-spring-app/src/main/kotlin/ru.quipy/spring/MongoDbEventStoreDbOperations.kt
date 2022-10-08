@@ -63,6 +63,7 @@ class MongoDbEventStoreDbOperations : EventStoreDbOperations {
     }
 
     override fun findSnapshotByAggregateId(snapshotsTableName: String, aggregateId: Any): Snapshot? {
+        println(aggregateId)
         return mongoTemplate.findById(aggregateId, snapshotsTableName)
     }
 

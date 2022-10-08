@@ -24,12 +24,14 @@ open class SpringAppConfig {
     @ConfigurationProperties(prefix = "event.sourcing")
     fun configProperties() = EventSourcingProperties()
 
-    @Bean
-    //@ConditionalOnBean(MongoTemplate::class)
-    fun eventStoreDbOperations() = JalalMongoDbEventStoreDbOperations()
 
     @Bean
     fun mongoEntityConverter() = MongoEntityConverter()
+
+
+    @Bean
+    //@ConditionalOnBean(MongoTemplate::class)
+    fun eventStoreDbOperations() = JalalMongoDbEventStoreDbOperations()
 
     @Bean(initMethod = "init")
     fun aggregateRegistry(eventSourcingProperties: EventSourcingProperties) =
