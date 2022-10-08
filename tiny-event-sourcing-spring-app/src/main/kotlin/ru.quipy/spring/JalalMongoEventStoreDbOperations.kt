@@ -1,5 +1,6 @@
 package ru.quipy.spring
 
+import com.mongodb.DuplicateKeyException
 import com.mongodb.client.MongoClient
 import com.mongodb.client.MongoDatabase
 import com.mongodb.client.model.Filters.*
@@ -10,7 +11,7 @@ import org.bson.Document
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.dao.DuplicateKeyException
+import ru.quipy.core.exceptions.DuplicateEventIdException
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.domain.*
 
@@ -33,7 +34,11 @@ class JalalMongoDbEventStoreDbOperations : EventStoreDbOperations {
 
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
         val document = entityConverter.convertObjectToBsonDocument(eventRecord)
-        getDatabase().getCollection(aggregateTableName).insertOne(document)
+        try {
+            getDatabase().getCollection(aggregateTableName).insertOne(document)
+        }catch(e: DuplicateKeyException) {
+            throw DuplicateEventIdException("There is record with such an id. Record cannot be saved $eventRecord", e)
+        }
     }
 
     override fun tableExists(aggregateTableName: String) : Boolean {
