@@ -1,13 +1,18 @@
-package ru.quipy.demo
+package ru.quipy.projectDemo
 
-import ru.quipy.demo.api.TagAssignedToTaskEvent
-import ru.quipy.demo.api.TagCreatedEvent
-import ru.quipy.demo.api.TaskCreatedEvent
-import ru.quipy.demo.logic.ProjectAggregateState
+import ru.quipy.projectDemo.api.ProjectCreatedEvent
+import ru.quipy.projectDemo.api.TagAssignedToTaskEvent
+import ru.quipy.projectDemo.api.TagCreatedEvent
+import ru.quipy.projectDemo.api.TaskCreatedEvent
+import ru.quipy.projectDemo.logic.ProjectAggregateState
 import java.util.*
 
 
 // Commands : takes something -> returns event
+fun ProjectAggregateState.create(id: String): ProjectCreatedEvent {
+    return ProjectCreatedEvent(projectId = id)
+}
+
 fun ProjectAggregateState.addTask(name: String): TaskCreatedEvent {
     return TaskCreatedEvent(projectId = this.aggregateId, taskId = UUID.randomUUID(), taskName = name)
 }

@@ -64,7 +64,7 @@ interface AggregateRegistry {
     }
 
     interface AggregateStateInfo<ID, A : Aggregate, S : AggregateState<ID, A>> : EventInfo<A>, BasicAggregateInfo<A> {
-        var instantiateFunction: (ID) -> S
+        var instantiateFunction: () -> S
 
         fun getStateTransitionFunction(eventName: String): AggregateStateTransitionFunction<A, Event<A>, S>
     }
@@ -103,7 +103,7 @@ interface AggregateRegistry {
         private val eventsMap: ConcurrentHashMap<String, StateTransitionInfo<ID, A, S>> = ConcurrentHashMap(),
     ) : EventInfo<A>, AggregateStateInfo<ID, A, S>, StateTransitionsRegistrar<ID, A, S> {
 
-        override lateinit var instantiateFunction: (ID) -> S
+        override lateinit var instantiateFunction: () -> S // todo sukhoa rename
 
         override fun getEventTypeByName(eventName: String): KClass<Event<A>> {
             return (eventsMap[eventName]?.eventClass
@@ -123,12 +123,10 @@ interface AggregateRegistry {
             val eventInfo = AnnotationUtils.findAnnotation(eventClass.java, DomainEvent::class.java)
                 ?: throw IllegalStateException("No annotation ${DomainEvent::class.simpleName} provided on domain event ${eventClass.simpleName}")
 
-            val constructor = aggregateStateClass.constructors.firstOrNull {
-                it.parameters.size == 1 && it.parameters[0].type.classifier == String::class
-            }
-                ?: throw IllegalStateException("No suitable constructor from ID class provided for aggregate ${aggregateClass.simpleName}")
+            val emptyStateCreatorFunction = aggregateStateClass.constructors.firstOrNull { it.parameters.isEmpty() }
+                ?: throw IllegalStateException("No suitable empty constructor provided for aggregate state ${aggregateStateClass.simpleName}")
 
-            instantiateFunction = { constructor.call(it) as S }
+            instantiateFunction = { emptyStateCreatorFunction.call() as S }
 
             eventsMap.putIfAbsent(eventInfo.name, StateTransitionInfo(eventClass, eventStateTransitionFunction))?.also {
                 throw IllegalStateException("Event ${eventInfo.name} already registered with class ${eventClass.simpleName}")

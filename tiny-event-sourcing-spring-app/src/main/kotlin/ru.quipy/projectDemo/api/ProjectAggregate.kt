@@ -1,4 +1,4 @@
-package ru.quipy.demo.api
+package ru.quipy.projectDemo.api
 
 import ru.quipy.core.annotations.AggregateType
 import ru.quipy.domain.Aggregate
