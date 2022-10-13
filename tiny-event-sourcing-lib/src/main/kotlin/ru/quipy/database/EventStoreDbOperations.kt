@@ -49,9 +49,9 @@ interface EventStoreDbOperations {
 
     fun tableExists(aggregateTableName: String): Boolean
 
-    fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot)
+    fun <T,E>updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot<T, E>)
 
-    fun findSnapshotByAggregateId(snapshotsTableName: String, aggregateId: Any): Snapshot?
+    fun <T,E>findSnapshotByAggregateId(snapshotsTableName: String, aggregateId: Any): Snapshot<T,E>?
 
     fun findStreamReadIndex(streamName: String): EventStreamReadIndex?
 

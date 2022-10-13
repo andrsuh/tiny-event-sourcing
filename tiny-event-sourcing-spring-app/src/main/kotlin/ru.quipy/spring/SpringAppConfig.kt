@@ -26,7 +26,7 @@ open class SpringAppConfig {
 
 
     @Bean
-    fun mongoEntityConverter() = MongoEntityConverter()
+    fun mongoEntityConverter() : MongoEntityConverter = JacksonMongoEntityConverter()
 
 
     @Bean

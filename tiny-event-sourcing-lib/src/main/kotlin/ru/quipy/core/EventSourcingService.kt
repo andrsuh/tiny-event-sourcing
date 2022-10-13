@@ -1,5 +1,6 @@
 package ru.quipy.core
 
+import com.fasterxml.jackson.core.type.TypeReference
 import org.slf4j.LoggerFactory
 import ru.quipy.core.exceptions.DuplicateEventIdException
 import ru.quipy.database.EventStoreDbOperations
@@ -103,10 +104,10 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
         var version = 0L
 
         val state =
-            eventStoreDbOperations.findSnapshotByAggregateId(eventSourcingProperties.snapshotTableName, aggregateId)
+            eventStoreDbOperations.findSnapshotByAggregateId<ID, S>(eventSourcingProperties.snapshotTableName, aggregateId)
                 ?.let {
                     version = it.version
-                    it.snapshot as S
+                    it.snapshot
                 } ?: aggregateInfo.instantiateFunction(aggregateId)
 
 

@@ -32,7 +32,7 @@ class MongoDbEventStoreDbOperations : EventStoreDbOperations {
 
     override fun tableExists(aggregateTableName: String) = mongoTemplate.collectionExists(aggregateTableName)
 
-    override fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot) {
+    override fun <T,E>updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot<T,E>) {
         mongoTemplate.updateWithLatestVersion(tableName, snapshot)
     }
 
@@ -62,7 +62,7 @@ class MongoDbEventStoreDbOperations : EventStoreDbOperations {
         return mongoTemplate.find(Query().addCriteria(criteria), aggregateTableName)
     }
 
-    override fun findSnapshotByAggregateId(snapshotsTableName: String, aggregateId: Any): Snapshot? {
+    override fun <T,E>findSnapshotByAggregateId(snapshotsTableName: String, aggregateId: Any): Snapshot<T,E>? {
         println(aggregateId)
         return mongoTemplate.findById(aggregateId, snapshotsTableName)
     }
