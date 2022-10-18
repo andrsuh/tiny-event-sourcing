@@ -44,7 +44,7 @@ class BankEventStreamsTest {
 
         val state = bankESService.getState(testId)!!
 
-        Assertions.assertEquals(testId, state.aggregateId)
+        Assertions.assertEquals(testId, state.getId())
     }
 
     @Test
@@ -59,7 +59,7 @@ class BankEventStreamsTest {
 
         val state = bankESService.getState(testId)!!
 
-        Assertions.assertEquals(testId, state.aggregateId)
+        Assertions.assertEquals(testId, state.getId())
         Assertions.assertEquals(1, state.bankAccounts.size)
         Assertions.assertNotNull(state.bankAccounts[createdEvent.bankAccountId])
         Assertions.assertEquals(createdEvent.bankAccountId, state.bankAccounts[createdEvent.bankAccountId]!!.id)
@@ -88,7 +88,7 @@ class BankEventStreamsTest {
 
         val state = bankESService.getState(testId)!!
 
-        Assertions.assertEquals(testId, state.aggregateId)
+        Assertions.assertEquals(testId, state.getId())
         Assertions.assertEquals(1, state.bankAccounts.size)
         Assertions.assertNotNull(state.bankAccounts[createdEvent.bankAccountId])
         Assertions.assertEquals(createdEvent.bankAccountId, state.bankAccounts[createdEvent.bankAccountId]!!.id)
@@ -114,7 +114,7 @@ class BankEventStreamsTest {
 
         val state = bankESService.getState(testId)!!
 
-        Assertions.assertEquals(testId, state.aggregateId)
+        Assertions.assertEquals(testId, state.getId())
         Assertions.assertEquals(2, state.bankAccounts.size)
         // first
         Assertions.assertNotNull(state.bankAccounts[createdBankAccountEvent1.bankAccountId])
@@ -129,7 +129,7 @@ class BankEventStreamsTest {
             createdBankAccountEvent2.bankAccountId,
             state.bankAccounts[createdBankAccountEvent2.bankAccountId]!!.id
         )
-        Assertions.assertEquals( BigDecimal.ZERO, state.bankAccounts[createdBankAccountEvent2.bankAccountId]!!.amount)
+        Assertions.assertEquals(BigDecimal.ZERO, state.bankAccounts[createdBankAccountEvent2.bankAccountId]!!.amount)
     }
 
     @Test
@@ -155,7 +155,11 @@ class BankEventStreamsTest {
 
         // transfer
         val transferEvent = bankESService.update(testId) {
-            it.transferBetweenInternalAccounts(createdBankAccountEvent1.bankAccountId, createdBankAccountEvent2.bankAccountId, depositAmount)
+            it.transferBetweenInternalAccounts(
+                createdBankAccountEvent1.bankAccountId,
+                createdBankAccountEvent2.bankAccountId,
+                depositAmount
+            )
         }
 
         val state = bankESService.getState(testId)!!

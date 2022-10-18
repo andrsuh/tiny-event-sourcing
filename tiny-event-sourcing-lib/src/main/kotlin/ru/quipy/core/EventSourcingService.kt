@@ -23,11 +23,11 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
     }
 
     private val aggregateInfo =
-        aggregateRegistry.getStateTransitionInfo<ID, A, S>(aggregateClass) // todo sukhoa pass the only info?
+        aggregateRegistry.getStateTransitionInfo<ID, A, S>(aggregateClass)
             ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered")
 
     fun <E : Event<A>> create(eventGenerationFunction: (a: S) -> E): E {
-        val emptyAggregateState = aggregateInfo.instantiateFunction.invoke()
+        val emptyAggregateState = aggregateInfo.emptyStateCreator.invoke()
         return tryUpdateState(emptyAggregateState, 0, eventGenerationFunction)
     }
 
@@ -92,7 +92,9 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
             .getStateTransitionFunction(newEvent.name)
             .performTransition(aggregateState, newEvent)
 
-        val aggregateId = aggregateState.aggregateId
+        val aggregateId = aggregateState.getId()
+            ?: throw IllegalStateException("Aggregate ${aggregateInfo.aggregateClass.simpleName} state has null id after applying event $newEvent")
+
         newEvent.version = updatedVersion
 
         val eventRecord = EventRecord(
@@ -133,7 +135,7 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
                 ?.let {
                     version = it.version
                     it.snapshot as S
-                } ?: aggregateInfo.instantiateFunction()
+                } ?: aggregateInfo.emptyStateCreator()
 
         eventStoreDbOperations.findEventRecordsWithAggregateVersionGraterThan(
             aggregateInfo.aggregateEventsTableName,

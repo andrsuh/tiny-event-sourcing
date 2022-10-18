@@ -7,17 +7,19 @@ import java.util.*
 
 // Service's business logic
 class ProjectAggregateState: AggregateState<String, ProjectAggregate> {
-    override lateinit var aggregateId: String
+    private lateinit var projectId: String
     var createdAt: Long = System.currentTimeMillis()
     var updatedAt: Long = System.currentTimeMillis()
 
     var tasks = mutableMapOf<UUID, TaskEntity>()
     var projectTags = mutableMapOf<UUID, ProjectTag>()
 
+    override fun getId() = projectId
+
     // State transition functions
     @StateTransitionFunc
     fun projectCreatedApply(event: ProjectCreatedEvent) {
-        aggregateId = event.projectId
+        projectId = event.projectId
         updatedAt = createdAt
     }
 

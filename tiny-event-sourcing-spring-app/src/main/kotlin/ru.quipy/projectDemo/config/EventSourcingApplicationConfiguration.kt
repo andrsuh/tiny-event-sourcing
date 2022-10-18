@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration
 import ru.quipy.bankDemo.api.AccountAggregate
 import ru.quipy.bankDemo.logic.Account
 import ru.quipy.core.AggregateRegistry
+import ru.quipy.core.EventSourcingService
 import ru.quipy.core.EventSourcingServiceFactory
 import ru.quipy.projectDemo.api.ProjectAggregate
 import ru.quipy.projectDemo.logic.ProjectAggregateState
@@ -59,11 +60,10 @@ class EventSourcingApplicationConfiguration {
     }
 
     @Bean
-    fun demoESService() =
-        eventSourcingServiceFactory.getOrCreateService<String, ProjectAggregate, ProjectAggregateState>(ProjectAggregate::class)
+    fun demoESService() = eventSourcingServiceFactory.create<String, ProjectAggregate, ProjectAggregateState>()
 
     @Bean
-    fun bankESService() =
-        eventSourcingServiceFactory.getOrCreateService<UUID, AccountAggregate, Account>(AccountAggregate::class)
+    fun bankESService(): EventSourcingService<UUID, AccountAggregate, Account> =
+        eventSourcingServiceFactory.create()
 
 }

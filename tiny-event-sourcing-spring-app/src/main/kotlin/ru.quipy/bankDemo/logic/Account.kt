@@ -11,8 +11,10 @@ import java.util.*
 // вопрос, что делать, если, скажем, обрабатываем какой-то ивент, понимаем, что агрегата, который нужно обновить не существует.
 // Может ли ивент (ошибка) существовать в отрыве от агрегата?
 class Account : AggregateState<UUID, AccountAggregate> {
-    override lateinit var aggregateId: UUID
+    private lateinit var accountId: UUID
     var bankAccounts: MutableMap<UUID, BankAccount> = mutableMapOf()
+
+    override fun getId() = accountId
 
     fun createNewAccount(id: UUID): AccountCreatedEvent {
         return AccountCreatedEvent(id)
@@ -20,9 +22,9 @@ class Account : AggregateState<UUID, AccountAggregate> {
 
     fun createNewBankAccount(): BankAccountCreatedEvent {
         if (bankAccounts.size >= 5)
-            throw IllegalStateException("Account $aggregateId already has ${bankAccounts.size} bank accounts")
+            throw IllegalStateException("Account $accountId already has ${bankAccounts.size} bank accounts")
 
-        return BankAccountCreatedEvent(accountId = aggregateId, bankAccountId = UUID.randomUUID())
+        return BankAccountCreatedEvent(accountId = accountId, bankAccountId = UUID.randomUUID())
     }
 
     fun deposit(toBankAccountId: UUID, amount: BigDecimal): BankAccountDepositEvent {
@@ -34,7 +36,7 @@ class Account : AggregateState<UUID, AccountAggregate> {
 
 
         return BankAccountDepositEvent(
-            accountId = aggregateId,
+            accountId = accountId,
             bankAccountId = toBankAccountId,
             amount = amount
         )
@@ -49,7 +51,7 @@ class Account : AggregateState<UUID, AccountAggregate> {
         }
 
         return BankAccountWithdrawalEvent(
-            accountId = aggregateId,
+            accountId = accountId,
             bankAccountId = fromBankAccountId,
             amount = amount
         )
@@ -71,7 +73,7 @@ class Account : AggregateState<UUID, AccountAggregate> {
             ?: throw IllegalArgumentException("No such account to transfer to: $toBankAccountId")
 
         return InternalAccountTransferEvent(
-            accountId = aggregateId,
+            accountId = accountId,
             bankAccountIdFrom = fromBankAccountId,
             bankAccountIdTo = toBankAccountId,
             amount = transferAmount
@@ -85,7 +87,7 @@ class Account : AggregateState<UUID, AccountAggregate> {
 
     @StateTransitionFunc
     fun createNewBankAccount(event: AccountCreatedEvent) {
-        aggregateId = event.accountId
+        accountId = event.accountId
     }
 
     @StateTransitionFunc

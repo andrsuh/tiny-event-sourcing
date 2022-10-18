@@ -64,7 +64,7 @@ interface AggregateRegistry {
     }
 
     interface AggregateStateInfo<ID, A : Aggregate, S : AggregateState<ID, A>> : EventInfo<A>, BasicAggregateInfo<A> {
-        var instantiateFunction: () -> S
+        var emptyStateCreator: () -> S
 
         fun getStateTransitionFunction(eventName: String): AggregateStateTransitionFunction<A, Event<A>, S>
     }
@@ -103,7 +103,7 @@ interface AggregateRegistry {
         private val eventsMap: ConcurrentHashMap<String, StateTransitionInfo<ID, A, S>> = ConcurrentHashMap(),
     ) : EventInfo<A>, AggregateStateInfo<ID, A, S>, StateTransitionsRegistrar<ID, A, S> {
 
-        override lateinit var instantiateFunction: () -> S // todo sukhoa rename
+        override lateinit var emptyStateCreator: () -> S
 
         override fun getEventTypeByName(eventName: String): KClass<Event<A>> {
             return (eventsMap[eventName]?.eventClass
@@ -126,7 +126,7 @@ interface AggregateRegistry {
             val emptyStateCreatorFunction = aggregateStateClass.constructors.firstOrNull { it.parameters.isEmpty() }
                 ?: throw IllegalStateException("No suitable empty constructor provided for aggregate state ${aggregateStateClass.simpleName}")
 
-            instantiateFunction = { emptyStateCreatorFunction.call() as S }
+            emptyStateCreator = { emptyStateCreatorFunction.call() as S }
 
             eventsMap.putIfAbsent(eventInfo.name, StateTransitionInfo(eventClass, eventStateTransitionFunction))?.also {
                 throw IllegalStateException("Event ${eventInfo.name} already registered with class ${eventClass.simpleName}")
