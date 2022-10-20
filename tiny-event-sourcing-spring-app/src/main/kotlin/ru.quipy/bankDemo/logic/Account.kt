@@ -6,18 +6,17 @@ import ru.quipy.domain.AggregateState
 import java.math.BigDecimal
 import java.util.*
 
-// todo написать в доку, что нужен пустой конструктор...
-// todo стоит написать, что в стейте не может быть закрытых полей, потому как нихера не сериализуется. Ну или определенные настройки маппера нужны
 // вопрос, что делать, если, скажем, обрабатываем какой-то ивент, понимаем, что агрегата, который нужно обновить не существует.
 // Может ли ивент (ошибка) существовать в отрыве от агрегата?
 class Account : AggregateState<UUID, AccountAggregate> {
     private lateinit var accountId: UUID
+    private lateinit var holderId: UUID
     var bankAccounts: MutableMap<UUID, BankAccount> = mutableMapOf()
 
     override fun getId() = accountId
 
-    fun createNewAccount(id: UUID): AccountCreatedEvent {
-        return AccountCreatedEvent(id)
+    fun createNewAccount(id: UUID = UUID.randomUUID(), holderId: UUID): AccountCreatedEvent {
+        return AccountCreatedEvent(id, holderId)
     }
 
     fun createNewBankAccount(): BankAccountCreatedEvent {
@@ -28,11 +27,15 @@ class Account : AggregateState<UUID, AccountAggregate> {
     }
 
     fun deposit(toBankAccountId: UUID, amount: BigDecimal): BankAccountDepositEvent {
-        bankAccounts[toBankAccountId]
-            ?: throw IllegalArgumentException("No such account to transfer to: $toBankAccountId")
+        val bankAccount = (bankAccounts[toBankAccountId]
+            ?: throw IllegalArgumentException("No such account to transfer to: $toBankAccountId"))
 
-        if (bankAccounts.values.sumOf { it.amount } + amount > BigDecimal(15_000_000))
-            throw IllegalStateException("You can't store more than 15.000.000")
+
+        if (bankAccount.balance + amount > BigDecimal(10_000_000))
+            throw IllegalStateException("You can't store more than 10.000.000 on account ${bankAccount.id}")
+
+        if (bankAccounts.values.sumOf { it.balance } + amount > BigDecimal(25_000_000))
+            throw IllegalStateException("You can't store more than 25.000.000 in total")
 
 
         return BankAccountDepositEvent(
@@ -46,8 +49,8 @@ class Account : AggregateState<UUID, AccountAggregate> {
         val fromBankAccount = bankAccounts[fromBankAccountId]
             ?: throw IllegalArgumentException("No such account to withdraw from: $fromBankAccountId")
 
-        if (amount > fromBankAccount.amount) {
-            throw IllegalArgumentException("Cannot withdraw $amount. Not enough money: ${fromBankAccount.amount}")
+        if (amount > fromBankAccount.balance) {
+            throw IllegalArgumentException("Cannot withdraw $amount. Not enough money: ${fromBankAccount.balance}")
         }
 
         return BankAccountWithdrawalEvent(
@@ -65,12 +68,16 @@ class Account : AggregateState<UUID, AccountAggregate> {
         val bankAccountFrom = bankAccounts[fromBankAccountId]
             ?: throw IllegalArgumentException("No such account to withdraw from: $fromBankAccountId")
 
-        if (transferAmount > bankAccountFrom.amount) {
-            throw IllegalArgumentException("Cannot withdraw $transferAmount. Not enough money: ${bankAccountFrom.amount}")
+        if (transferAmount > bankAccountFrom.balance) {
+            throw IllegalArgumentException("Cannot withdraw $transferAmount. Not enough money: ${bankAccountFrom.balance}")
         }
 
-        bankAccounts[toBankAccountId]
-            ?: throw IllegalArgumentException("No such account to transfer to: $toBankAccountId")
+        val bankAccountTo = (bankAccounts[toBankAccountId]
+            ?: throw IllegalArgumentException("No such account to transfer to: $toBankAccountId"))
+
+
+        if (bankAccountTo.balance + transferAmount > BigDecimal(10_000_000))
+            throw IllegalStateException("You can't store more than 10.000.000 on account ${bankAccountTo.id}")
 
         return InternalAccountTransferEvent(
             accountId = accountId,
@@ -81,13 +88,14 @@ class Account : AggregateState<UUID, AccountAggregate> {
     }
 
     @StateTransitionFunc
-    fun createNewBankAccount(event: BankAccountCreatedEvent) {
-        bankAccounts[event.bankAccountId] = BankAccount(event.bankAccountId)
+    fun createNewBankAccount(event: AccountCreatedEvent) {
+        accountId = event.accountId
+        holderId = event.userId
     }
 
     @StateTransitionFunc
-    fun createNewBankAccount(event: AccountCreatedEvent) {
-        accountId = event.accountId
+    fun createNewBankAccount(event: BankAccountCreatedEvent) {
+        bankAccounts[event.bankAccountId] = BankAccount(event.bankAccountId)
     }
 
     @StateTransitionFunc
@@ -110,13 +118,13 @@ class Account : AggregateState<UUID, AccountAggregate> {
 
 data class BankAccount(
     val id: UUID,
-    internal var amount: BigDecimal = BigDecimal.ZERO,
+    internal var balance: BigDecimal = BigDecimal.ZERO,
 ) {
     fun deposit(amount: BigDecimal) {
-        this.amount = this.amount.add(amount)
+        this.balance = this.balance.add(amount)
     }
 
     fun withdraw(amount: BigDecimal) {
-        this.amount = this.amount.subtract(amount)
+        this.balance = this.balance.subtract(amount)
     }
 }

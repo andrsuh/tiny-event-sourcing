@@ -18,6 +18,7 @@ import java.util.*
 class BankEventStreamsTest {
     companion object {
         private val testId = UUID.randomUUID()
+        private val userId = UUID.randomUUID()
     }
 
     @Autowired
@@ -39,7 +40,7 @@ class BankEventStreamsTest {
     @Test
     fun createAccount() {
         bankESService.create {
-            it.createNewAccount(testId)
+            it.createNewAccount(id = testId, holderId = userId)
         }
 
         val state = bankESService.getState(testId)!!
@@ -50,7 +51,7 @@ class BankEventStreamsTest {
     @Test
     fun createBankAccount() {
         bankESService.create {
-            it.createNewAccount(testId)
+            it.createNewAccount(id = testId, holderId = userId)
         }
 
         val createdEvent = bankESService.update(testId) {
@@ -63,13 +64,13 @@ class BankEventStreamsTest {
         Assertions.assertEquals(1, state.bankAccounts.size)
         Assertions.assertNotNull(state.bankAccounts[createdEvent.bankAccountId])
         Assertions.assertEquals(createdEvent.bankAccountId, state.bankAccounts[createdEvent.bankAccountId]!!.id)
-        Assertions.assertEquals(BigDecimal.ZERO, state.bankAccounts[createdEvent.bankAccountId]!!.amount)
+        Assertions.assertEquals(BigDecimal.ZERO, state.bankAccounts[createdEvent.bankAccountId]!!.balance)
     }
 
     @Test
     fun createBankAccountAndDeposit() {
         bankESService.create {
-            it.createNewAccount(testId)
+            it.createNewAccount(id = testId, holderId = userId)
         }
 
         val createdEvent = bankESService.update(testId) {
@@ -94,14 +95,14 @@ class BankEventStreamsTest {
         Assertions.assertEquals(createdEvent.bankAccountId, state.bankAccounts[createdEvent.bankAccountId]!!.id)
         Assertions.assertEquals(
             depositEvent1.amount + depositEvent2.amount,
-            state.bankAccounts[createdEvent.bankAccountId]!!.amount
+            state.bankAccounts[createdEvent.bankAccountId]!!.balance
         )
     }
 
     @Test
     fun createTwoBankAccounts() {
         bankESService.create {
-            it.createNewAccount(testId)
+            it.createNewAccount(id = testId, holderId = userId)
         }
 
         val createdBankAccountEvent1 = bankESService.update(testId) {
@@ -122,20 +123,20 @@ class BankEventStreamsTest {
             state.bankAccounts[createdBankAccountEvent1.bankAccountId]!!.id,
             createdBankAccountEvent1.bankAccountId
         )
-        Assertions.assertEquals(BigDecimal.ZERO, state.bankAccounts[createdBankAccountEvent1.bankAccountId]!!.amount)
+        Assertions.assertEquals(BigDecimal.ZERO, state.bankAccounts[createdBankAccountEvent1.bankAccountId]!!.balance)
         // second
         Assertions.assertNotNull(state.bankAccounts[createdBankAccountEvent2.bankAccountId])
         Assertions.assertEquals(
             createdBankAccountEvent2.bankAccountId,
             state.bankAccounts[createdBankAccountEvent2.bankAccountId]!!.id
         )
-        Assertions.assertEquals(BigDecimal.ZERO, state.bankAccounts[createdBankAccountEvent2.bankAccountId]!!.amount)
+        Assertions.assertEquals(BigDecimal.ZERO, state.bankAccounts[createdBankAccountEvent2.bankAccountId]!!.balance)
     }
 
     @Test
     fun createTwoBankAccountsDepositAndTransfer() {
         bankESService.create {
-            it.createNewAccount(testId)
+            it.createNewAccount(id = testId, holderId = userId)
         }
 
         // first create and deposit
@@ -169,7 +170,7 @@ class BankEventStreamsTest {
         Assertions.assertNotNull(state.bankAccounts[transferEvent.bankAccountIdFrom])
         Assertions.assertNotNull(state.bankAccounts[transferEvent.bankAccountIdTo])
 
-        Assertions.assertEquals(BigDecimal.ZERO, state.bankAccounts[transferEvent.bankAccountIdFrom]!!.amount)
-        Assertions.assertEquals(transferEvent.amount, state.bankAccounts[transferEvent.bankAccountIdTo]!!.amount)
+        Assertions.assertEquals(BigDecimal.ZERO, state.bankAccounts[transferEvent.bankAccountIdFrom]!!.balance)
+        Assertions.assertEquals(transferEvent.amount, state.bankAccounts[transferEvent.bankAccountIdTo]!!.balance)
     }
 }

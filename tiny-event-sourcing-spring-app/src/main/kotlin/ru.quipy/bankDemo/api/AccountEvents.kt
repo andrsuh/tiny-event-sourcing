@@ -15,6 +15,7 @@ const val INTERNAL_ACCOUNT_TRANSFER = "INTERNAL_ACCOUNT_TRANSFER_EVENT"
 @DomainEvent(name = ACCOUNT_CREATED)
 class AccountCreatedEvent(
     val accountId: UUID,
+    val userId: UUID,
 ) : Event<AccountAggregate>(
     name = ACCOUNT_CREATED,
     createdAt = System.currentTimeMillis(),
