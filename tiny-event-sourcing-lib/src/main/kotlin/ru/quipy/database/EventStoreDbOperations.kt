@@ -1,10 +1,7 @@
 package ru.quipy.database
 
 import ru.quipy.core.exceptions.DuplicateEventIdException
-import ru.quipy.domain.ActiveEventStreamReader
-import ru.quipy.domain.EventRecord
-import ru.quipy.domain.EventStreamReadIndex
-import ru.quipy.domain.Snapshot
+import ru.quipy.domain.*
 
 /**
  * Abstracts away the DB access. Provides the operations for event sourcing functioning.
@@ -37,21 +34,21 @@ interface EventStoreDbOperations {
      * Each event stores the number of the aggregate state version. This is the version of the state after the event is applied.
      */
     fun findEventRecordsWithAggregateVersionGraterThan(
-        aggregateTableName: String,
-        aggregateId: Any,
-        aggregateVersion: Long
+        aggregateTableName: String, aggregateId: Any, aggregateVersion: Long
     ): List<EventRecord>
 
     /**
      * Returns a batch of events that has their sequence number greater than passed
      */
-    fun findBatchOfEventRecordAfter(aggregateTableName: String, eventSequenceNum: Long, batchSize: Int): List<EventRecord>
+    fun findBatchOfEventRecordAfter(
+        aggregateTableName: String, eventSequenceNum: Long, batchSize: Int
+    ): List<EventRecord>
 
     fun tableExists(aggregateTableName: String): Boolean
 
-    fun <T,E>updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot<T, E>)
+    fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot)
 
-    fun <T,E>findSnapshotByAggregateId(snapshotsTableName: String, aggregateId: Any): Snapshot<T,E>?
+    fun findSnapshotByAggregateId(snapshotsTableName: String, aggregateId: Any): Snapshot?
 
     fun findStreamReadIndex(streamName: String): EventStreamReadIndex?
 

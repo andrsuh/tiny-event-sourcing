@@ -1,9 +1,9 @@
 package ru.quipy.spring
 
-import com.fasterxml.jackson.core.type.TypeReference
 import org.bson.Document
+import kotlin.reflect.KClass
 
 interface MongoEntityConverter {
     fun <T : Any> convertObjectToBsonDocument(obj : T) : Document
-    fun <T> convertBsonDocumentToObject(document: Document, typeRef: TypeReference<T>) : T
+    fun <T : Any> convertBsonDocumentToObject(document: Document, clazz: KClass<T>) : T
 }

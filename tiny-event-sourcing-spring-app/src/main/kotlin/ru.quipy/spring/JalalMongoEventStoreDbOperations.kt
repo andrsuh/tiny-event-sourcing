@@ -1,7 +1,11 @@
 package ru.quipy.spring
 
-import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator
+import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.mongodb.DuplicateKeyException
 import com.mongodb.client.MongoClient
 import com.mongodb.client.MongoDatabase
@@ -15,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import ru.quipy.core.exceptions.DuplicateEventIdException
 import ru.quipy.database.EventStoreDbOperations
-import ru.quipy.demo.logic.ProjectAggregateState
 import ru.quipy.domain.*
 
 
@@ -36,26 +39,29 @@ class JalalMongoDbEventStoreDbOperations : EventStoreDbOperations {
     lateinit var databaseName: String
 
     @Autowired
-    lateinit var objectMapper: ObjectMapper;
+    lateinit var objectMapper: ObjectMapper
 
 
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
         val document = entityConverter.convertObjectToBsonDocument(eventRecord)
         try {
             getDatabase().getCollection(aggregateTableName).insertOne(document)
-        }catch(e: DuplicateKeyException) {
+        } catch (e: DuplicateKeyException) {
             throw DuplicateEventIdException("There is record with such an id. Record cannot be saved $eventRecord", e)
         }
     }
 
-    override fun tableExists(aggregateTableName: String) : Boolean {
+    override fun tableExists(aggregateTableName: String): Boolean {
         return getDatabase()
             .listCollectionNames()
             .into(ArrayList<String>())
             .contains(aggregateTableName)
     }
 
-    override fun <T, E> updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot<T, E>) {
+    override fun updateSnapshotWithLatestVersion(
+        tableName: String,
+        snapshot: Snapshot
+    ) {
         updateWithLatestVersion(tableName, snapshot);
     }
 
@@ -71,7 +77,7 @@ class JalalMongoDbEventStoreDbOperations : EventStoreDbOperations {
             .sort(Sorts.ascending("createdAt"))
             .limit(batchSize)
             .toList()
-            .map{ entityConverter.convertBsonDocumentToObject(it, object : TypeReference<EventRecord>() {}) }
+            .map { entityConverter.convertBsonDocumentToObject(it, EventRecord::class) }
     }
 
 
@@ -83,37 +89,42 @@ class JalalMongoDbEventStoreDbOperations : EventStoreDbOperations {
 
         return getDatabase()
             .getCollection(aggregateTableName)
-            .find(and(
-                eq("aggregateId", aggregateId),
-                gt("aggregateVersion", aggregateVersion)
-            )).toList().map{ entityConverter.convertBsonDocumentToObject(it, object : TypeReference<EventRecord>() {}) }
+            .find(
+                and(
+                    eq("aggregateId", aggregateId),
+                    gt("aggregateVersion", aggregateVersion)
+                )
+            ).toList().map { entityConverter.convertBsonDocumentToObject(it, EventRecord::class) }
     }
 
-    override fun <T, E> findSnapshotByAggregateId(snapshotsTableName: String, aggregateId: Any): Snapshot<T, E>? {
+    override fun findSnapshotByAggregateId(
+        snapshotsTableName: String,
+        aggregateId: Any
+    ): Snapshot? {
         val document = findOne(snapshotsTableName, aggregateId) ?: return null
-        return entityConverter.convertBsonDocumentToObject(document, object : TypeReference<Snapshot<T, E>>() {})
+        return entityConverter.convertBsonDocumentToObject(document, Snapshot::class)
     }
 
     override fun findStreamReadIndex(streamName: String): EventStreamReadIndex? {
         val document = findOne("event-stream-read-index", streamName) ?: return null
-        return entityConverter.convertBsonDocumentToObject(document, object : TypeReference<EventStreamReadIndex>() {})
+        return entityConverter.convertBsonDocumentToObject(document, EventStreamReadIndex::class)
     }
 
     override fun getActiveStreamReader(streamName: String): ActiveEventStreamReader? {
         val document = findOne("event-stream-active-readers", streamName) ?: return null
-        return entityConverter.convertBsonDocumentToObject(document, object : TypeReference<ActiveEventStreamReader>() {})
+        return entityConverter.convertBsonDocumentToObject(document, ActiveEventStreamReader::class)
     }
 
     override fun commitStreamReadIndex(readIndex: EventStreamReadIndex) {
         updateWithLatestVersion("event-stream-read-index", readIndex) // todo sukhoa make configurable?
     }
 
-    private fun getDatabase() : MongoDatabase {
+    private fun getDatabase(): MongoDatabase {
         return mongoClient.getDatabase(databaseName)
     }
 
-    private fun findOne(collectionName: String, id: Any) : Document? {
-       return getDatabase()
+    private fun findOne(collectionName: String, id: Any): Document? {
+        return getDatabase()
             .getCollection(collectionName)
             .find(eq("_id", id))
             .first()
@@ -132,7 +143,7 @@ class JalalMongoDbEventStoreDbOperations : EventStoreDbOperations {
                     .returnDocument(ReturnDocument.AFTER)
             ) ?: return null
 
-        return entityConverter.convertBsonDocumentToObject(result, object : TypeReference<T>() {})
+        return entityConverter.convertBsonDocumentToObject(result, T::class)
     }
 
     private inline fun <reified E> updateWithLatestVersion(

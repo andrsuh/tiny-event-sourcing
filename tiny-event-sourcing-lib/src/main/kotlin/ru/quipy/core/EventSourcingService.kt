@@ -1,12 +1,12 @@
 package ru.quipy.core
 
-import com.fasterxml.jackson.core.type.TypeReference
 import org.slf4j.LoggerFactory
 import ru.quipy.core.exceptions.DuplicateEventIdException
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.domain.*
 import ru.quipy.mapper.EventMapper
 import kotlin.reflect.KClass
+
 
 /**
  * Allows you to update aggregates and get the last state of the aggregate instances.
@@ -102,12 +102,11 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
 
     private fun getVersionedState(aggregateId: ID): Pair<Long, S> {
         var version = 0L
-
         val state =
-            eventStoreDbOperations.findSnapshotByAggregateId<ID, S>(eventSourcingProperties.snapshotTableName, aggregateId)
+            eventStoreDbOperations.findSnapshotByAggregateId(eventSourcingProperties.snapshotTableName, aggregateId)
                 ?.let {
                     version = it.version
-                    it.snapshot
+                    it.snapshot as S
                 } ?: aggregateInfo.instantiateFunction(aggregateId)
 
 
