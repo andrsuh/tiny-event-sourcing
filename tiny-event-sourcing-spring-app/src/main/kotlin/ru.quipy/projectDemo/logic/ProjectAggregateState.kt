@@ -1,24 +1,28 @@
-package ru.quipy.demo.logic
+package ru.quipy.projectDemo.logic
 
 import ru.quipy.core.annotations.StateTransitionFunc
-import ru.quipy.demo.api.ProjectAggregate
-import ru.quipy.demo.api.TagAssignedToTaskEvent
-import ru.quipy.demo.api.TagCreatedEvent
-import ru.quipy.demo.api.TaskCreatedEvent
 import ru.quipy.domain.AggregateState
+import ru.quipy.projectDemo.api.*
 import java.util.*
 
 // Service's business logic
-data class ProjectAggregateState(
-    override val aggregateId: String
-) : AggregateState<String, ProjectAggregate> {
-    override var createdAt: Long = System.currentTimeMillis()
-    override var updatedAt: Long = System.currentTimeMillis()
+class ProjectAggregateState: AggregateState<String, ProjectAggregate> {
+    private lateinit var projectId: String
+    var createdAt: Long = System.currentTimeMillis()
+    var updatedAt: Long = System.currentTimeMillis()
 
     var tasks = mutableMapOf<UUID, TaskEntity>()
     var projectTags = mutableMapOf<UUID, ProjectTag>()
 
+    override fun getId() = projectId
+
     // State transition functions
+    @StateTransitionFunc
+    fun projectCreatedApply(event: ProjectCreatedEvent) {
+        projectId = event.projectId
+        updatedAt = createdAt
+    }
+
     @StateTransitionFunc
     fun tagCreatedApply(event: TagCreatedEvent) {
         projectTags[event.tagId] = ProjectTag(event.tagId, event.tagName)

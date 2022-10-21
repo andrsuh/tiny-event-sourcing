@@ -9,10 +9,11 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import ru.quipy.core.EventSourcingService
-import ru.quipy.demo.api.ProjectAggregate
-import ru.quipy.demo.api.TagCreatedEvent
-import ru.quipy.demo.createTag
-import ru.quipy.demo.logic.ProjectAggregateState
+import ru.quipy.projectDemo.api.ProjectAggregate
+import ru.quipy.projectDemo.api.TagCreatedEvent
+import ru.quipy.projectDemo.create
+import ru.quipy.projectDemo.createTag
+import ru.quipy.projectDemo.logic.ProjectAggregateState
 import ru.quipy.streams.AggregateSubscriptionsManager
 import java.util.concurrent.TimeUnit
 
@@ -45,6 +46,10 @@ class StreamEventOrderingTest {
 
     @Test
     fun testEventOrder() {
+        esService.create {
+            it.create(testId)
+        }
+
         esService.update(testId) {
             it.createTag("1")
         }

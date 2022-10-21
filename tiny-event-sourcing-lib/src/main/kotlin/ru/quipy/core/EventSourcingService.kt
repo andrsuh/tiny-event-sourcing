@@ -2,6 +2,7 @@ package ru.quipy.core
 
 import org.slf4j.LoggerFactory
 import ru.quipy.core.exceptions.DuplicateEventIdException
+import ru.quipy.core.exceptions.EventRecordOptimisticLockException
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.domain.*
 import ru.quipy.mapper.EventMapper
@@ -22,14 +23,19 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
     }
 
     private val aggregateInfo =
-        aggregateRegistry.getStateTransitionInfo<ID, A, S>(aggregateClass) // todo sukhoa pass the only info?
+        aggregateRegistry.getStateTransitionInfo<ID, A, S>(aggregateClass)
             ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered")
+
+    fun <E : Event<A>> create(eventGenerationFunction: (a: S) -> E): E {
+        val emptyAggregateState = aggregateInfo.emptyStateCreator.invoke()
+        return tryUpdateState(emptyAggregateState, 0, eventGenerationFunction)
+    }
 
     /**
      * Allows to update aggregate by running some logic on aggregate state that results in [Event].
      *
      * [aggregateId] - refers to the ID of the aggregate instance for update. If no aggregate instance with
-     * given id found then will be created.
+     * given id found then IllegalArgumentException will be thrown.
      * [eventGenerationFunction] - method will construct the current aggregate instance state and pass it to this function.
      * You can run any logic/validations/invariants checks on this aggregate state and return the [Event] instance if case
      * everything is fine and update can be done. Just throw exception with a descriptive message otherwise e.g. "Name can't be empty".
@@ -51,53 +57,75 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
         while (true) { // spinlock
             val (currentVersion, aggregateState) = getVersionedState(aggregateId)
 
-            val updatedVersion = currentVersion + 1
-
-            val newEvent = try {
-                eventGenerationFunction(aggregateState)
-            } catch (e: Exception) {
-                logger.warn("Exception thrown during update: ", e)
-                throw e
+            if (currentVersion == 0L) {
+                throw IllegalArgumentException("Aggregate ${aggregateInfo.aggregateClass.simpleName} with id: $aggregateId do not exist. Use \"create\" method.")
             }
 
-            aggregateInfo
-                .getStateTransitionFunction(newEvent.name)
-                .performTransition(aggregateState, newEvent)
-
-            newEvent.version = updatedVersion
-
-            val eventRecord = EventRecord(
-                "$aggregateId-$updatedVersion",
-                aggregateId,
-                updatedVersion,
-                newEvent.name,
-                eventMapper.eventToString(newEvent)
-            )
-
             try {
-                eventStoreDbOperations.insertEventRecord(aggregateInfo.aggregateEventsTableName, eventRecord)
-            } catch (e: DuplicateEventIdException) {
-                logger.info("Optimistic lock exception. Failed to save event record id: ${eventRecord.id}")
+                return tryUpdateState(aggregateState, currentVersion, eventGenerationFunction)
+            } catch (e: EventRecordOptimisticLockException) {
+                logger.info("Optimistic lock exception. Failed to save event record id: ${e.eventRecord.id}")
 
                 if (numOfAttempts++ >= 20) // todo sukhoa weird
-                    throw IllegalStateException("Too many attempts to save event record: $eventRecord, event: ${eventRecord.payload}")
+                    throw IllegalStateException("Too many attempts to save event record: ${e.eventRecord}, event: ${e.eventRecord.payload}")
 
                 continue
             }
-
-            if (updatedVersion % eventSourcingProperties.snapshotFrequency == 0L) {
-                val snapshot = Snapshot(aggregateId, aggregateState, updatedVersion)
-                eventStoreDbOperations.updateSnapshotWithLatestVersion(
-                    eventSourcingProperties.snapshotTableName,
-                    snapshot
-                ) // todo sukhoa move this and frequency to aggregate-specific config
-            }
-
-            return newEvent
         }
     }
 
-    fun getState(aggregateId: ID): S = getVersionedState(aggregateId).second
+    private fun <E : Event<A>> tryUpdateState(
+        aggregateState: S,
+        currentStateVersion: Long,
+        eventGenerationFunction: (a: S) -> E
+    ): E {
+        val updatedVersion = currentStateVersion + 1
+
+        val newEvent = try {
+            eventGenerationFunction(aggregateState)
+        } catch (e: Exception) {
+            logger.warn("Exception thrown during update: ", e)
+            throw e
+        }
+
+        aggregateInfo
+            .getStateTransitionFunction(newEvent.name)
+            .performTransition(aggregateState, newEvent)
+
+        val aggregateId = aggregateState.getId()
+            ?: throw IllegalStateException("Aggregate ${aggregateInfo.aggregateClass.simpleName} state has null id after applying event $newEvent")
+
+        newEvent.version = updatedVersion
+
+        val eventRecord = EventRecord(
+            "$aggregateId-$updatedVersion",
+            aggregateId,
+            updatedVersion,
+            newEvent.name,
+            eventMapper.eventToString(newEvent)
+        )
+
+        try {
+            eventStoreDbOperations.insertEventRecord(aggregateInfo.aggregateEventsTableName, eventRecord)
+        } catch (e: DuplicateEventIdException) {
+            throw EventRecordOptimisticLockException(e.message, e.cause, eventRecord)
+        }
+
+        if (updatedVersion % eventSourcingProperties.snapshotFrequency == 0L) {
+            val snapshot = Snapshot(aggregateId, aggregateState, updatedVersion)
+            eventStoreDbOperations.updateSnapshotWithLatestVersion(
+                eventSourcingProperties.snapshotTableName,
+                snapshot
+            ) // todo sukhoa move this and frequency to aggregate-specific config
+        }
+
+        return newEvent
+    }
+
+    fun getState(aggregateId: ID): S? {
+        val versionedState = getVersionedState(aggregateId)
+        return if (versionedState.first != 0L) versionedState.second else null
+    }
 
     private fun getVersionedState(aggregateId: ID): Pair<Long, S> {
         var version = 0L
@@ -107,8 +135,7 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
                 ?.let {
                     version = it.version
                     it.snapshot as S
-                } ?: aggregateInfo.instantiateFunction(aggregateId)
-
+                } ?: aggregateInfo.emptyStateCreator()
 
         eventStoreDbOperations.findEventRecordsWithAggregateVersionGraterThan(
             aggregateInfo.aggregateEventsTableName,

@@ -16,10 +16,11 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import ru.quipy.core.EventSourcingService
-import ru.quipy.demo.addTask
-import ru.quipy.demo.api.ProjectAggregate
-import ru.quipy.demo.api.TaskCreatedEvent
-import ru.quipy.demo.logic.ProjectAggregateState
+import ru.quipy.projectDemo.addTask
+import ru.quipy.projectDemo.api.ProjectAggregate
+import ru.quipy.projectDemo.api.TaskCreatedEvent
+import ru.quipy.projectDemo.create
+import ru.quipy.projectDemo.logic.ProjectAggregateState
 import ru.quipy.streams.AggregateSubscriptionsManager
 import ru.quipy.streams.annotation.AggregateSubscriber
 import ru.quipy.streams.annotation.RetryConf
@@ -53,6 +54,9 @@ class EventStreamsTest {
     @BeforeEach
     fun init() {
         cleanDatabase()
+        demoESService.create { project ->
+            project.create(testId)
+        }
     }
 
     @Test

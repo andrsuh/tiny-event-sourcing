@@ -16,7 +16,7 @@ interface EventStoreDbOperations {
     /**
      * Appends event record in aggregate event log.
      *
-     * Throws [DuplicateEventIdException] if there is already event with same .
+     * Throws [DuplicateEventIdException] if there is already event with same.
      *
      * This is used to handle concurrency If one of the insertion operation running in parallel managed to insert
      * event, then others should retry their attempt including create aggregate state again, performing validations
