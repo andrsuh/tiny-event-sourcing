@@ -86,19 +86,70 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
                 continue
             }
 
-            if (updatedVersion % eventSourcingProperties.snapshotFrequency == 0L) {
-                val snapshot = Snapshot(aggregateId, aggregateState, updatedVersion)
-                eventStoreDbOperations.updateSnapshotWithLatestVersion(
-                    eventSourcingProperties.snapshotTableName,
-                    snapshot
-                ) // todo sukhoa move this and frequency to aggregate-specific config
-            }
-
+            makeSnapshotIfNecessary(aggregateId, aggregateState, updatedVersion)
             return newEvent
         }
     }
 
+
+    fun updateSerial(aggregateId: ID, eventGenerationFunction: (a: S) -> List<Event<A>>): List<Event<A>>{
+        var numOfAttempts = 0
+        while (true) { // spinlock
+            val (currentVersion, aggregateState) = getVersionedState(aggregateId)
+
+            val newEvents = try {
+                eventGenerationFunction(aggregateState)
+            } catch (e: Exception) {
+                logger.warn("Exception thrown during update: ", e)
+                throw e
+            }
+
+            var updatedVersion = currentVersion
+
+            newEvents.forEach { newEvent ->
+                aggregateInfo
+                    .getStateTransitionFunction(newEvent.name)
+                    .performTransition(aggregateState, newEvent)
+                newEvent.version = ++updatedVersion
+            }
+
+            val eventRecords = newEvents.map {
+                EventRecord(
+                    "$aggregateId-${it.version}",
+                    aggregateId,
+                    it.version,
+                    it.name,
+                    eventMapper.eventToString(it)
+                )
+            }
+
+            try {
+                eventStoreDbOperations.insertEventRecords(aggregateInfo.aggregateEventsTableName, eventRecords)
+            } catch (e: DuplicateEventIdException) {
+                logger.info("Optimistic lock exception. Failed to save event records id: ${eventRecords.map { it.id }}")
+
+                if (numOfAttempts++ >= 20) // todo sukhoa weird
+                    throw IllegalStateException("Too many attempts to save event records: $eventRecords")
+
+                continue
+            }
+
+            makeSnapshotIfNecessary(aggregateId, aggregateState, updatedVersion)
+            return newEvents
+        }
+    }
+
     fun getState(aggregateId: ID): S = getVersionedState(aggregateId).second
+
+    private fun makeSnapshotIfNecessary(aggregateId: ID, aggregateState: S, updatedVersion: Long) {
+        if (updatedVersion % eventSourcingProperties.snapshotFrequency == 0L) {
+            val snapshot = Snapshot(aggregateId, aggregateState, updatedVersion)
+            eventStoreDbOperations.updateSnapshotWithLatestVersion(
+                eventSourcingProperties.snapshotTableName,
+                snapshot
+            ) // todo sukhoa move this and frequency to aggregate-specific config
+        }
+    }
 
     private fun getVersionedState(aggregateId: ID): Pair<Long, S> {
         var version = 0L

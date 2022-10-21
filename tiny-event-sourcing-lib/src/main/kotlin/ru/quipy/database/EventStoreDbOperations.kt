@@ -28,6 +28,9 @@ interface EventStoreDbOperations {
     @Throws(exceptionClasses = [DuplicateEventIdException::class])
     fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord)
 
+    @Throws(exceptionClasses = [DuplicateEventIdException::class])
+    fun insertEventRecords(aggregateTableName: String, eventRecords: List<EventRecord>)
+
     /**
      * Aggregate state version is the number of events that should be applied to empty aggregate state to get current state.
      *
