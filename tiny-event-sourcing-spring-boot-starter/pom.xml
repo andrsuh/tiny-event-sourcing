@@ -9,11 +9,11 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>tiny-event-sourcing-config-spring-boot-starter</artifactId>
+    <artifactId>tiny-event-sourcing-spring-boot-starter</artifactId>
 
     <version>2.0.1-SNAPSHOT</version>
-    <name>tiny-event-sourcing-config-spring-boot-starter</name>
-    <description>Tiny event sourcing config spring boot starter</description>
+    <name>tiny-event-sourcing-spring-boot-starter</name>
+    <description>Tiny event sourcing spring boot starter</description>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
