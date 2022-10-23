@@ -18,9 +18,9 @@ import java.util.*
 import javax.annotation.PostConstruct
 
 @Configuration
-class EventSourcingApplicationConfiguration {
+class AppConfiguration {
 
-    private val logger = LoggerFactory.getLogger(EventSourcingApplicationConfiguration::class.java)
+    private val logger = LoggerFactory.getLogger(AppConfiguration::class.java)
 
     @Autowired
     private lateinit var subscriptionsManager: AggregateSubscriptionsManager
