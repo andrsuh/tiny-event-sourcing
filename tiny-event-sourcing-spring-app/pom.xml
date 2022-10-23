@@ -37,12 +37,6 @@
 
     <dependencies>
         <dependency>
-            <artifactId>tiny-event-sourcing-lib</artifactId>
-            <groupId>ru.quipy</groupId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
             <artifactId>tiny-event-sourcing-config-spring-boot-starter</artifactId>
             <groupId>ru.quipy</groupId>
             <version>${project.version}</version>
