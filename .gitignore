@@ -1,2 +1,14 @@
 # Project exclude paths
-/target/
+**/target/
+
+# IDEA files
+
+.idea/libraries/**
+.idea/compiler.xml
+.idea/jarRepositories.xml
+.idea/kotlinc.xml
+.idea/vcs.xml
+.idea/misc.xml
+.idea/modules.xml
+
+**/*.iml
