@@ -96,7 +96,9 @@ See the example of how to define [aggregate state](#define-aggregate-state) and 
 
 First thing you have to do is to define your aggregates, their states, events, commands and state transition functions. See example [here](#example-of-how-to-use-library)
 
-Also, you have to instantiate or implement the following classes/interfaces:
+### Manual library configuration
+
+If you use pure library without any frameworks, you have to instantiate or implement the following classes/interfaces:
 - Interface `EventMapper` that allows to map some row representation (json String by default) of event to instance of `Event` class and vice versa. There is default implementation for event represented in json format `JsonEventMapper` .
 - Class `EventSourcingProperties` contains properties for event sourcing library. You can instantiate the class the default values or read some configuration file and initialize config with this values
 - Interface `AggregateRegistry` acts as a local storage of the aggregates and their events meta-information. Provides methods to store (register) this meta-information. Library provides two implementation of the interface: `SeekingForSuitableClassesAggregateRegistry` and `BasicAggregateRegistry` . First automatically scans the classpath (you can define the package for scan in properties) and find all the classes that are marked with `AggregateType` and extend `Aggregate` as well as those marked with `DomainEvent` and extend `Event`  and register them. `BasicAggregateRegistry` requires all the aggregates and event to be manually registered. (**todo example**)
@@ -105,6 +107,10 @@ Also, you have to instantiate or implement the following classes/interfaces:
 
 Here is the class diagram
 ![ConfigClassDiagram](images/ConfigClassDiagramm.png)
+
+### Spring application configuration
+
+There is [Spring Boot starter](tiny-event-sourcing-spring-boot-starter) module provided with the library, which can create for you most infrastructure classes and add them to the context. So if you want to create a Spring application, you can simply add dependency on this module like it performed in [this sample application](tiny-event-sourcing-spring-app).
 
 # Example of how to use library
 

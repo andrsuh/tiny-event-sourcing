@@ -18,9 +18,9 @@ import java.util.*
 import javax.annotation.PostConstruct
 
 @Configuration
-class EventSourcingApplicationConfiguration {
+class ProjectDemoConfig {
 
-    private val logger = LoggerFactory.getLogger(EventSourcingApplicationConfiguration::class.java)
+    private val logger = LoggerFactory.getLogger(ProjectDemoConfig::class.java)
 
     @Autowired
     private lateinit var subscriptionsManager: AggregateSubscriptionsManager
@@ -61,9 +61,5 @@ class EventSourcingApplicationConfiguration {
 
     @Bean
     fun demoESService() = eventSourcingServiceFactory.create<String, ProjectAggregate, ProjectAggregateState>()
-
-    @Bean
-    fun bankESService(): EventSourcingService<UUID, AccountAggregate, Account> =
-        eventSourcingServiceFactory.create()
 
 }

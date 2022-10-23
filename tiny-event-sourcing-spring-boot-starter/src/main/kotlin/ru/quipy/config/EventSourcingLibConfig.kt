@@ -1,4 +1,4 @@
-package ru.quipy.spring
+package ru.quipy.config
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -12,20 +12,18 @@ import ru.quipy.streams.AggregateEventStreamManager
 import ru.quipy.streams.AggregateSubscriptionsManager
 
 @Configuration
-open class SpringAppConfig {
+class EventSourcingLibConfig {
     @Bean
     fun jsonObjectMapper() = jacksonObjectMapper()
 
-    @Bean
-    //@ConditionalOnMissingBean(EventMapper::class)
+    @Bean//@ConditionalOnMissingBean(EventMapper::class)
     fun eventMapper(jsonObjectMapper: ObjectMapper) = JsonEventMapper(jsonObjectMapper)
 
     @Bean
     @ConfigurationProperties(prefix = "event.sourcing")
     fun configProperties() = EventSourcingProperties()
 
-    @Bean
-    //@ConditionalOnBean(MongoTemplate::class)
+    @Bean//@ConditionalOnBean(MongoTemplate::class)
     fun eventStoreDbOperations() = MongoDbEventStoreDbOperations()
 
     @Bean(initMethod = "init")

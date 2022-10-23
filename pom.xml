@@ -8,6 +8,7 @@
     <modules>
         <module>tiny-event-sourcing-lib</module>
         <module>tiny-event-sourcing-spring-app</module>
+        <module>tiny-event-sourcing-spring-boot-starter</module>
     </modules>
 
     <groupId>ru.quipy</groupId>
