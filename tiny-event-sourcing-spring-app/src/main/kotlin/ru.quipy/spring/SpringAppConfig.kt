@@ -2,6 +2,7 @@ package ru.quipy.spring
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.mongodb.client.MongoClients
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -9,6 +10,8 @@ import org.springframework.data.mongodb.MongoDatabaseFactory
 import org.springframework.data.mongodb.MongoTransactionManager
 import ru.quipy.core.*
 import ru.quipy.database.EventStoreDbOperations
+import ru.quipy.eventstore.JacksonMongoEntityConverter
+import ru.quipy.eventstore.MongoClientDbEventStoreDbOperations
 import ru.quipy.mapper.JsonEventMapper
 import ru.quipy.streams.AggregateEventStreamManager
 import ru.quipy.streams.AggregateSubscriptionsManager
@@ -28,16 +31,19 @@ class SpringAppConfig {
 
 
     @Bean
-    fun mongoEntityConverter() : MongoEntityConverter = JacksonMongoEntityConverter()
-
-
-    @Bean
     fun transactionManager(dbFactory: MongoDatabaseFactory): MongoTransactionManager {
         return MongoTransactionManager(dbFactory)
     }
+
     @Bean
     //@ConditionalOnBean(MongoTemplate::class)
-    fun eventStoreDbOperations() = JalalMongoDbEventStoreDbOperations()
+    fun eventStoreDbOperations() : EventStoreDbOperations {
+        return MongoClientDbEventStoreDbOperations(
+            MongoClients.create("mongodb://localhost:27017"),
+            "tiny-es",
+            JacksonMongoEntityConverter()
+        )
+    }
 
     @Bean(initMethod = "init")
     fun aggregateRegistry(eventSourcingProperties: EventSourcingProperties) =

@@ -1,11 +1,5 @@
-package ru.quipy.spring
+package ru.quipy.eventstore
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator
-import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator
-import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.mongodb.DuplicateKeyException
 import com.mongodb.client.MongoClient
 import com.mongodb.client.MongoDatabase
@@ -14,33 +8,22 @@ import com.mongodb.client.model.FindOneAndReplaceOptions
 import com.mongodb.client.model.ReturnDocument
 import com.mongodb.client.model.Sorts
 import org.bson.Document
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import ru.quipy.core.exceptions.DuplicateEventIdException
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.domain.*
 
 
-//TODO Sevabeat change class name
-class JalalMongoDbEventStoreDbOperations : EventStoreDbOperations {
+class MongoClientDbEventStoreDbOperations(
+    private val mongoClient: MongoClient,
+    private val databaseName: String,
+    private val entityConverter: MongoEntityConverter
+) : EventStoreDbOperations {
+
     companion object {
-        val logger = LoggerFactory.getLogger(MongoDbEventStoreDbOperations::class.java)
+        val logger: Logger = LoggerFactory.getLogger(MongoClientDbEventStoreDbOperations::class.java)
     }
-
-    @Autowired
-    lateinit var mongoClient: MongoClient
-
-
-    @Autowired
-    lateinit var entityConverter: MongoEntityConverter
-
-    @Value("\${spring.data.mongodb.database}")
-    lateinit var databaseName: String
-
-    @Autowired
-    lateinit var objectMapper: ObjectMapper
-
 
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
         val document = entityConverter.convertObjectToBsonDocument(eventRecord)
@@ -48,6 +31,27 @@ class JalalMongoDbEventStoreDbOperations : EventStoreDbOperations {
             getDatabase().getCollection(aggregateTableName).insertOne(document)
         } catch (e: DuplicateKeyException) {
             throw DuplicateEventIdException("There is record with such an id. Record cannot be saved $eventRecord", e)
+        }
+    }
+
+    override fun insertEventRecords(aggregateTableName: String, eventRecords: List<EventRecord>) {
+        val session = mongoClient.startSession();
+        session.use { clientSession ->
+            try {
+                clientSession.startTransaction()
+                getDatabase().getCollection(aggregateTableName).insertMany(
+                    eventRecords.map { entityConverter.convertObjectToBsonDocument(it) }
+                )
+                clientSession.commitTransaction()
+            } catch (e: DuplicateKeyException) {
+                clientSession.abortTransaction()
+                throw DuplicateEventIdException(
+                    "There is record with such an id. Records cannot be saved $eventRecords",
+                    e
+                )
+            } catch (e: Exception) {
+                clientSession.abortTransaction()
+            }
         }
     }
 
