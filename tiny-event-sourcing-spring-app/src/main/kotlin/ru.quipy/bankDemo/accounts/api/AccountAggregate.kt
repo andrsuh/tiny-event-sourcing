@@ -1,4 +1,4 @@
-package ru.quipy.bankDemo.api
+package ru.quipy.bankDemo.accounts.api
 
 import ru.quipy.core.annotations.AggregateType
 import ru.quipy.domain.Aggregate

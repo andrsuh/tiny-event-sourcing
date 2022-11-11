@@ -127,21 +127,30 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
         return if (versionedState.first != 0L) versionedState.second else null
     }
 
-    private fun getVersionedState(aggregateId: ID): Pair<Long, S> {
+    fun getStateOfVersion(aggregateId: ID, version: Long): S? {
+        val versionedState = getVersionedState(aggregateId, version)
+        return if (versionedState.first != 0L) versionedState.second else null
+    }
+
+    private fun getVersionedState(aggregateId: ID, certainVersion: Long? = null): Pair<Long, S> {
         var version = 0L
 
-        val state =
-            eventStoreDbOperations.findSnapshotByAggregateId(eventSourcingProperties.snapshotTableName, aggregateId)
-                ?.let {
-                    version = it.version
-                    it.snapshot as S
-                } ?: aggregateInfo.emptyStateCreator()
+        val (initialState, initialVersion) = getInitialState(aggregateId)
+
+        val state = when {
+            certainVersion != null -> aggregateInfo.emptyStateCreator()
+            else -> {
+                version = initialVersion
+                initialState
+            }
+        }
 
         eventStoreDbOperations.findEventRecordsWithAggregateVersionGraterThan(
             aggregateInfo.aggregateEventsTableName,
             aggregateId,
             version
         )
+            .filter { eventRecord -> certainVersion == null || eventRecord.aggregateVersion <= certainVersion }
             .map { eventRecord ->
                 eventMapper.toEvent(
                     eventRecord.payload,
@@ -157,4 +166,11 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
 
         return version to state
     }
+
+    private fun getInitialState(aggregateId: ID): Pair<S, Long> =
+        eventStoreDbOperations.findSnapshotByAggregateId(eventSourcingProperties.snapshotTableName, aggregateId)
+            ?.let {
+                it.snapshot as S to it.version
+            } ?: (aggregateInfo.emptyStateCreator() to 0L)
+
 }
