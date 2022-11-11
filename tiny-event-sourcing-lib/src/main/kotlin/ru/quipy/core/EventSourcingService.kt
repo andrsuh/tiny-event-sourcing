@@ -121,7 +121,6 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
         makeSnapshotIfNecessary(aggregateId, aggregateState, updatedVersion)
         return newEvent
         }
-    }
 
 
     fun updateSerial(aggregateId: ID, eventGenerationFunction: (a: S) -> List<Event<A>>): List<Event<A>>{
@@ -151,7 +150,7 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
                     aggregateId,
                     it.version,
                     it.name,
-                    EventMapper.eventToString(it)
+                    eventMapper.eventToString(it)
                 )
             }
 
@@ -171,7 +170,7 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
         }
     }
 
-    fun getState(aggregateId: ID): S = getVersionedState(aggregateId).second
+    fun getStateOld(aggregateId: ID): S = getVersionedState(aggregateId).second
 
     private fun makeSnapshotIfNecessary(aggregateId: ID, aggregateState: S, updatedVersion: Long) {
         if (updatedVersion % eventSourcingProperties.snapshotFrequency == 0L) {
