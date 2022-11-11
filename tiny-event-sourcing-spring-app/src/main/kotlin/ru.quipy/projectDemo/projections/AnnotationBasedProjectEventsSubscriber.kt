@@ -1,11 +1,11 @@
-package ru.quipy.demo.projections
+package ru.quipy.projectDemo.projections
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import ru.quipy.demo.api.ProjectAggregate
-import ru.quipy.demo.api.TagCreatedEvent
-import ru.quipy.demo.api.TaskCreatedEvent
+import ru.quipy.projectDemo.api.ProjectAggregate
+import ru.quipy.projectDemo.api.TagCreatedEvent
+import ru.quipy.projectDemo.api.TaskCreatedEvent
 import ru.quipy.streams.annotation.AggregateSubscriber
 import ru.quipy.streams.annotation.SubscribeEvent
 

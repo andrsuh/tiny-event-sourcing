@@ -72,19 +72,21 @@ In our library the command of `Aggregate` N can be any function that takes insta
 
 Aggregate state represents the state of an aggregate instance after applying some number of changes (events).
 
-Aggregate instance has a version. It shows the number of events that was applied to the state starting with empty state.
+Aggregate instance may have a version. It shows the number of events that was applied to the state starting with empty state.
 
 Every new event (change / update) will introduce some changing in an aggregate state. So far as we persist events, not the bare aggregate we will be able to get the state of the aggregate at any point of time by getting all the events up to some version and iteratively "applying" all these events to the aggregate state starting from empty state.
 
 What do we mean by “applying” changes? Interface `AggregateStateTransitionFunction` represents a simple function that takes aggregate state, some aggregate's event and applies the changes described by the event to the state producing the next (updated) state.
-You have to implement the logic of applying for each event of an aggregate. Such a function as member might be implemented as an extension functions of the aggregate state and should be marked with `StateTransitionFunc` annotation.
+You have to implement the logic of applying for each event of an aggregate. Such a function might be implemented both as the member of the aggregate state and as an extension function of the aggregate state and should be marked with `StateTransitionFunc` annotation.
 
 The library code during update:
 
 - Retrieves all the aggregate’s instance events from DB
-- Build the current aggregate state by creating the empty aggregate state and iteratively applying all the event in the insertion order to it. (snapshots optimization is available)
+- Build the current aggregate state by:
+  - Creating the empty aggregate state (your state class **must have an empty constructor** for this purpose)
+  - Iteratively applying all the event in the insertion order to it. (snapshots optimization is also available)
 - Tries to apply new event to the current state to check if it is applicable indeed
-- If some parallel process managed to update aggregate earlier than process ran by you (read: they were running simultaneously, but not yours won) you have to repeat your attempt. Just because the state of the aggregate changed and now some of the validations may fail or some invariants may be breached. Library takes care of such cases. You may not to think about the concurrency troubles - your responsibility is just define aggregates, events and business logic - commands with validations and other checks and events with how they should be applied to an aggregate state.
+- If some parallel process managed to update aggregate earlier than process ran by you (read: they were running simultaneously, but not yours won) you have to repeat your attempt. Just because the state of the aggregate changed and now some of the validations may fail or some invariants may be broken. Library takes care of such cases. You may not to think about the concurrency troubles - your responsibility is just define aggregates, events and business logic - commands with validations and other checks and events with how they should be applied to an aggregate state.
 
 See the example of how to define [aggregate state](#define-aggregate-state) and state [transition functions](#define-aggregate-state-transition-functions)
 
@@ -94,15 +96,21 @@ See the example of how to define [aggregate state](#define-aggregate-state) and 
 
 First thing you have to do is to define your aggregates, their states, events, commands and state transition functions. See example [here](#example-of-how-to-use-library)
 
-Also, you have to instantiate or implement the following classes/interfaces:
+### Manual library configuration
+
+If you use pure library without any frameworks, you have to instantiate or implement the following classes/interfaces:
 - Interface `EventMapper` that allows to map some row representation (json String by default) of event to instance of `Event` class and vice versa. There is default implementation for event represented in json format `JsonEventMapper` .
 - Class `EventSourcingProperties` contains properties for event sourcing library. You can instantiate the class the default values or read some configuration file and initialize config with this values
-- Interface `AggregateRegistry` acts as a local storage of the aggregates and their events meta-information. Provides methods to store (register) this meta-information. Library provides two implementation of the interface: `SeekingForSuitableClassesAggregateRegistry` and `BasicAggregateRegistry` . First automatically scans the classpath (you can define the package for scan in properties) and find all the classes that are marked with `AggregateType` and extend `Aggregate` as well as those marked with `DomainEvent` and extend `Event`  and register them. `BasicAggregateRegistry` requires all the aggregates and event to be manually registered. (**Example**)
+- Interface `AggregateRegistry` acts as a local storage of the aggregates and their events meta-information. Provides methods to store (register) this meta-information. Library provides two implementation of the interface: `SeekingForSuitableClassesAggregateRegistry` and `BasicAggregateRegistry` . First automatically scans the classpath (you can define the package for scan in properties) and find all the classes that are marked with `AggregateType` and extend `Aggregate` as well as those marked with `DomainEvent` and extend `Event`  and register them. `BasicAggregateRegistry` requires all the aggregates and event to be manually registered. (**todo example**)
 - Interface `EventStoreDbOperations` abstracts away the DB access. Provides the operations for event sourcing functioning. You can provide your own implementation of EventStoreDbOperations and run event sourcing app working on any DB you wish under the hood. There is implementation of `EventStoreDbOperations` which uses MongoDB and can be used only for Spring apps.
 - Class `EventSourcingService` for each of the aggregates in your domain. Allows you to update aggregates and get the last state of the aggregate instances. It's convenient to use `EventSourcingServiceFactory` for instantiation of the `EventSourcingService` instances. See [here](#performing-updates-operation-under-the-aggregates).
 
 Here is the class diagram
 ![ConfigClassDiagram](images/ConfigClassDiagramm.png)
+
+### Spring application configuration
+
+There is [Spring Boot starter](tiny-event-sourcing-spring-boot-starter) module provided with the library, which can create for you most infrastructure classes and add them to the context. So if you want to create a Spring application, you can simply add dependency on this module like it performed in [this sample application](tiny-event-sourcing-spring-app).
 
 # Example of how to use library
 
@@ -128,14 +136,15 @@ User written Aggregate class has to implement Aggregate interface-marker from th
 
 Now we need some class that describes the inner state of the aggregate instance at different points of time. It's used only for your service and can be defined this way:
 ```kotlin
-data class ProjectAggregateState(
-    override val aggregateId: String
-) : AggregateState<String, ProjectAggregate> {
-    override var createdAt: Long = System.currentTimeMillis()
-    override var updatedAt: Long = System.currentTimeMillis()
+class ProjectAggregateState: AggregateState<String, ProjectAggregate> {
+  private lateinit var projectId: String
+  private var createdAt: Long = System.currentTimeMillis()
+  private var updatedAt: Long = System.currentTimeMillis()
 
-    private var tasks = mutableMapOf<UUID, TaskEntity>()
-    private var projectTags = mutableMapOf<UUID, ProjectTag>()
+  private var tasks = mutableMapOf<UUID, TaskEntity>()
+  private var projectTags = mutableMapOf<UUID, ProjectTag>()
+
+  override fun getId() = projectId
 }
 
 // nested aggregate entity
@@ -152,6 +161,7 @@ data class ProjectTag(
 )
 ```
 As you can see here we define the aggregate state with all of its internals - nested entities and any other fields you wish. It just should reflect the state of the aggregate.
+Note that we have to implement method `fun getId()` defined by `ProjectAggregateState` and pay attention to its contract. It returns the aggregate ID or null if the state is just created (empty, initial state). The ID should be assigned by the first aggregate command-event pair.
 Note, that State should have a constructor with a single parameter - id
 
 ## Define Domain events
@@ -179,7 +189,8 @@ This is how this event with its meta-information looks in database:
 ## Define commands
 Commands in our library are represented by methods that take current aggregate state, perform all checks and validations and produces event if changes is allowed and legit. For example, it may be a member function of the aggregate or extension function.
 ```kotlin
-fun UserAggregateState.createUserCommand(
+fun UserAggregate.createUserCommand(
+   userId: UUID = UUID.randomUUID(),
    name: String,
    password: String,
    login: String
@@ -195,7 +206,7 @@ fun UserAggregateState.createUserCommand(
    }
    
    return UserCreatedEvent(
-      userId = aggregateId,
+      userId = userId,
       userLogin = login,
       userPassword = password,
       userName = name
@@ -210,15 +221,16 @@ Each event describes changes that move aggregate state N to the next state N + 1
 If we take all the events (N events) from aggregate event log and iteratively call corresponding transition functions starting with an empty aggregate state, it will go over N state transitions and will end up in the most actual state.
 You can define them as member or extension functions of the aggregate state and mark with `StateTransitionFunc` annotation. Let's look at the example:
 ```kotlin
-data class ProjectAggregateState(
-    override val aggregateId: String
-) : AggregateState<String, ProjectAggregate> {
-    override var createdAt: Long = System.currentTimeMillis()
-    override var updatedAt: Long = System.currentTimeMillis()
+class ProjectAggregateState: AggregateState<String, ProjectAggregate> {
+     private lateinit var projectId: String
+     private var createdAt: Long = System.currentTimeMillis()
+     private var updatedAt: Long = System.currentTimeMillis()
 
-    private var tasks = mutableMapOf<UUID, TaskEntity>()
-    private var projectTags = mutableMapOf<UUID, ProjectTag>()
+     private var tasks = mutableMapOf<UUID, TaskEntity>()
+     private var projectTags = mutableMapOf<UUID, ProjectTag>()
 
+     override fun getId() = projectId
+  
     @StateTransitionFunc
     fun tagCreatedApply(event: TagCreatedEvent) {
         projectTags[event.tagId] = ProjectTag(event.tagId, event.tagName)
@@ -244,15 +256,23 @@ fun ProjectAggregateState.tagAssignedApply(event: TagAssignedToTaskEvent) {
 
 You have to use `EventSourcingService` class instance to perform updates on an aggregate. The easiest way to create it id to use `EventSourcingServiceFactory` instance. It's parametrized with ID type of the aggregate, aggregate class type and it's state type.
 ```kotlin
- eventSourcingServiceFactory.getOrCreateService<String, ProjectAggregate, ProjectAggregateState>(ProjectAggregate::class)
+ eventSourcingServiceFactory.create<String, ProjectAggregate, ProjectAggregateState>()
 ```
 
-Once you have the instance of `EventSourcingService<UserAggregate>` you can inject it whenever you wish and use method `update` to do some changes on aggregate. The method takes two parameters - `aggregateId` and `eventGenerationFunction`. First one doesn't require any explanations. The second parameter is a function that takes the aggregate state and returns event if change is legit. In other words - it is a command. Look at how can you use it:
+Once you have the instance of `EventSourcingService<UserAggregate>` you can inject it whenever you wish and use `create` method to create the aggregate instance.
+```kotlin
+projectEventSourcingService.create { project ->
+    project.createNew(projectId = UUID.randomUUID(), title = "My first project")
+}
+```
+
+Then you can use method `update` to do some changes on aggregate. The method takes two parameters - `aggregateId` and `eventGenerationFunction`. First one doesn't require any explanations. The second parameter is a function that takes the aggregate state and returns event if change is legit. In other words - it is a command. Look at how can you use it:
 ```kotlin
 projectEventSourcingService.update(projectId) { project ->
     project.addTask("New task for you!")
 }
 ```
+
 
 ## Define Subscribers
 Second important concept of this example are subscribers. You can make subscriptions in two ways.

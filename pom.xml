@@ -8,6 +8,7 @@
     <modules>
         <module>tiny-event-sourcing-lib</module>
         <module>tiny-event-sourcing-spring-app</module>
+        <module>tiny-event-sourcing-spring-boot-starter</module>
         <module>tiny-event-sourcing-mongodb-operations</module>
     </modules>
 

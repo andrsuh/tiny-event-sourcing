@@ -1,22 +1,26 @@
-package ru.quipy.demo.config
+package ru.quipy.projectDemo.config
 
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import ru.quipy.bankDemo.api.AccountAggregate
+import ru.quipy.bankDemo.logic.Account
 import ru.quipy.core.AggregateRegistry
+import ru.quipy.core.EventSourcingService
 import ru.quipy.core.EventSourcingServiceFactory
-import ru.quipy.demo.projections.AnnotationBasedProjectEventsSubscriber
-import ru.quipy.demo.api.ProjectAggregate
-import ru.quipy.demo.logic.ProjectAggregateState
+import ru.quipy.projectDemo.api.ProjectAggregate
+import ru.quipy.projectDemo.logic.ProjectAggregateState
+import ru.quipy.projectDemo.projections.AnnotationBasedProjectEventsSubscriber
 import ru.quipy.streams.AggregateEventStreamManager
 import ru.quipy.streams.AggregateSubscriptionsManager
+import java.util.*
 import javax.annotation.PostConstruct
 
 @Configuration
-class EventSourcingApplicationConfiguration {
+class ProjectDemoConfig {
 
-    private val logger = LoggerFactory.getLogger(EventSourcingApplicationConfiguration::class.java)
+    private val logger = LoggerFactory.getLogger(ProjectDemoConfig::class.java)
 
     @Autowired
     private lateinit var subscriptionsManager: AggregateSubscriptionsManager
@@ -56,6 +60,6 @@ class EventSourcingApplicationConfiguration {
     }
 
     @Bean
-    fun demoESService() = eventSourcingServiceFactory.getOrCreateService<String, ProjectAggregate, ProjectAggregateState>(ProjectAggregate::class)
+    fun demoESService() = eventSourcingServiceFactory.create<String, ProjectAggregate, ProjectAggregateState>()
 
 }

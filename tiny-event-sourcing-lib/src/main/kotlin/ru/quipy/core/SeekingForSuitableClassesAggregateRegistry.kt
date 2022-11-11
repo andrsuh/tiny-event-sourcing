@@ -54,7 +54,7 @@ class SeekingForSuitableClassesAggregateRegistry(
         val events = refs.getTypesAnnotatedWith(DomainEvent::class.java).map {
             val eventClass = it
             var c = it
-            while (c.superclass != Event::class.java) {
+            while (c.superclass != Event::class.java) { // todo sukhoa is it possible to get infinite loop
                 c = c.superclass
             }
             // class might have more than one superclass

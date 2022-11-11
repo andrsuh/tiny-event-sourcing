@@ -12,10 +12,11 @@ interface Unique<ID> { // todo sukhoa rename this stuff
 
 interface Aggregate
 
-interface AggregateState<ID, A : Aggregate> {
-    val aggregateId: ID
-    var createdAt: Long
-    var updatedAt: Long
+interface AggregateState<ID, A : Aggregate> { // todo sukhoa add version of the state
+    /**
+     * Returns the ID of the aggregate or null if state is empty
+     */
+    fun getId(): ID?
 }
 
 fun interface AggregateStateTransitionFunction<A : Aggregate, E : Event<A>, S : AggregateState<*, A>> {
