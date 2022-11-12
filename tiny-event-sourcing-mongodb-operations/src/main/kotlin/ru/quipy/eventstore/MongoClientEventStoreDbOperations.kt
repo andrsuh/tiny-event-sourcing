@@ -1,6 +1,8 @@
 package ru.quipy.eventstore
 
 import com.mongodb.DuplicateKeyException
+import com.mongodb.ErrorCategory
+import com.mongodb.MongoCommandException
 import com.mongodb.client.MongoClient
 import com.mongodb.client.MongoDatabase
 import com.mongodb.client.model.Filters.*
@@ -13,7 +15,6 @@ import org.slf4j.LoggerFactory
 import ru.quipy.core.exceptions.DuplicateEventIdException
 import ru.quipy.database.EventStoreDbOperations
 import ru.quipy.domain.*
-
 
 class MongoClientDbEventStoreDbOperations(
     private val mongoClient: MongoClient,
@@ -66,7 +67,7 @@ class MongoClientDbEventStoreDbOperations(
         tableName: String,
         snapshot: Snapshot
     ) {
-        updateWithLatestVersion(tableName, snapshot);
+        updateWithLatestVersion(tableName, snapshot)
     }
 
     override fun findBatchOfEventRecordAfter(
@@ -137,11 +138,14 @@ class MongoClientDbEventStoreDbOperations(
     private inline fun <reified T> replaceOlderEntityOrInsert(
         tableName: String, replacement: T
     ): T? where T : Versioned, T : Unique<*> {
+        println(replacement.id)
+        val document = entityConverter.convertObjectToBsonDocument(replacement);
+        document.remove("_id")
         val result = getDatabase()
             .getCollection(tableName)
             .findOneAndReplace(
                 and(eq("_id", replacement.id), lt("version", replacement.version)),
-                entityConverter.convertObjectToBsonDocument(replacement),
+                document,
                 FindOneAndReplaceOptions()
                     .upsert(true)
                     .returnDocument(ReturnDocument.AFTER)
@@ -155,8 +159,10 @@ class MongoClientDbEventStoreDbOperations(
         entity: E
     ): E? where E : Versioned, E : Unique<*> = try {
         replaceOlderEntityOrInsert(tableName, entity)
-    } catch (e: DuplicateKeyException) {
-        logger.info("Entity concurrent update led to clashing. Entity: $entity, table name: $tableName", e)
-        null
+    } catch (e: MongoCommandException) {
+        if(ErrorCategory.fromErrorCode(e.errorCode) == ErrorCategory.DUPLICATE_KEY) {
+            logger.info("Entity concurrent update led to clashing. Entity: $entity, table name: $tableName", e)
+            null
+        }else throw e
     }
 }

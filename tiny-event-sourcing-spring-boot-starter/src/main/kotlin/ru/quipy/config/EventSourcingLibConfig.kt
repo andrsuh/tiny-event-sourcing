@@ -2,7 +2,10 @@ package ru.quipy.config
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.mongodb.ConnectionString
+import com.mongodb.MongoClientSettings
 import com.mongodb.client.MongoClients
+import org.bson.UuidRepresentation
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -31,8 +34,14 @@ class EventSourcingLibConfig {
     @Bean
     //@ConditionalOnBean(MongoTemplate::class)
     fun eventStoreDbOperations() : EventStoreDbOperations {
+//        return MongoDbEventStoreDbOperations()
+        val clientSettings: MongoClientSettings =
+            MongoClientSettings.builder()
+                .applyConnectionString(ConnectionString("mongodb://localhost:27017"))
+                .uuidRepresentation(UuidRepresentation.STANDARD).build()
+        val mongoClient = MongoClients.create(clientSettings)
         return MongoClientDbEventStoreDbOperations(
-            MongoClients.create("mongodb://localhost:27017"),
+            mongoClient,
             "tiny-es",
             JacksonMongoEntityConverter()
         )

@@ -1,5 +1,6 @@
 package ru.quipy.config
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
@@ -24,6 +25,9 @@ open class MongoDbEventStoreDbOperations : EventStoreDbOperations {
 
     @Autowired
     lateinit var mongoTemplate: MongoTemplate
+
+    @Autowired
+    lateinit var objectMapper: ObjectMapper
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
         try {
             mongoTemplate.insert(eventRecord, aggregateTableName)
@@ -46,6 +50,7 @@ open class MongoDbEventStoreDbOperations : EventStoreDbOperations {
     override fun tableExists(aggregateTableName: String) = mongoTemplate.collectionExists(aggregateTableName)
 
     override fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot) {
+        println(objectMapper.writeValueAsString(snapshot))
         mongoTemplate.updateWithLatestVersion(tableName, snapshot)
     }
 
