@@ -1,4 +1,4 @@
-package ru.quipy.eventstore
+package ru.quipy.eventstore.converter
 
 import org.bson.Document
 import kotlin.reflect.KClass

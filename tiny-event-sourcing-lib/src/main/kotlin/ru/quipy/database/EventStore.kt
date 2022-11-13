@@ -5,10 +5,10 @@ import ru.quipy.domain.*
 
 /**
  * Abstracts away the DB access. Provides the operations for event sourcing functioning.
- * You can provide your own implementation of [EventStoreDbOperations] and run event sourcing app
+ * You can provide your own implementation of [EventStore] and run event sourcing app
  * working on any DB you wish under the hood.
  */
-interface EventStoreDbOperations {
+interface EventStore {
 
     /**
      * Appends event record in aggregate event log.

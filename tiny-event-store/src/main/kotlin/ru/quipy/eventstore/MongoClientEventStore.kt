@@ -1,10 +1,8 @@
 package ru.quipy.eventstore
 
-import com.mongodb.DuplicateKeyException
 import com.mongodb.ErrorCategory
 import com.mongodb.MongoCommandException
-import com.mongodb.client.MongoClient
-import com.mongodb.client.MongoDatabase
+import com.mongodb.MongoWriteException
 import com.mongodb.client.model.Filters.*
 import com.mongodb.client.model.FindOneAndReplaceOptions
 import com.mongodb.client.model.ReturnDocument
@@ -13,43 +11,52 @@ import org.bson.Document
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import ru.quipy.core.exceptions.DuplicateEventIdException
-import ru.quipy.database.EventStoreDbOperations
+import ru.quipy.database.EventStore
 import ru.quipy.domain.*
+import ru.quipy.eventstore.converter.MongoEntityConverter
+import ru.quipy.eventstore.factory.MongoClientFactory
 
-class MongoClientDbEventStoreDbOperations(
-    private val mongoClient: MongoClient,
-    private val databaseName: String,
-    private val entityConverter: MongoEntityConverter
-) : EventStoreDbOperations {
+class MongoClientEventStore(
+    private val entityConverter: MongoEntityConverter,
+    private val databaseFactory: MongoClientFactory
+) : EventStore {
 
     companion object {
-        val logger: Logger = LoggerFactory.getLogger(MongoClientDbEventStoreDbOperations::class.java)
+        val logger: Logger = LoggerFactory.getLogger(MongoClientEventStore::class.java)
     }
 
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
+        println("USE MONGOCLIENT")
         val document = entityConverter.convertObjectToBsonDocument(eventRecord)
         try {
-            getDatabase().getCollection(aggregateTableName).insertOne(document)
-        } catch (e: DuplicateKeyException) {
-            throw DuplicateEventIdException("There is record with such an id. Record cannot be saved $eventRecord", e)
+            databaseFactory.getDatabase().getCollection(aggregateTableName).insertOne(document)
+        } catch (e: MongoWriteException) {
+            if (ErrorCategory.fromErrorCode(e.code) == ErrorCategory.DUPLICATE_KEY) {
+                throw DuplicateEventIdException(
+                    "There is record with such an id. Record cannot be saved $eventRecord",
+                    e
+                )
+            } else throw e
         }
     }
 
     override fun insertEventRecords(aggregateTableName: String, eventRecords: List<EventRecord>) {
-        val session = mongoClient.startSession();
+        val session = databaseFactory.getClient().startSession();
         session.use { clientSession ->
             try {
                 clientSession.startTransaction()
-                getDatabase().getCollection(aggregateTableName).insertMany(
+                databaseFactory.getDatabase().getCollection(aggregateTableName).insertMany(
                     eventRecords.map { entityConverter.convertObjectToBsonDocument(it) }
                 )
                 clientSession.commitTransaction()
-            } catch (e: DuplicateKeyException) {
+            } catch (e: MongoCommandException) {
                 clientSession.abortTransaction()
-                throw DuplicateEventIdException(
-                    "There is record with such an id. Records cannot be saved $eventRecords",
-                    e
-                )
+                if (ErrorCategory.fromErrorCode(e.errorCode) == ErrorCategory.DUPLICATE_KEY) {
+                    throw DuplicateEventIdException(
+                        "There is record with such an id. Records cannot be saved $eventRecords",
+                        e
+                    )
+                } else throw e
             } catch (e: Exception) {
                 clientSession.abortTransaction()
             }
@@ -57,7 +64,7 @@ class MongoClientDbEventStoreDbOperations(
     }
 
     override fun tableExists(aggregateTableName: String): Boolean {
-        return getDatabase()
+        return databaseFactory.getDatabase()
             .listCollectionNames()
             .into(ArrayList<String>())
             .contains(aggregateTableName)
@@ -76,7 +83,7 @@ class MongoClientDbEventStoreDbOperations(
         batchSize: Int
     ): List<EventRecord> {
 
-        return getDatabase()
+        return databaseFactory.getDatabase()
             .getCollection(aggregateTableName)
             .find(gt("createdAt", eventSequenceNum))
             .sort(Sorts.ascending("createdAt"))
@@ -92,7 +99,7 @@ class MongoClientDbEventStoreDbOperations(
         aggregateVersion: Long
     ): List<EventRecord> {
 
-        return getDatabase()
+        return databaseFactory.getDatabase()
             .getCollection(aggregateTableName)
             .find(
                 and(
@@ -124,12 +131,8 @@ class MongoClientDbEventStoreDbOperations(
         updateWithLatestVersion("event-stream-read-index", readIndex) // todo sukhoa make configurable?
     }
 
-    private fun getDatabase(): MongoDatabase {
-        return mongoClient.getDatabase(databaseName)
-    }
-
     private fun findOne(collectionName: String, id: Any): Document? {
-        return getDatabase()
+        return databaseFactory.getDatabase()
             .getCollection(collectionName)
             .find(eq("_id", id))
             .first()
@@ -138,10 +141,9 @@ class MongoClientDbEventStoreDbOperations(
     private inline fun <reified T> replaceOlderEntityOrInsert(
         tableName: String, replacement: T
     ): T? where T : Versioned, T : Unique<*> {
-        println(replacement.id)
         val document = entityConverter.convertObjectToBsonDocument(replacement);
         document.remove("_id")
-        val result = getDatabase()
+        val result = databaseFactory.getDatabase()
             .getCollection(tableName)
             .findOneAndReplace(
                 and(eq("_id", replacement.id), lt("version", replacement.version)),
@@ -160,9 +162,9 @@ class MongoClientDbEventStoreDbOperations(
     ): E? where E : Versioned, E : Unique<*> = try {
         replaceOlderEntityOrInsert(tableName, entity)
     } catch (e: MongoCommandException) {
-        if(ErrorCategory.fromErrorCode(e.errorCode) == ErrorCategory.DUPLICATE_KEY) {
+        if (ErrorCategory.fromErrorCode(e.errorCode) == ErrorCategory.DUPLICATE_KEY) {
             logger.info("Entity concurrent update led to clashing. Entity: $entity, table name: $tableName", e)
             null
-        }else throw e
+        } else throw e
     }
 }

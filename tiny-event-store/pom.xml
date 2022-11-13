@@ -12,8 +12,8 @@
     </parent>
 
     <version>2.0.1-SNAPSHOT</version>
-    <name>tiny-event-sourcing-mongodb-operations</name>
-    <artifactId>tiny-event-sourcing-mongodb-operations</artifactId>
+    <name>tiny-event-store</name>
+    <artifactId>tiny-event-store</artifactId>
     <description>Tiny event sourcing mongodb event-store operations</description>
 
     <properties>
@@ -42,6 +42,11 @@
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-kotlin</artifactId>
             <version>2.12.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+            <version>2.7.5</version>
         </dependency>
     </dependencies>
 

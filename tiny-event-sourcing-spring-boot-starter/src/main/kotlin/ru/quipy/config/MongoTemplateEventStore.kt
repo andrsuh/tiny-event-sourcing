@@ -13,14 +13,14 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.transaction.annotation.Transactional
 import ru.quipy.core.exceptions.DuplicateEventIdException
-import ru.quipy.database.EventStoreDbOperations
+import ru.quipy.database.EventStore
 import ru.quipy.domain.*
-import ru.quipy.config.MongoDbEventStoreDbOperations.Companion.logger
+import ru.quipy.config.MongoTemplateEventStore.Companion.logger
 
 
-open class MongoDbEventStoreDbOperations : EventStoreDbOperations {
+open class MongoTemplateEventStore : EventStore {
     companion object {
-        val logger = LoggerFactory.getLogger(MongoDbEventStoreDbOperations::class.java)
+        val logger = LoggerFactory.getLogger(MongoTemplateEventStore::class.java)
     }
 
     @Autowired
@@ -50,7 +50,6 @@ open class MongoDbEventStoreDbOperations : EventStoreDbOperations {
     override fun tableExists(aggregateTableName: String) = mongoTemplate.collectionExists(aggregateTableName)
 
     override fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot) {
-        println(objectMapper.writeValueAsString(snapshot))
         mongoTemplate.updateWithLatestVersion(tableName, snapshot)
     }
 
