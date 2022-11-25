@@ -1,4 +1,4 @@
-package ru.quipy.config
+package ru.quipy
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional
 import ru.quipy.core.exceptions.DuplicateEventIdException
 import ru.quipy.database.EventStore
 import ru.quipy.domain.*
-import ru.quipy.config.MongoTemplateEventStore.Companion.logger
+import ru.quipy.MongoTemplateEventStore.Companion.logger
 
 
 open class MongoTemplateEventStore : EventStore {

@@ -26,7 +26,6 @@ class MongoClientEventStore(
     }
 
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
-        println("USE MONGOCLIENT")
         val document = entityConverter.convertObjectToBsonDocument(eventRecord)
         try {
             databaseFactory.getDatabase().getCollection(aggregateTableName).insertOne(document)

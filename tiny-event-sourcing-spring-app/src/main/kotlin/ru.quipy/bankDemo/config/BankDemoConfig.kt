@@ -20,8 +20,4 @@ class BankDemoConfig {
     fun bankESService(
         eventSourcingServiceFactory: EventSourcingServiceFactory
     ) : EventSourcingService<UUID, AccountAggregate, Account> = eventSourcingServiceFactory.create()
-//    @Bean
-//    fun mongoClientFactory(): MongoClientFactory {
-//        return MongoClientFactoryImpl("tiny-es")
-//    }
 }

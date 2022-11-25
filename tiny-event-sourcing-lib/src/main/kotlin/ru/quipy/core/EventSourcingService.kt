@@ -111,7 +111,7 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
 
     private fun <R> updateWithSpinLock(
         aggregateId: ID,
-        updateFunction: (aggregateState : S, version: Long) -> R
+        updateFunction: (aggregateState: S, version: Long) -> R
     ): R {
         var numOfAttempts = 0
         while (true) { // spinlock

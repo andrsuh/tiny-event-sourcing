@@ -8,8 +8,9 @@
     <modules>
         <module>tiny-event-sourcing-lib</module>
         <module>tiny-event-sourcing-spring-app</module>
-        <module>tiny-event-sourcing-spring-boot-starter</module>
         <module>tiny-event-store</module>
+        <module>tiny-event-sourcing-spring-boot-starter</module>
+        <module>mongo-event-store-spring-boot-starter</module>
     </modules>
 
     <groupId>ru.quipy</groupId>
@@ -17,6 +18,7 @@
     <version>2.0.1-SNAPSHOT</version>
     <name>tiny-event-sourcing</name>
     <description>Tiny event sourcing framework</description>
+
     <properties>
         <java.version>11</java.version>
         <git.username>andrsuh</git.username>
@@ -27,7 +29,6 @@
     </properties>
 
     <dependencies>
-
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-kotlin</artifactId>

@@ -10,8 +10,6 @@ import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import org.bson.Document
-import org.bson.codecs.DocumentCodec
-import org.mongojack.JacksonCodecRegistry
 import kotlin.reflect.KClass
 
 
@@ -46,11 +44,19 @@ class JacksonMongoEntityConverter : MongoEntityConverter {
         return mapper
     }
 
+    private val converters: List<BsonConverter<*, *>> = listOf(
+        UuidConverter()
+    )
+
     override fun <T : Any> convertObjectToBsonDocument(obj: T): Document {
         val document = Document.parse(objectMapper.writeValueAsString(obj))
         if (document.containsKey(EXPECTED_ID_KEY)) {
             document[TARGET_ID_KEY] = document.remove(EXPECTED_ID_KEY)
         }
+        documentBypass(document) { converter, value ->
+            converter.convertToBsonType(value)
+        }
+
         return document
     }
 
@@ -58,7 +64,26 @@ class JacksonMongoEntityConverter : MongoEntityConverter {
         if (document.containsKey(TARGET_ID_KEY)) {
             document[EXPECTED_ID_KEY] = document.remove(TARGET_ID_KEY)
         }
+        documentBypass(document) { converter, value ->
+            converter.convertFromBsonType(value)
+        }
         return objectMapper.readValue(document.toJson(), clazz.java)
+    }
+
+    private fun documentBypass(document: Document, handler: (converter: BsonConverter<*, *>, value: Any) -> Any?) {
+        document.forEach {
+            if (it.value is Document) {
+                documentBypass(it.value as Document, handler)
+            } else {
+                for (converter in converters) {
+                    val newValue = handler(converter, it.value)
+                    if (newValue != null) {
+                        document[it.key] = newValue
+                        break
+                    }
+                }
+            }
+        }
     }
 
 }

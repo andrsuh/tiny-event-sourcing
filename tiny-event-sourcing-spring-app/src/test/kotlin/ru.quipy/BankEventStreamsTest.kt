@@ -53,7 +53,6 @@ class BankEventStreamsTest {
         bankESService.create {
             it.createNewAccount(id = testId, holderId = userId)
         }
-
         val createdEvent = bankESService.update(testId) {
             it.createNewBankAccount()
         }
