@@ -125,8 +125,7 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
                 return updateFunction(aggregateState, currentVersion)
             } catch (e: EventRecordOptimisticLockException) {
                 logger.info("Optimistic lock exception. Failed to save event records id: ${e.eventRecords.map { it.id }}")
-
-                if (numOfAttempts++ >= 20) // todo sukhoa weird
+                if (numOfAttempts++ >= eventSourcingProperties.spinLockMaxAttempts)
                     throw IllegalStateException("Too many attempts to save event records: ${e.eventRecords}")
 
                 continue

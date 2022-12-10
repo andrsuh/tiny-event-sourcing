@@ -9,12 +9,7 @@ import ru.quipy.eventstore.factory.MongoClientFactory
 import ru.quipy.eventstore.factory.MongoClientFactoryImpl
 
 @SpringBootApplication
-class Application {
-    @Bean
-    fun mongoClientFactory(): MongoClientFactory {
-        return MongoClientFactoryImpl("tiny-es")
-    }
-}
+class Application
 
 fun main(args: Array<String>) {
     runApplication<Application>(*args)

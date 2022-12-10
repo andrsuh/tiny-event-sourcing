@@ -44,7 +44,7 @@
 
         <dependency>
             <groupId>ru.quipy</groupId>
-            <artifactId>mongo-event-store-spring-boot-starter</artifactId>
+            <artifactId>tiny-mongo-event-store-spring-boot-starter</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

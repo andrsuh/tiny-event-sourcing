@@ -26,6 +26,11 @@ class MongoClientFactoryImpl : MongoClientFactory {
         this.databaseName = databaseName
     }
 
+    constructor(mongoClient: MongoClient, databaseName: String) {
+        this.client = mongoClient
+        this.databaseName = databaseName
+    }
+
     override fun getDatabase(): MongoDatabase {
         return client.getDatabase(databaseName)
     }

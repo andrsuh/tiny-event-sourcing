@@ -1,12 +1,9 @@
 package ru.quipy.eventstore
 
-import com.mongodb.ErrorCategory
-import com.mongodb.MongoCommandException
-import com.mongodb.MongoWriteException
+import com.mongodb.*
+import com.mongodb.client.TransactionBody
+import com.mongodb.client.model.*
 import com.mongodb.client.model.Filters.*
-import com.mongodb.client.model.FindOneAndReplaceOptions
-import com.mongodb.client.model.ReturnDocument
-import com.mongodb.client.model.Sorts
 import org.bson.Document
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -14,6 +11,8 @@ import ru.quipy.core.exceptions.DuplicateEventIdException
 import ru.quipy.database.EventStore
 import ru.quipy.domain.*
 import ru.quipy.eventstore.converter.MongoEntityConverter
+import ru.quipy.eventstore.exception.MongoClientExceptionTranslator
+import ru.quipy.eventstore.exception.MongoDuplicateKeyException
 import ru.quipy.eventstore.factory.MongoClientFactory
 
 class MongoClientEventStore(
@@ -25,39 +24,38 @@ class MongoClientEventStore(
         val logger: Logger = LoggerFactory.getLogger(MongoClientEventStore::class.java)
     }
 
+    private val exceptionTranslator = MongoClientExceptionTranslator()
+
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
         val document = entityConverter.convertObjectToBsonDocument(eventRecord)
         try {
-            databaseFactory.getDatabase().getCollection(aggregateTableName).insertOne(document)
-        } catch (e: MongoWriteException) {
-            if (ErrorCategory.fromErrorCode(e.code) == ErrorCategory.DUPLICATE_KEY) {
-                throw DuplicateEventIdException(
-                    "There is record with such an id. Record cannot be saved $eventRecord",
-                    e
-                )
-            } else throw e
+            exceptionTranslator.withTranslation {
+                databaseFactory.getDatabase().getCollection(aggregateTableName).insertOne(document)
+            }
+        } catch (e: MongoDuplicateKeyException) {
+            throw DuplicateEventIdException(
+                "There is record with such an id. Record cannot be saved $eventRecord", e
+            )
         }
     }
 
     override fun insertEventRecords(aggregateTableName: String, eventRecords: List<EventRecord>) {
-        val session = databaseFactory.getClient().startSession();
+        val session = databaseFactory.getClient().startSession()
         session.use { clientSession ->
             try {
-                clientSession.startTransaction()
-                databaseFactory.getDatabase().getCollection(aggregateTableName).insertMany(
-                    eventRecords.map { entityConverter.convertObjectToBsonDocument(it) }
-                )
-                clientSession.commitTransaction()
-            } catch (e: MongoCommandException) {
-                clientSession.abortTransaction()
-                if (ErrorCategory.fromErrorCode(e.errorCode) == ErrorCategory.DUPLICATE_KEY) {
-                    throw DuplicateEventIdException(
-                        "There is record with such an id. Records cannot be saved $eventRecords",
-                        e
+                exceptionTranslator.withTranslation {
+                    clientSession.startTransaction()
+                    databaseFactory.getDatabase().getCollection(aggregateTableName).insertMany(
+                        eventRecords.map { entityConverter.convertObjectToBsonDocument(it) },
+                        InsertManyOptions().ordered(true)
                     )
-                } else throw e
-            } catch (e: Exception) {
+                    clientSession.commitTransaction()
+                }
+            } catch (e: MongoDuplicateKeyException) {
                 clientSession.abortTransaction()
+                throw DuplicateEventIdException(
+                    "There is record with such an id. Records cannot be saved $eventRecords", e
+                )
             }
         }
     }

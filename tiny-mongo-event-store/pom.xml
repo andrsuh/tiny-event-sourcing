@@ -12,8 +12,8 @@
     </parent>
 
     <version>2.0.1-SNAPSHOT</version>
-    <name>tiny-event-store</name>
-    <artifactId>tiny-event-store</artifactId>
+    <name>tiny-mongo-event-store</name>
+    <artifactId>tiny-mongo-event-store</artifactId>
     <description>Tiny event sourcing mongodb event-store operations</description>
 
     <properties>

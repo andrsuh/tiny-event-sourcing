@@ -7,10 +7,10 @@
 
     <modules>
         <module>tiny-event-sourcing-lib</module>
-        <module>tiny-event-sourcing-spring-app</module>
-        <module>tiny-event-store</module>
+        <module>tiny-mongo-event-store</module>
+        <module>tiny-mongo-event-store-spring-boot-starter</module>
         <module>tiny-event-sourcing-spring-boot-starter</module>
-        <module>mongo-event-store-spring-boot-starter</module>
+        <module>tiny-event-sourcing-spring-app</module>
     </modules>
 
     <groupId>ru.quipy</groupId>
@@ -23,7 +23,6 @@
         <java.version>11</java.version>
         <git.username>andrsuh</git.username>
         <git.repo>tiny-event-sourcing</git.repo>
-
         <kotlin.version>1.6.10</kotlin.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
     </properties>
