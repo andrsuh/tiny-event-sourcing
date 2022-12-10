@@ -38,7 +38,6 @@ import java.util.*
 )
 @EnableAutoConfiguration
 class UpdateSerialTest {
-
     companion object {
         private val testAggregateId = UUID.randomUUID()
 
@@ -47,8 +46,8 @@ class UpdateSerialTest {
         const val TEST_TABLE_NAME = "update-serial-test"
 
         const val BATCH_SIZE = 5
-        const val CONCURRENT_TASKS = 5
-        const val ITERATIONS_PER_TASK = 10
+        const val CONCURRENT_TASKS = 10
+        const val ITERATIONS_PER_TASK = 100
     }
 
     //
