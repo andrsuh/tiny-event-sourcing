@@ -8,14 +8,14 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import ru.quipy.bankDemo.api.AccountAggregate
-import ru.quipy.bankDemo.logic.Account
+import ru.quipy.bankDemo.accounts.api.AccountAggregate
+import ru.quipy.bankDemo.accounts.logic.Account
 import ru.quipy.core.EventSourcingService
 import java.math.BigDecimal
 import java.util.*
 
 @SpringBootTest
-class BankEventStreamsTest {
+class BankAggregateStateTest {
     companion object {
         private val testId = UUID.randomUUID()
         private val userId = UUID.randomUUID()
