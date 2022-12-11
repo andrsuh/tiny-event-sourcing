@@ -11,7 +11,7 @@ To add library to your project put the following dependency in your `pom.xml`:
 <dependency>
     <groupId>ru.quipy</groupId>
     <artifactId>tiny-event-sourcing-lib</artifactId>
-    <version>${library.version}/version>
+    <version>${library.version}</version>
 </dependency>
 ```
 
