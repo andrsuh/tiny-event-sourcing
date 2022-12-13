@@ -157,11 +157,11 @@ class MongoClientEventStore(
         tableName: String,
         entity: E
     ): E? where E : Versioned, E : Unique<*> = try {
-        replaceOlderEntityOrInsert(tableName, entity)
-    } catch (e: MongoCommandException) {
-        if (ErrorCategory.fromErrorCode(e.errorCode) == ErrorCategory.DUPLICATE_KEY) {
-            logger.info("Entity concurrent update led to clashing. Entity: $entity, table name: $tableName", e)
-            null
-        } else throw e
+        exceptionTranslator.withTranslation {
+            replaceOlderEntityOrInsert(tableName, entity)
+        }
+    } catch (e: MongoDuplicateKeyException) {
+        logger.info("Entity concurrent update led to clashing. Entity: $entity, table name: $tableName", e)
+        null
     }
 }
