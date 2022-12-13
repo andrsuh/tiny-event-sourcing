@@ -1,0 +1,68 @@
+{
+  "groups": [
+    {
+      "name": "Event sourcing properties",
+      "type": "ru.quipy.core.EventSourcingProperties",
+      "sourceType": "ru.quipy.core.EventSourcingProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "event.sourcing.snapshot-frequency",
+      "type": "java.lang.Integer",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": 25
+    },
+    {
+      "name": "event.sourcing.snapshot-table-name",
+      "type": "java.lang.String",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": "snapshots"
+    },
+    {
+      "name": "event.sourcing.stream-read-period",
+      "type": "java.lang.Integer",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": 1000
+    },
+    {
+      "name": "event.sourcing.stream-batch-size",
+      "type": "java.lang.Integer",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": 200
+    },
+    {
+      "name": "event.sourcing.auto-scan-enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "event.sourcing.scan-package",
+      "type": "java.lang.String",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": null
+    },
+    {
+      "name": "event.sourcing.spin-lock-max-attempts",
+      "type": "java.lang.Integer",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": 25
+    }
+  ],
+  "hints": [
+    {
+      "name": "event.sourcing.auto-scan-enabled",
+      "values": [
+        {
+          "value": true,
+          "description": "Enable auto-scan"
+        },
+        {
+          "value": false,
+          "description": "Disable auto-scan"
+        }
+      ]
+    }
+  ]
+}

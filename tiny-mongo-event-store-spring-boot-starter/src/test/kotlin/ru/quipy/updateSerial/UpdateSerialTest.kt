@@ -16,27 +16,18 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.test.context.ActiveProfiles
 import ru.quipy.core.EventSourcingProperties
 import ru.quipy.core.EventSourcingService
 import ru.quipy.domain.EventRecord
-import ru.quipy.updateSerial.UpdateSerialTestConfiguration.Companion.DATABASE_NAME
 import java.util.*
 
 
 @SpringBootTest(
-    classes = [UpdateSerialTestConfiguration::class],
-    properties = [
-        "spring.data.mongodb.host=localhost",
-        "spring.data.mongodb.port=27018",
-        "spring.data.mongodb.database=".plus(DATABASE_NAME),
-        "spring.mongodb.embedded.version=4.0.12",
-        "event.sourcing.auto-scan-enabled=true",
-        "event.sourcing.scan-package=ru.quipy.updateSerial",
-        "event.sourcing.spin-lock-max-attempts=10000",
-        "event.sourcing.snapshot-frequency=10000"
-    ],
+    classes = [UpdateSerialTestConfiguration::class]
 )
 @EnableAutoConfiguration
+@ActiveProfiles("test")
 class UpdateSerialTest {
     companion object {
         private val testAggregateId = UUID.randomUUID()
@@ -47,10 +38,9 @@ class UpdateSerialTest {
 
         const val BATCH_SIZE = 5
         const val CONCURRENT_TASKS = 10
-        const val ITERATIONS_PER_TASK = 100
+        const val ITERATIONS_PER_TASK = 10
     }
 
-    //
     @Autowired
     private lateinit var mongoTemplate: MongoTemplate
 
@@ -68,16 +58,12 @@ class UpdateSerialTest {
     @Autowired
     private lateinit var properties: EventSourcingProperties
 
-
     @AfterEach
     @BeforeEach
     fun cleanDatabase() {
         mongoTemplate.dropCollection(TEST_TABLE_NAME)
         mongoTemplate.dropCollection(properties.snapshotTableName)
     }
-
-    private fun generateEventRecordsBatch(size: Int, aggregate: TestAggregateState) =
-        List(size) { aggregate.testUpdateSerial(it) }
 
     private fun getExpectedMask(): String {
         return List(ITERATIONS_PER_TASK * CONCURRENT_TASKS) {
@@ -105,7 +91,7 @@ class UpdateSerialTest {
                 launch(Dispatchers.Default) {
                     repeat(ITERATIONS_PER_TASK) {
                         service.updateSerial(testAggregateId) {
-                            generateEventRecordsBatch(BATCH_SIZE, it)
+                            it.testUpdateSerial(BATCH_SIZE)
                         }
                     }
                 }

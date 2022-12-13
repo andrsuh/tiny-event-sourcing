@@ -8,6 +8,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.ActiveProfiles
 import ru.quipy.core.EventSourcingService
 import ru.quipy.projectDemo.api.ProjectAggregate
 import ru.quipy.projectDemo.api.TagCreatedEvent
@@ -18,6 +20,8 @@ import ru.quipy.streams.AggregateSubscriptionsManager
 import java.util.concurrent.TimeUnit
 
 @SpringBootTest(properties = ["event.sourcing.stream-batch-size=3"])
+@ActiveProfiles("test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class StreamEventOrderingTest {
     companion object {
         const val testId = "3"
