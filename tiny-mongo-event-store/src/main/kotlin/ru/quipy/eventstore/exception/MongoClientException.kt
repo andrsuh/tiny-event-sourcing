@@ -5,4 +5,4 @@ open class MongoClientException(
     override val cause: Throwable?
 ) : RuntimeException(
     message, cause
-) {}
+)

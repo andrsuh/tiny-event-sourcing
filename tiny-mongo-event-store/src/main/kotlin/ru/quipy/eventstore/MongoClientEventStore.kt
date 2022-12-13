@@ -1,9 +1,12 @@
 package ru.quipy.eventstore
 
-import com.mongodb.*
-import com.mongodb.client.TransactionBody
-import com.mongodb.client.model.*
+import com.mongodb.ErrorCategory
+import com.mongodb.MongoCommandException
 import com.mongodb.client.model.Filters.*
+import com.mongodb.client.model.FindOneAndReplaceOptions
+import com.mongodb.client.model.InsertManyOptions
+import com.mongodb.client.model.ReturnDocument
+import com.mongodb.client.model.Sorts
 import org.bson.Document
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

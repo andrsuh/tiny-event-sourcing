@@ -4,13 +4,13 @@ import com.mongodb.*
 
 class MongoClientExceptionTranslator {
 
-    private fun translateException(ex: Exception) : MongoClientException? {
-        when(ex) {
+    private fun translateException(ex: Exception): MongoClientException? {
+        when (ex) {
             is DuplicateKeyException -> {
                 return MongoDuplicateKeyException(ex.message, ex)
             }
             is MongoWriteException -> {
-                if(ErrorCategory.fromErrorCode(ex.code) == ErrorCategory.DUPLICATE_KEY){
+                if (ErrorCategory.fromErrorCode(ex.code) == ErrorCategory.DUPLICATE_KEY) {
                     return MongoDuplicateKeyException(ex.message, ex)
                 }
             }
@@ -30,10 +30,10 @@ class MongoClientExceptionTranslator {
         return null
     }
 
-    fun <T> withTranslation(action: () -> T) : T {
-        try{
+    fun <T> withTranslation(action: () -> T): T {
+        try {
             return action()
-        }catch (ex: Exception) {
+        } catch (ex: Exception) {
             throw this.translateException(ex) ?: ex
         }
     }

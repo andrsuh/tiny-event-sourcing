@@ -31,7 +31,7 @@ class SeekingForSuitableClassesAggregateRegistry(
 
         if (eventSourcingProperties.scanPackage.isNullOrBlank()) {
             logger.error("Scanning package is not set while automatic scanning for aggregates and events enabled. Set auth scan property")
-            return
+            throw IllegalStateException("You've set 'autoScanEnabled' property to true, but haven't specify 'scanPackage' property. Please set it to the package that need to be scanned for aggregates and events.")
         }
 
         val cfg = ConfigurationBuilder()

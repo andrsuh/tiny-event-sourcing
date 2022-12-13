@@ -12,10 +12,10 @@ import ru.quipy.updateSerial.UpdateSerialTest.Companion.TEST_TABLE_NAME
 import java.util.*
 
 @AggregateType(aggregateEventsTableName = TEST_TABLE_NAME)
-class TestAggregate: Aggregate
+class TestAggregate : Aggregate
 
 class TestAggregateState : AggregateState<UUID, TestAggregate> {
-    private lateinit var id : UUID
+    private lateinit var id: UUID
     private var order: Int = 0
 
     override fun getId() = id
@@ -45,7 +45,7 @@ class TestCreatedEvent(
 
 @DomainEvent(name = TEST_EVENT_NAME)
 class TestUpdateSerialEvent(
-    val order : Int
+    val order: Int
 ) : Event<TestAggregate>(
     name = TEST_EVENT_NAME,
     createdAt = System.currentTimeMillis(),

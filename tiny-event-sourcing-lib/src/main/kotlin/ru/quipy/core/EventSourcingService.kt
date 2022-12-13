@@ -49,7 +49,7 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
      * aggregate instance state and so on. This is how the concurrency issues are handled. This guarantees that replaying the
      * events from log in the insertion order we will get exactly the same aggregate state as what we got before insertion.
      *
-     * The number of attempts is limited to 20 currently.
+     * The number of attempts is limited and can be configured by "spinLockMaxAttempts" property of [EventSourcingProperties].
      *
      */
     fun <E : Event<A>> update(aggregateId: ID, eventGenerationFunction: (a: S) -> E): E {
@@ -151,20 +151,20 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
 
     private fun <E : Event<A>> tryUpdateState(
         aggregateState: S,
-        currentStateVersion: Long,
-        eventGenerationFunction: (a: S) -> E
+        currentStateVersion: Long, // todo sukhoa state should include version
+        eventGenerationFunction: (S) -> E
     ): E {
-        val eventsGenerationFunction = { a: S ->
-            listOf(eventGenerationFunction(a))
+        val eventsGenerationFunction = { state: S ->
+            listOf(eventGenerationFunction(state))
         }
-        val newEvents: List<E> = tryUpdateState(aggregateState, currentStateVersion, eventsGenerationFunction)
-        return newEvents[0]
+
+        return tryUpdateState(aggregateState, currentStateVersion, eventsGenerationFunction).first()
     }
 
     private fun <E : Event<A>> tryUpdateState(
         aggregateState: S,
         currentStateVersion: Long,
-        eventGenerationFunction: (a: S) -> List<E>
+        eventGenerationFunction: (S) -> List<E>
     ): List<E> {
         var updatedVersion = currentStateVersion
 
@@ -195,11 +195,11 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
             )
         }
 
-        try {
+        try { // todo sukhoa it can be generalized
             if (eventRecords.size > 1) {
                 eventStore.insertEventRecords(aggregateInfo.aggregateEventsTableName, eventRecords)
             } else {
-                eventStore.insertEventRecord(aggregateInfo.aggregateEventsTableName, eventRecords[0])
+                eventStore.insertEventRecord(aggregateInfo.aggregateEventsTableName, eventRecords.first())
             }
         } catch (e: DuplicateEventIdException) {
             throw EventRecordOptimisticLockException(e.message, e.cause, eventRecords)

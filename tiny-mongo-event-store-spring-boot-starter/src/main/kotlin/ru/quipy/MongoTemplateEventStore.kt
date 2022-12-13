@@ -1,19 +1,20 @@
 package ru.quipy
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.*
+import org.springframework.data.mongodb.core.FindAndReplaceOptions
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.find
+import org.springframework.data.mongodb.core.findById
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.transaction.annotation.Isolation
 import org.springframework.transaction.annotation.Transactional
+import ru.quipy.MongoTemplateEventStore.Companion.logger
 import ru.quipy.core.exceptions.DuplicateEventIdException
 import ru.quipy.database.EventStore
 import ru.quipy.domain.*
-import ru.quipy.MongoTemplateEventStore.Companion.logger
 
 
 open class MongoTemplateEventStore : EventStore {
@@ -37,7 +38,10 @@ open class MongoTemplateEventStore : EventStore {
         try {
             mongoTemplate.insert(eventRecords, aggregateTableName)
         } catch (e: DuplicateKeyException) {
-            throw DuplicateEventIdException("There is record with such an id. Record set cannot be saved $eventRecords", e)
+            throw DuplicateEventIdException(
+                "There is record with such an id. Record set cannot be saved $eventRecords",
+                e
+            )
         }
     }
 
