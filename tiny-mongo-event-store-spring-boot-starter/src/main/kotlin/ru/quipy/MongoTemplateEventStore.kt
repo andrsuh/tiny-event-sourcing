@@ -1,4 +1,4 @@
-package ru.quipy.config
+package ru.quipy
 
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -10,14 +10,16 @@ import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.findById
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.transaction.annotation.Transactional
+import ru.quipy.MongoTemplateEventStore.Companion.logger
 import ru.quipy.core.exceptions.DuplicateEventIdException
-import ru.quipy.database.EventStoreDbOperations
+import ru.quipy.database.EventStore
 import ru.quipy.domain.*
-import ru.quipy.config.MongoDbEventStoreDbOperations.Companion.logger
 
-class MongoDbEventStoreDbOperations : EventStoreDbOperations {
+
+open class MongoTemplateEventStore : EventStore {
     companion object {
-        val logger = LoggerFactory.getLogger(MongoDbEventStoreDbOperations::class.java)
+        val logger = LoggerFactory.getLogger(MongoTemplateEventStore::class.java)
     }
 
     @Autowired
@@ -28,6 +30,18 @@ class MongoDbEventStoreDbOperations : EventStoreDbOperations {
             mongoTemplate.insert(eventRecord, aggregateTableName)
         } catch (e: DuplicateKeyException) {
             throw DuplicateEventIdException("There is record with such an id. Record cannot be saved $eventRecord", e)
+        }
+    }
+
+    @Transactional
+    override fun insertEventRecords(aggregateTableName: String, eventRecords: List<EventRecord>) {
+        try {
+            mongoTemplate.insert(eventRecords, aggregateTableName)
+        } catch (e: DuplicateKeyException) {
+            throw DuplicateEventIdException(
+                "There is record with such an id. Record set cannot be saved $eventRecords",
+                e
+            )
         }
     }
 

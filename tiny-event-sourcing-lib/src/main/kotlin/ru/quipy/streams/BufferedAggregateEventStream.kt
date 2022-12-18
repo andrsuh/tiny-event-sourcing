@@ -4,7 +4,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import org.slf4j.LoggerFactory
-import ru.quipy.database.EventStoreDbOperations
+import ru.quipy.database.EventStore
 import ru.quipy.domain.Aggregate
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
@@ -20,7 +20,7 @@ class BufferedAggregateEventStream<A : Aggregate>(
     private val streamBatchSize: Int,
     private val tableName: String,
     private val retryConfig: RetryConf,
-    private val eventStoreDbOperations: EventStoreDbOperations,
+    private val eventStore: EventStore,
     private val eventStreamNotifier: EventStreamNotifier,
     private val dispatcher: CoroutineDispatcher
 ) : AggregateEventStream<A> {
@@ -89,7 +89,7 @@ class BufferedAggregateEventStream<A : Aggregate>(
                 checkAndResetIfRequired()
 
                 val eventsBatch =
-                    eventStoreDbOperations.findBatchOfEventRecordAfter(tableName, readingIndex, streamBatchSize)
+                    eventStore.findBatchOfEventRecordAfter(tableName, readingIndex, streamBatchSize)
                 eventStreamNotifier.onBatchRead(streamName, eventsBatch.size)
 
                 if (eventsBatch.isEmpty()) {
@@ -141,14 +141,14 @@ class BufferedAggregateEventStream<A : Aggregate>(
     }
 
     private suspend fun suspendTillTableExists() {
-        while (!eventStoreDbOperations.tableExists(tableName)) {
+        while (!eventStore.tableExists(tableName)) {
             delay(2_000)
             logger.trace("Event stream $streamName is waiting for $tableName to be created")
         }
     }
 
     private fun syncReaderIndex() {
-        eventStoreDbOperations.findStreamReadIndex(streamName)?.also {
+        eventStore.findStreamReadIndex(streamName)?.also {
             readingIndex = it.readIndex
             readerIndexCommittedVersion = it.version
             logger.info("Reader index synced for $streamName. Index: $readingIndex, version: $readerIndexCommittedVersion")
@@ -159,7 +159,7 @@ class BufferedAggregateEventStream<A : Aggregate>(
     private fun commitReaderIndexAndSync() {
         EventStreamReadIndex(streamName, readingIndex, readerIndexCommittedVersion + 1L).also {
             logger.info("Committing index for $streamName, index: $readingIndex, current version: $readerIndexCommittedVersion")
-            eventStoreDbOperations.commitStreamReadIndex(it)
+            eventStore.commitStreamReadIndex(it)
             eventStreamNotifier.onReadIndexCommitted(streamName, it.readIndex)
         }
         syncReaderIndex()

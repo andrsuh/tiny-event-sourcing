@@ -42,8 +42,8 @@ data class EventRecord(
 
 @Suppress("UNCHECKED_CAST")
 class Snapshot(
-    override val id: Any, // todo sukhoa weird ANY, should it be parametrized?
-    val snapshot: Any, // todo sukhoa weird ANY, should it be parametrized?
+    override val id : Any, // todo sukhoa weird ANY, should it be parametrized?
+    val snapshot : Any, // todo sukhoa weird ANY, should it be parametrized?
     override var version: Long
 ) : Versioned, Unique<Any>
 

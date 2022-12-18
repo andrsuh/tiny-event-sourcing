@@ -10,9 +10,9 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 /**
- * Acts as a local storage of the aggregates and their events meta-information.
+ * Acts as a local storage of the meta-information of aggregates and their events.
  * Provides methods to store (register) this meta-information.
- * All the classes that are marked with [AggregateType] and extend [Aggregate] as well as those
+ * All the classes that are marked with [AggregateType], extends [Aggregate] as well as those
  * marked with [DomainEvent] and extend [Event] should be explicitly registered here on app start up unless you're
  * using [SeekingForSuitableClassesAggregateRegistry]. [SeekingForSuitableClassesAggregateRegistry] decorates [BasicAggregateRegistry]
  * and provides automatic aggregates and domain events look up and registering.
@@ -21,8 +21,8 @@ import kotlin.reflect.KClass
  *
  * For example [EventSourcingService] uses it to
  *  - obtain aggregate DB table name
- *  - get aggregate instantiation function (to create empty aggregate state) also [AggregateSubscriptionsManager] does that
- *  - to get event type by it's name retrieved from DB
+ *  - get aggregate instantiation function (to create empty aggregate state)
+ *  - to get event type by its name retrieved from DB (also [AggregateSubscriptionsManager] does that)
  *
  */
 interface AggregateRegistry {
@@ -98,7 +98,7 @@ interface AggregateRegistry {
     @Suppress("unused")
     class AggregateStateInfoImpl<ID, A : Aggregate, S : AggregateState<ID, A>>(
         override val aggregateClass: KClass<in A>,
-        val aggregateStateClass: KClass<in S>,
+        private val aggregateStateClass: KClass<in S>,
         override val aggregateEventsTableName: String,
         private val eventsMap: ConcurrentHashMap<String, StateTransitionInfo<ID, A, S>> = ConcurrentHashMap(),
     ) : EventInfo<A>, AggregateStateInfo<ID, A, S>, StateTransitionsRegistrar<ID, A, S> {

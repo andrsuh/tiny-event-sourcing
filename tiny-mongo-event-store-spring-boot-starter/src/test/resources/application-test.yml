@@ -1,0 +1,15 @@
+event:
+  sourcing:
+    auto-scan-enabled: true
+    scan-package: ru.quipy.updateSerial
+    spin-lock-max-attempts: 11000
+    snapshot-frequency: 10000
+spring:
+  data:
+    mongodb:
+      host: localhost
+      port: 27018
+      database: tiny-es-test
+  mongodb:
+    embedded:
+      version: 4.0.12

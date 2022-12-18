@@ -9,6 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.ActiveProfiles
 import ru.quipy.bankDemo.accounts.api.AccountAggregate
 import ru.quipy.bankDemo.accounts.logic.Account
 import ru.quipy.bankDemo.transfers.api.TransferTransactionAggregate
@@ -21,6 +23,8 @@ import java.time.Duration
 import java.util.*
 
 @SpringBootTest
+@ActiveProfiles("test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class TransferTransactionAggregateStateTest {
     companion object {
         private val testAccountId = UUID.fromString("b88f83bf-9a2a-4091-9cb3-3185f6f65a4b")

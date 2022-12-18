@@ -31,7 +31,7 @@ class SeekingForSuitableClassesAggregateRegistry(
 
         if (eventSourcingProperties.scanPackage.isNullOrBlank()) {
             logger.error("Scanning package is not set while automatic scanning for aggregates and events enabled. Set auth scan property")
-            return
+            throw IllegalStateException("You've set 'autoScanEnabled' property to true, but haven't specify 'scanPackage' property. Please set it to the package that need to be scanned for aggregates and events.")
         }
 
         val cfg = ConfigurationBuilder()
@@ -57,7 +57,8 @@ class SeekingForSuitableClassesAggregateRegistry(
             while (c.superclass != Event::class.java) { // todo sukhoa is it possible to get infinite loop
                 c = c.superclass
             }
-            c.kotlin.supertypes[0].arguments[0].type!!.classifier as KClass<Aggregate> to eventClass.kotlin as KClass<Event<Aggregate>>
+            // class might have more than one superclass
+            c.kotlin.supertypes.find { superType -> superType.classifier == Event::class }!!.arguments[0].type!!.classifier as KClass<Aggregate> to eventClass.kotlin as KClass<Event<Aggregate>>
         }.groupBy({ it.first }) { it.second }
 
         // search for all the candidates to the aggregate state transition functions (static and not)

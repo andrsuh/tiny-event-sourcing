@@ -3,7 +3,7 @@ package ru.quipy.streams
 import kotlinx.coroutines.asCoroutineDispatcher
 import ru.quipy.core.AggregateRegistry
 import ru.quipy.core.EventSourcingProperties
-import ru.quipy.database.EventStoreDbOperations
+import ru.quipy.database.EventStore
 import ru.quipy.domain.Aggregate
 import ru.quipy.streams.annotation.RetryConf
 import ru.quipy.streams.annotation.RetryFailedStrategy
@@ -14,7 +14,7 @@ import kotlin.reflect.KClass
 
 class AggregateEventStreamManager(
     private val aggregateRegistry: AggregateRegistry,
-    private val eventStoreDbOperations: EventStoreDbOperations,
+    private val eventStore: EventStore,
     private val eventSourcingProperties: EventSourcingProperties,
 ) {
     private val eventStreamListener: EventStreamListenerImpl = EventStreamListenerImpl()// todo sukhoa make injectable
@@ -38,7 +38,7 @@ class AggregateEventStreamManager(
                 eventSourcingProperties.streamBatchSize,
                 eventInfo.aggregateEventsTableName,
                 retryConfig,
-                eventStoreDbOperations,
+                eventStore,
                 eventStreamListener,
                 eventStreamsDispatcher
             )

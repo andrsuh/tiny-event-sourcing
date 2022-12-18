@@ -15,6 +15,8 @@ import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.ActiveProfiles
 import ru.quipy.core.EventSourcingService
 import ru.quipy.projectDemo.addTask
 import ru.quipy.projectDemo.api.ProjectAggregate
@@ -31,7 +33,9 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.annotation.PostConstruct
 
 @SpringBootTest
+@ActiveProfiles("test")
 @Import(SubscriptionConfig::class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class EventStreamsTest {
     companion object {
         const val testId = "2"
