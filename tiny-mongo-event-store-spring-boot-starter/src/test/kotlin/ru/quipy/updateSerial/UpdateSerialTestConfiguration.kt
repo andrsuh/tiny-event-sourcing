@@ -47,7 +47,6 @@ class UpdateSerialTestConfiguration {
         aggregateRegistry: AggregateRegistry,
         eventMapper: JsonEventMapper,
     ): EventSourcingService<UUID, TestAggregate, TestAggregateState> {
-        println(databaseName)
         return EventSourcingServiceFactory(
             aggregateRegistry, eventMapper, mongoTemplateEventStore(), eventSourcingProperties
         ).create()

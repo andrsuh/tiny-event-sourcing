@@ -27,7 +27,7 @@ class TestAggregateState : AggregateState<UUID, TestAggregate> {
         id = event.testId
     }
 
-    fun testUpdateSerial(size: Int) = List(size) { TestUpdateSerialEvent(it) }
+    fun testUpdateSerial(size: Int) = List(size) { index -> TestUpdateSerialEvent(order + index + 1) }
 
     @StateTransitionFunc
     fun testUpdateSerial(event: TestUpdateSerialEvent) {

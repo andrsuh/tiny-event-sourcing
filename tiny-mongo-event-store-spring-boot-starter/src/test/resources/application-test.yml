@@ -8,7 +8,7 @@ spring:
   data:
     mongodb:
       host: localhost
-      port: 27019
+      port: 27018
       database: tiny-es-test
   mongodb:
     embedded:

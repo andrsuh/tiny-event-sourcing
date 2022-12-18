@@ -1,17 +1,41 @@
 # Tiny event sourcing library
 
-## Installation
-Sadly, but right now we don't have any publicly available repositories to download from, so in order to use the library you'll have to clone the repository to your machine and perform from the repository's root directory:
+## Getting Started
+
+### Installation with Spring Boot Starters
+To use library with Spring Boot put the following dependency in your `pom.xml`:
+
 ```
-mvn clean install
+<dependency>
+    <groupId>ru.quipy</groupId>
+    <artifactId>tiny-event-sourcing-spring-boot-starter</artifactId>
+    <version>${library.version}</version>
+</dependency>
 ```
 
-To add library to your project put the following dependency in your `pom.xml`:
+Currently, only the mongodb-based event-store implementation is available "out of box".
+
+To use this event-store implementation, put the following dependency to your `pom.xml`:
+```
+<dependency>
+    <groupId>ru.quipy</groupId>
+    <artifactId>tiny-mongo-event-store-spring-boot-starter</artifactId>
+    <version>${library.version}</version>
+</dependency>
+```
+
+### Manual installation
+If you don't want to use Spring Boot Starters, you need to add these dependencies:
 ```
 <dependency>
     <groupId>ru.quipy</groupId>
     <artifactId>tiny-event-sourcing-lib</artifactId>
-    <version>${library.version}/version>
+    <version>${library.version}</version>
+</dependency>
+<dependency>
+    <groupId>ru.quipy</groupId>
+    <artifactId>tiny-mongo-event-store/artifactId>
+    <version>${library.version}</version>
 </dependency>
 ```
 
@@ -108,9 +132,6 @@ If you use pure library without any frameworks, you have to instantiate or imple
 Here is the class diagram
 ![ConfigClassDiagram](images/ConfigClassDiagramm.png)
 
-### Spring application configuration
-
-There is [Spring Boot starter](tiny-event-sourcing-spring-boot-starter) module provided with the library, which can create for you most infrastructure classes and add them to the context. So if you want to create a Spring application, you can simply add dependency on this module like it performed in [this sample application](tiny-event-sourcing-spring-app).
 
 # Example of how to use library
 
@@ -213,7 +234,7 @@ fun UserAggregate.createUserCommand(
    )
 }
 ```
-Command could use State fields to perform validation, but **should not modify aggregate state**. Command should not have any side effects besides event emitting 
+Command could use State fields to perform validation, but **should not modify aggregate state**. Command should not have any side effects besides event emitting
 ## Define aggregate State transition functions
 
 There is one thing left to do before we are able to make changes on our aggregates. We have to teach the library to construct a current state of an aggregate.

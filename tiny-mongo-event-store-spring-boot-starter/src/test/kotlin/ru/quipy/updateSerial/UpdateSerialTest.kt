@@ -66,9 +66,8 @@ class UpdateSerialTest {
     }
 
     private fun getExpectedMask(): String {
-        return List(ITERATIONS_PER_TASK * CONCURRENT_TASKS) {
-            List(BATCH_SIZE) { it }
-        }.flatten().joinToString("")
+        return List(ITERATIONS_PER_TASK * CONCURRENT_TASKS * BATCH_SIZE) { it }
+            .joinToString("_")
     }
 
     private fun getActualMask(): String {
@@ -77,7 +76,7 @@ class UpdateSerialTest {
             .with(Sort.by("version").ascending())
         return mongoTemplate
             .find(query, EventRecord::class.java, TEST_TABLE_NAME)
-            .joinToString("") {
+            .joinToString("_") {
                 mapper.readValue(it.payload, TestUpdateSerialEvent::class.java).order.toString()
             }
     }
