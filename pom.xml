@@ -23,7 +23,7 @@
         <java.version>11</java.version>
         <git.username>andrsuh</git.username>
         <git.repo>tiny-event-sourcing</git.repo>
-        <kotlin.version>1.6.10</kotlin.version>
+        <kotlin.version>1.7.21</kotlin.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
     </properties>
 

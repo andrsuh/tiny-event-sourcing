@@ -18,7 +18,7 @@
     <properties>
         <java.version>11</java.version>
         <spring.boot.version>2.6.6</spring.boot.version>
-        <kotlin.version>1.6.21</kotlin.version>
+        <kotlin.version>1.7.21</kotlin.version>
         <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
         <awaitility.version>4.2.0</awaitility.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>

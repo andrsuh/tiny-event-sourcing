@@ -6,6 +6,7 @@ import ru.quipy.core.exceptions.EventRecordOptimisticLockException
 import ru.quipy.database.EventStore
 import ru.quipy.domain.*
 import ru.quipy.mapper.EventMapper
+import kotlin.experimental.ExperimentalTypeInference
 import kotlin.reflect.KClass
 
 /**
@@ -26,7 +27,14 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
         aggregateRegistry.getStateTransitionInfo<ID, A, S>(aggregateClass)
             ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered")
 
-    fun <E : Event<A>> create(eventGenerationFunction: (a: S) -> E): E {
+    fun <E : Event<A>> create(eventGenerationFunction: SingleEventCommand<ID, A, S, E>): E {
+        val emptyAggregateState = aggregateInfo.emptyStateCreator.invoke()
+        return tryUpdateState(emptyAggregateState, 0, eventGenerationFunction)
+    }
+
+    @OptIn(ExperimentalTypeInference::class)
+    @OverloadResolutionByLambdaReturnType
+    fun <E : Event<A>> create(eventGenerationFunction: MultiEventCommand<ID, A, S, E>): List<E> {
         val emptyAggregateState = aggregateInfo.emptyStateCreator.invoke()
         return tryUpdateState(emptyAggregateState, 0, eventGenerationFunction)
     }
@@ -36,7 +44,7 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
      *
      * [aggregateId] - refers to the ID of the aggregate instance for update. If no aggregate instance with
      * given id found then IllegalArgumentException will be thrown.
-     * [eventGenerationFunction] - method will construct the current aggregate instance state and pass it to this function.
+     * [command] - method will construct the current aggregate instance state and pass it to this function.
      * You can run any logic/validations/invariants checks on this aggregate state and return the [Event] instance if case
      * everything is fine and update can be done. Just throw exception with a descriptive message otherwise e.g. "Name can't be empty".
      *
@@ -52,15 +60,19 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
      * The number of attempts is limited and can be configured by "spinLockMaxAttempts" property of [EventSourcingProperties].
      *
      */
-    fun <E : Event<A>> update(aggregateId: ID, eventGenerationFunction: (a: S) -> E): E {
+//    @OptIn(ExperimentalTypeInference::class)
+//    @OverloadResolutionByLambdaReturnType
+    fun <E : Event<A>> update(aggregateId: ID, command: SingleEventCommand<ID, A, S, E>): E {
         return updateWithSpinLock(aggregateId) { aggregateState, version ->
-            tryUpdateState(aggregateState, version, eventGenerationFunction)
+            tryUpdateState(aggregateState, version, command)
         }
     }
 
-    fun updateSerial(aggregateId: ID, eventGenerationFunction: (a: S) -> List<Event<A>>): List<Event<A>> {
+    @OptIn(ExperimentalTypeInference::class)
+    @OverloadResolutionByLambdaReturnType
+    fun update(aggregateId: ID, command: MultiEventCommand<ID, A, S, Event<A>>): List<Event<A>> {
         return updateWithSpinLock(aggregateId) { aggregateState, version ->
-            tryUpdateState(aggregateState, version, eventGenerationFunction)
+            tryUpdateState(aggregateState, version, command)
         }
     }
 
@@ -125,10 +137,10 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
         }
     }
 
-    private fun <R> updateWithSpinLock(
+    private fun <Result> updateWithSpinLock(
         aggregateId: ID,
-        updateFunction: (aggregateState: S, version: Long) -> R
-    ): R {
+        updateFunction: (aggregateState: S, version: Long) -> Result
+    ): Result {
         var numOfAttempts = 0
         while (true) { // spinlock
             val (currentVersion, aggregateState) = getVersionedState(aggregateId)
@@ -152,24 +164,18 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
     private fun <E : Event<A>> tryUpdateState(
         aggregateState: S,
         currentStateVersion: Long, // todo sukhoa state should include version
-        eventGenerationFunction: (S) -> E
-    ): E {
-        val eventsGenerationFunction = { state: S ->
-            listOf(eventGenerationFunction(state))
-        }
-
-        return tryUpdateState(aggregateState, currentStateVersion, eventsGenerationFunction).first()
-    }
+        command: SingleEventCommand<ID, A, S, E>
+    ) = tryUpdateState(aggregateState, currentStateVersion, command.toMultiEventCommand()).first()
 
     private fun <E : Event<A>> tryUpdateState(
         aggregateState: S,
         currentStateVersion: Long,
-        eventGenerationFunction: (S) -> List<E>
+        command: MultiEventCommand<ID, A, S, E>
     ): List<E> {
         var updatedVersion = currentStateVersion
 
         val newEvents = try {
-            eventGenerationFunction(aggregateState)
+            command.execute(aggregateState)
         } catch (e: Exception) {
             logger.warn("Exception thrown during update: ", e)
             throw e

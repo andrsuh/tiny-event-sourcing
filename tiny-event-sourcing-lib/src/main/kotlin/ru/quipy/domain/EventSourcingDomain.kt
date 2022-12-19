@@ -63,3 +63,14 @@ class ActiveEventStreamReader(
     override var version: Long,
     val lastInteraction: Long
 ) : Unique<UUID>, Versioned
+
+fun interface SingleEventCommand<ID : Any, A : Aggregate, S : AggregateState<ID, A>, E : Event<A>> {
+    fun execute(state: S): E
+}
+
+fun <ID : Any, A : Aggregate, S : AggregateState<ID, A>, E : Event<A>> SingleEventCommand<ID, A, S, E>.toMultiEventCommand() =
+    MultiEventCommand<ID, A, S, E> { state -> listOf(this@toMultiEventCommand.execute(state)) }
+
+fun interface MultiEventCommand<ID : Any, A : Aggregate, S : AggregateState<ID, A>, E : Event<A>> {
+    fun execute(state: S): List<E>
+}

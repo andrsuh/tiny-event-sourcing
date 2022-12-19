@@ -66,7 +66,7 @@ class UpdateSerialTest {
     }
 
     private fun getExpectedMask(): String {
-        return List(ITERATIONS_PER_TASK * CONCURRENT_TASKS * BATCH_SIZE) { it }
+        return List(ITERATIONS_PER_TASK * CONCURRENT_TASKS * BATCH_SIZE) { it + 1 }
             .joinToString("_")
     }
 
@@ -89,7 +89,7 @@ class UpdateSerialTest {
             repeat(CONCURRENT_TASKS) {
                 launch(Dispatchers.Default) {
                     repeat(ITERATIONS_PER_TASK) {
-                        service.updateSerial(testAggregateId) {
+                        service.update(testAggregateId) {
                             it.testUpdateSerial(BATCH_SIZE)
                         }
                     }
