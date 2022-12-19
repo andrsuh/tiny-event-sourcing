@@ -1,4 +1,4 @@
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/ru.quipy/tiny-event-sourcing-spring-boot-starter/badge.svg?style=plastic)](https://maven-badges.herokuapp.com/maven-central/cz.jirutka.rsql/rsql-parser)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/ru.quipy/tiny-event-sourcing-spring-boot-starter/badge.svg?style=plastic)](https://maven-badges.herokuapp.com/maven-central/ru.quipy/tiny-event-sourcing-spring-boot-starter)
 
 
 # Tiny event sourcing library
