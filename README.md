@@ -2,6 +2,9 @@
 
 ## Getting Started
 
+### Versions
+You can find the information about current version and what changes were made on our [releases page](https://github.com/andrsuh/tiny-event-sourcing/wiki/RELEASES-tiny-event-sourcing)
+
 ### Installation with Spring Boot Starters
 To use library with Spring Boot put the following dependency in your `pom.xml`:
 
