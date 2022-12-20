@@ -6,6 +6,7 @@ import ru.quipy.core.exceptions.EventRecordOptimisticLockException
 import ru.quipy.database.EventStore
 import ru.quipy.domain.*
 import ru.quipy.mapper.EventMapper
+import kotlin.experimental.ExperimentalTypeInference
 import kotlin.reflect.KClass
 
 /**
@@ -26,23 +27,31 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
         aggregateRegistry.getStateTransitionInfo<ID, A, S>(aggregateClass)
             ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered")
 
-    fun <E : Event<A>> create(eventGenerationFunction: (a: S) -> E): E {
+    fun <E : Event<A>> create(command: (a: S) -> E): E {
         val emptyAggregateState = aggregateInfo.emptyStateCreator.invoke()
-        return tryUpdateState(emptyAggregateState, 0, eventGenerationFunction)
+        return tryUpdate(emptyAggregateState, 0, command)
+    }
+
+    @OptIn(ExperimentalTypeInference::class)
+    @OverloadResolutionByLambdaReturnType
+    fun <E : Event<A>> create(command: (a: S) -> List<E>): List<E> {
+        val emptyAggregateState = aggregateInfo.emptyStateCreator.invoke()
+        return tryUpdate(emptyAggregateState, 0, command)
     }
 
     /**
-     * Allows to update aggregate by running some logic on aggregate state that results in [Event].
+     * Allows to update aggregate by performing command logic on aggregate state which results in [Event].
      *
      * [aggregateId] - refers to the ID of the aggregate instance for update. If no aggregate instance with
      * given id found then IllegalArgumentException will be thrown.
-     * [eventGenerationFunction] - method will construct the current aggregate instance state and pass it to this function.
-     * You can run any logic/validations/invariants checks on this aggregate state and return the [Event] instance if case
+     * [command] - function that receives current aggregate state, perform some business logic and produces event.
+     * Library itself constructs the current aggregate instance state and passes it to this function.
+     * You can run any logic/validations/invariants checks on this aggregate state and return the [Event] instance in case
      * everything is fine and update can be done. Just throw exception with a descriptive message otherwise e.g. "Name can't be empty".
      *
-     * Your event will be applied to the aggregate to check if it is applicable indeed. Then event will be serialized to
-     * string using [EventMapper], wrapped with [EventRecord] instance containing all the necessary meta-information and
-     * sent to [EventStore.insertEventRecord] for string it in aggregate event log.
+     * Your event will be applied to the aggregate to check if it is applicable indeed by performing corresponding [AggregateStateTransitionFunction].
+     * Then event will be serialized to string using [EventMapper], wrapped with [EventRecord] instance containing all the necessary meta-information and
+     * sent to [EventStore] for storing it in aggregate event log.
      *
      * If insertion failed with [DuplicateEventIdException], which means some other process managed to store event with same
      * version/aggregateId first, we will repeat all the actions starting with loading and construction the freshest
@@ -52,15 +61,17 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
      * The number of attempts is limited and can be configured by "spinLockMaxAttempts" property of [EventSourcingProperties].
      *
      */
-    fun <E : Event<A>> update(aggregateId: ID, eventGenerationFunction: (a: S) -> E): E {
+    fun <E : Event<A>> update(aggregateId: ID, command: (S) -> E): E {
         return updateWithSpinLock(aggregateId) { aggregateState, version ->
-            tryUpdateState(aggregateState, version, eventGenerationFunction)
+            tryUpdate(aggregateState, version, command)
         }
     }
 
-    fun updateSerial(aggregateId: ID, eventGenerationFunction: (a: S) -> List<Event<A>>): List<Event<A>> {
+    @OptIn(ExperimentalTypeInference::class)
+    @OverloadResolutionByLambdaReturnType
+    fun <E : Event<A>> update(aggregateId: ID, command: (S) -> List<E>): List<E> {
         return updateWithSpinLock(aggregateId) { aggregateState, version ->
-            tryUpdateState(aggregateState, version, eventGenerationFunction)
+            tryUpdate(aggregateState, version, command)
         }
     }
 
@@ -149,29 +160,27 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
         }
     }
 
-    private fun <E : Event<A>> tryUpdateState(
+    private fun <E : Event<A>> tryUpdate(
         aggregateState: S,
         currentStateVersion: Long, // todo sukhoa state should include version
-        eventGenerationFunction: (S) -> E
+        command: (S) -> E
     ): E {
-        val eventsGenerationFunction = { state: S ->
-            listOf(eventGenerationFunction(state))
-        }
+        val multiEventCommand = { state: S -> listOf(command(state)) }
 
-        return tryUpdateState(aggregateState, currentStateVersion, eventsGenerationFunction).first()
+        return tryUpdate(aggregateState, currentStateVersion, multiEventCommand).first()
     }
 
-    private fun <E : Event<A>> tryUpdateState(
+    private fun <E : Event<A>> tryUpdate(
         aggregateState: S,
         currentStateVersion: Long,
-        eventGenerationFunction: (S) -> List<E>
+        command: (S) -> List<E>
     ): List<E> {
         var updatedVersion = currentStateVersion
 
         val newEvents = try {
-            eventGenerationFunction(aggregateState)
+            command(aggregateState)
         } catch (e: Exception) {
-            logger.warn("Exception thrown during update: ", e)
+            logger.warn("Exception thrown during aggregate update: ", e)
             throw e
         }
 

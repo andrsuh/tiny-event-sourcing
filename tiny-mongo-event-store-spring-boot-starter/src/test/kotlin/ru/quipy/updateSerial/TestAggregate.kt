@@ -7,7 +7,8 @@ import ru.quipy.domain.Aggregate
 import ru.quipy.domain.AggregateState
 import ru.quipy.domain.Event
 import ru.quipy.updateSerial.UpdateSerialTest.Companion.CREATED_EVENT_NAME
-import ru.quipy.updateSerial.UpdateSerialTest.Companion.TEST_EVENT_NAME
+import ru.quipy.updateSerial.UpdateSerialTest.Companion.TEST_EVENT_NAME_1
+import ru.quipy.updateSerial.UpdateSerialTest.Companion.TEST_EVENT_NAME_2
 import ru.quipy.updateSerial.UpdateSerialTest.Companion.TEST_TABLE_NAME
 import java.util.*
 
@@ -27,10 +28,20 @@ class TestAggregateState : AggregateState<UUID, TestAggregate> {
         id = event.testId
     }
 
-    fun testUpdateSerial(size: Int) = List(size) { index -> TestUpdateSerialEvent(order + index + 1) }
+    fun testUpdateSerial(size: Int) = List(size) {index ->
+            when (index % 2) {
+                0 -> TestEvent_1(order + index + 1)
+                else -> TestEvent_2(order + index + 1)
+            }
+    }
 
     @StateTransitionFunc
-    fun testUpdateSerial(event: TestUpdateSerialEvent) {
+    fun testUpdateSerial(event: TestEvent_1) {
+        order = event.order
+    }
+
+    @StateTransitionFunc
+    fun testUpdateSerial(event: TestEvent_2) {
         order = event.order
     }
 }
@@ -43,10 +54,18 @@ class TestCreatedEvent(
     createdAt = System.currentTimeMillis(),
 )
 
-@DomainEvent(name = TEST_EVENT_NAME)
-class TestUpdateSerialEvent(
+@DomainEvent(name = TEST_EVENT_NAME_1)
+class TestEvent_1(
     val order: Int
 ) : Event<TestAggregate>(
-    name = TEST_EVENT_NAME,
+    name = TEST_EVENT_NAME_1,
+    createdAt = System.currentTimeMillis(),
+)
+
+@DomainEvent(name = TEST_EVENT_NAME_2)
+class TestEvent_2(
+    val order: Int
+) : Event<TestAggregate>(
+    name = TEST_EVENT_NAME_2,
     createdAt = System.currentTimeMillis(),
 )

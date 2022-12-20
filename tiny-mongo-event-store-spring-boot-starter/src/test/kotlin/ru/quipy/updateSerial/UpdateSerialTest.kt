@@ -33,7 +33,8 @@ class UpdateSerialTest {
         private val testAggregateId = UUID.randomUUID()
 
         const val CREATED_EVENT_NAME = "SERIAL_TEST_CREATED_EVENT"
-        const val TEST_EVENT_NAME = "SERIAL_TEST_EVENT"
+        const val TEST_EVENT_NAME_1 = "TEST_EVENT_1"
+        const val TEST_EVENT_NAME_2 = "TEST_EVENT_2"
         const val TEST_TABLE_NAME = "update-serial-test"
 
         const val BATCH_SIZE = 5
@@ -66,18 +67,18 @@ class UpdateSerialTest {
     }
 
     private fun getExpectedMask(): String {
-        return List(ITERATIONS_PER_TASK * CONCURRENT_TASKS * BATCH_SIZE) { it }
+        return List(ITERATIONS_PER_TASK * CONCURRENT_TASKS * BATCH_SIZE) { it + 1 }
             .joinToString("_")
     }
 
     private fun getActualMask(): String {
         val query = Query()
-            .addCriteria(Criteria.where("eventTitle").`is`(TEST_EVENT_NAME))
+            .addCriteria(Criteria.where("eventTitle").`in`(TEST_EVENT_NAME_1, TEST_EVENT_NAME_2))
             .with(Sort.by("version").ascending())
         return mongoTemplate
             .find(query, EventRecord::class.java, TEST_TABLE_NAME)
             .joinToString("_") {
-                mapper.readValue(it.payload, TestUpdateSerialEvent::class.java).order.toString()
+                mapper.readValue(it.payload, TestEvent_1::class.java).order.toString()
             }
     }
 
@@ -89,7 +90,7 @@ class UpdateSerialTest {
             repeat(CONCURRENT_TASKS) {
                 launch(Dispatchers.Default) {
                     repeat(ITERATIONS_PER_TASK) {
-                        service.updateSerial(testAggregateId) {
+                        service.update(testAggregateId) {
                             it.testUpdateSerial(BATCH_SIZE)
                         }
                     }
