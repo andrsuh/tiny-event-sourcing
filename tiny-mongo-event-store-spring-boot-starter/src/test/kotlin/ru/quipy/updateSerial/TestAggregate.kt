@@ -28,6 +28,9 @@ class TestAggregateState : AggregateState<UUID, TestAggregate> {
         id = event.testId
     }
 
+    /**
+     * This command generates the list of different type of events like it can be in a real world
+     */
     fun testUpdateSerial(size: Int) = List(size) {index ->
             when (index % 2) {
                 0 -> TestEvent_1(order + index + 1)
