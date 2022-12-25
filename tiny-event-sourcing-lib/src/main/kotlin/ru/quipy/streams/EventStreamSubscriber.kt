@@ -9,7 +9,6 @@ import ru.quipy.mapper.EventMapper
 import ru.quipy.streams.EventStreamSubscriber.EventStreamSubscriptionBuilder
 import java.util.concurrent.Executors
 import kotlin.reflect.KClass
-import kotlin.reflect.KFunction1
 
 /**
  * Wraps the instance of [AggregateEventStream] and:
@@ -50,7 +49,7 @@ class EventStreamSubscriber<A : Aggregate>(
     class EventStreamSubscriptionBuilder<A : Aggregate>(
         private val wrapped: AggregateEventStream<A>,
         private val eventMapper: EventMapper,
-        private val nameToEventClassFunc: KFunction1<String, KClass<Event<A>>>,
+        private val nameToEventClassFunc: (String) -> KClass<Event<A>>,
         private val activeReaderManager: EventStreamReaderManager,
     ) {
         private val handlers = mutableMapOf<KClass<out Event<A>>, suspend (Event<A>) -> Unit>()
@@ -72,6 +71,6 @@ class EventStreamSubscriber<A : Aggregate>(
  */
 fun <A : Aggregate> AggregateEventStream<A>.toSubscriptionBuilder(
     eventMapper: EventMapper,
-    nameToEventClassFunc: KFunction1<String, KClass<Event<A>>>,
+    nameToEventClassFunc: (String) -> KClass<Event<A>>,
     activeReaderManager: EventStreamReaderManager
 ) = EventStreamSubscriptionBuilder(this, eventMapper, nameToEventClassFunc, activeReaderManager)
