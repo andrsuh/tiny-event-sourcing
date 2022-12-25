@@ -78,7 +78,10 @@ class SingleEventStreamReadingStrategy<A : Aggregate>(
     private val nextReaderAliveCheck: Duration = 15.seconds
 
     @Volatile
-    private var isActive = true
+    private var isActive: Boolean = true
+
+    @Volatile
+    private var reader: CommonEventStreamReadingStrategy<A>? = null
 
     override suspend fun read(stream: AggregateEventStream<A>) {
         while (isActive) {
@@ -87,9 +90,10 @@ class SingleEventStreamReadingStrategy<A : Aggregate>(
                 delay(nextReaderAliveCheck.inWholeMilliseconds)
             } else if (streamManager.tryInterceptReading(stream.streamName)) {
                 stream.launchEventStream()
+                streamManager.initReaderState(stream.streamName)
 
-                val commonReader = CommonEventStreamReadingStrategy(streamManager, eventMapper, nameToEventClassFunc, handlers)
-                commonReader.read(stream)
+                reader = CommonEventStreamReadingStrategy(streamManager, eventMapper, nameToEventClassFunc, handlers)
+                reader!!.read(stream)
             } else {
                 logger.info("Failed to intercept reading of stream ${stream.streamName}, because someone else succeeded first.")
                 continue
@@ -98,6 +102,7 @@ class SingleEventStreamReadingStrategy<A : Aggregate>(
     }
 
     override fun stop() {
+        reader?.stop()
         isActive = false
     }
 }
