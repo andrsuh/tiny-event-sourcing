@@ -127,6 +127,14 @@ class MongoClientEventStore(
         return entityConverter.convertBsonDocumentToObject(document, ActiveEventStreamReader::class)
     }
 
+    override fun updateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader) {
+        TODO("Not yet implemented")
+    }
+
+    override fun tryReplaceActiveStreamReader(expectedVersion: Long, newActiveReader: ActiveEventStreamReader): Boolean {
+        TODO("Not yet implemented")
+    }
+
     override fun commitStreamReadIndex(readIndex: EventStreamReadIndex) {
         updateWithLatestVersion("event-stream-read-index", readIndex) // todo sukhoa make configurable?
     }

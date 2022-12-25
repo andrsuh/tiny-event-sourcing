@@ -89,6 +89,18 @@ open class MongoTemplateEventStore : EventStore {
         return mongoTemplate.findById(streamName, "event-stream-active-readers") // todo sukhoa make configurable?
     }
 
+    override fun updateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader) {
+        mongoTemplate.insetOrUpdateEntityByIdAndVersion("event-stream-active-readers", updatedActiveReader)
+    }
+
+    override fun tryReplaceActiveStreamReader(expectedVersion: Long, newActiveReader: ActiveEventStreamReader): Boolean {
+        return mongoTemplate.tryReplaceWithOptimisticLock(
+            "event-stream-active-readers",
+            expectedVersion,
+            newActiveReader
+        )
+    }
+
     override fun commitStreamReadIndex(readIndex: EventStreamReadIndex) {
         mongoTemplate.updateWithLatestVersion("event-stream-read-index", readIndex) // todo sukhoa make configurable?
     }
@@ -115,6 +127,50 @@ inline fun <reified E> MongoTemplate.updateWithLatestVersion(
 } catch (e: DuplicateKeyException) {
     logger.info("Entity concurrent update led to clashing. Entity: $entity, table name: $tableName", e)
     null
+}
+
+inline fun <reified E> MongoTemplate.insetOrUpdateEntityByIdAndVersion(
+    tableName: String,
+    replacement: E
+): E? where E : Versioned, E : Unique<*> {
+    return update(E::class.java)
+        .inCollection(tableName)
+        .matching(Query.query(Criteria.where("_id").`is`(replacement.id).and("version").`is`(replacement.version)))
+        .replaceWith(replacement)
+        .withOptions(FindAndReplaceOptions.options().upsert().returnNew())
+        .findAndReplace()
+        .orElse(null)
+}
+
+inline fun <reified E> MongoTemplate.tryReplaceWithOptimisticLock(
+    tableName: String,
+    expectedVersion: Long,
+    entity: E
+): Boolean where E : Versioned, E : Unique<*> {
+    while (true) {
+        val existingEntity = findById(entity.id!!, E::class.java, tableName)
+
+        if (existingEntity != null) {
+            val updateResult = update(E::class.java)
+                .inCollection(tableName)
+                .matching(Query.query(Criteria.where("_id").`is`(entity.id).and("version").`is`(expectedVersion)))
+                .replaceWith(entity)
+                .findAndReplace()
+
+            return updateResult.isPresent
+        } else {
+            try {
+                insert(E::class.java)
+                    .inCollection(tableName)
+                    .one(entity)
+
+                return true
+            } catch (e: DuplicateKeyException) {
+                logger.info("Entity concurrent update led to clashing. Entity: $entity, table name: $tableName", e)
+                continue
+            }
+        }
+    }
 }
 
 inline fun <reified E, ID> MongoTemplate.updateWithOptimisticLock(
