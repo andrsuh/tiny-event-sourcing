@@ -41,7 +41,7 @@ class CommonEventStreamReadingStrategy<A : Aggregate>(
     private var isActive = true
 
     override suspend fun read(stream: AggregateEventStream<A>) {
-        // TODO: stop mechanism
+        logger.info("Starting reading stream ${stream.streamName}...")
         while (isActive) {
             stream.handleNextRecord { eventRecord ->
                 try {
@@ -74,7 +74,7 @@ class SingleEventStreamReadingStrategy<A : Aggregate>(
     private val handlers: Map<KClass<out Event<A>>, suspend (Event<A>) -> Unit>,
 ) : EventStreamReadingStrategy<A> {
     private val logger: Logger = LoggerFactory.getLogger(SingleEventStreamReadingStrategy::class.java)
-    private val nextReaderAliveCheck: Duration = 1.seconds
+    private val nextReaderAliveCheck: Duration = 10.seconds
 
     @Volatile
     private var isActive = true
@@ -82,11 +82,15 @@ class SingleEventStreamReadingStrategy<A : Aggregate>(
     override suspend fun read(stream: AggregateEventStream<A>) {
         while (isActive) {
             if (streamManager.isReaderAlive(stream.streamName)) {
+                logger.debug("Reader of stream ${stream.streamName} is alive. Waiting $nextReaderAliveCheck before continuing...")
                 Thread.sleep(nextReaderAliveCheck.inWholeMilliseconds)
             } else if (streamManager.tryInterceptReading(stream.streamName)) {
                 val commonReader = CommonEventStreamReadingStrategy(streamManager, eventMapper, nameToEventClassFunc, handlers)
                 commonReader.read(stream)
-            } else continue
+            } else {
+                logger.info("Failed to intercept reading of stream ${stream.streamName}, because someone else succeeded first.")
+                continue
+            }
         }
     }
 
@@ -112,9 +116,12 @@ class ActiveEventStreamReaderManager(
         val lastInteraction = activeStreamReader.lastInteraction
         val currentTime = System.currentTimeMillis()
 
-        if ((currentTime - lastInteraction).minutes > maxActiveReaderInactivityPeriod)
+        if (currentTime - lastInteraction > maxActiveReaderInactivityPeriod.inWholeMilliseconds) {
+            logger.warn("Reader of stream $streamName is not alive. Last interaction time: $lastInteraction.")
             return false
+        }
 
+        logger.debug("Reader of stream $streamName is alive. Last interaction time: $lastInteraction.")
         return true
     }
 
