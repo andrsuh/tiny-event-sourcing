@@ -2,14 +2,11 @@ package ru.quipy.streams
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import ru.quipy.database.EventStore
-import ru.quipy.domain.ActiveEventStreamReader
 import ru.quipy.domain.Aggregate
 import ru.quipy.domain.Event
 import ru.quipy.mapper.EventMapper
 import kotlin.reflect.KClass
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 interface EventStreamReadingStrategy<A : Aggregate> {
@@ -42,6 +39,7 @@ class CommonEventStreamReadingStrategy<A : Aggregate>(
 
     override suspend fun read(stream: AggregateEventStream<A>) {
         logger.info("Starting reading stream ${stream.streamName}...")
+
         while (isActive) {
             stream.handleNextRecord { eventRecord ->
                 try {
@@ -55,6 +53,8 @@ class CommonEventStreamReadingStrategy<A : Aggregate>(
                 }
             }
         }
+
+        logger.info("Reader of stream ${stream.streamName} was stopped.")
     }
 
     private fun convertPayloadToEvent(payload: String, eventTitle: String): Event<A> = eventMapper.toEvent(
