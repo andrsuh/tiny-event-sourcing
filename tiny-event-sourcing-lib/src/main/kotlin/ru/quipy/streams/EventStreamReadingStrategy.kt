@@ -1,6 +1,6 @@
 package ru.quipy.streams
 
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import ru.quipy.domain.Aggregate
@@ -34,12 +34,18 @@ class CommonEventStreamReadingStrategy<A : Aggregate>(
     private val handlers: Map<KClass<out Event<A>>, suspend (Event<A>) -> Unit>,
 ) : EventStreamReadingStrategy<A> {
     private val logger: Logger = LoggerFactory.getLogger(CommonEventStreamReadingStrategy::class.java)
+    private val activityUpdateInterval: Duration = 30.seconds
 
     @Volatile
     private var isActive = true
 
+    @Volatile
+    private var activityJob: Job? = null
+
     override suspend fun read(stream: AggregateEventStream<A>) {
         logger.info("Starting reading stream ${stream.streamName}...")
+
+        activityJob = runActivityUpdate(stream)
 
         while (isActive) {
             stream.handleNextRecord { eventRecord ->
@@ -58,14 +64,27 @@ class CommonEventStreamReadingStrategy<A : Aggregate>(
         logger.info("Reader of stream ${stream.streamName} was stopped.")
     }
 
+    override fun stop() {
+        isActive = false
+        activityJob?.cancel()
+    }
+
+    private fun runActivityUpdate(stream: AggregateEventStream<A>): Job {
+        logger.info("Starting activity updating job of stream ${stream.streamName}...")
+        val coroutineScope = CoroutineScope(Dispatchers.Default)
+
+        return coroutineScope.launch {
+            while (isActive) {
+                streamManager.updateReaderState(stream.streamName, stream.readingIndex)
+                delay(activityUpdateInterval.inWholeMilliseconds)
+            }
+        }
+    }
+
     private fun convertPayloadToEvent(payload: String, eventTitle: String): Event<A> = eventMapper.toEvent(
         payload,
         nameToEventClassFunc(eventTitle)
     )
-
-    override fun stop() {
-        isActive = false
-    }
 }
 
 class SingleEventStreamReadingStrategy<A : Aggregate>(
@@ -102,7 +121,7 @@ class SingleEventStreamReadingStrategy<A : Aggregate>(
     }
 
     override fun stop() {
-        reader?.stop()
         isActive = false
+        reader?.stop()
     }
 }
