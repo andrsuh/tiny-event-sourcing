@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration
 import ru.quipy.core.*
 import ru.quipy.database.EventStore
 import ru.quipy.mapper.JsonEventMapper
+import ru.quipy.streams.ActiveEventStreamReaderManager
 import ru.quipy.streams.AggregateEventStreamManager
 import ru.quipy.streams.AggregateSubscriptionsManager
 
@@ -53,11 +54,19 @@ class EventSourcingLibConfig {
         eventStreamManager: AggregateEventStreamManager,
         aggregateRegistry: AggregateRegistry,
         eventMapper: JsonEventMapper,
+        eventStore: EventStore
     ) = AggregateSubscriptionsManager(
         eventStreamManager,
+        streamReaderManager(eventStore),
         aggregateRegistry,
         eventMapper
     )
+
+    @ConditionalOnBean(EventStore::class)
+    @ConditionalOnMissingBean
+    fun streamReaderManager(
+        eventStore: EventStore
+    ) = ActiveEventStreamReaderManager(eventStore)
 
     @Bean
     @ConditionalOnBean(EventStore::class)

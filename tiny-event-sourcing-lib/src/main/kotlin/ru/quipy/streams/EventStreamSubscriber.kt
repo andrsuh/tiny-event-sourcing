@@ -9,6 +9,7 @@ import ru.quipy.mapper.EventMapper
 import ru.quipy.streams.EventStreamSubscriber.EventStreamSubscriptionBuilder
 import java.util.concurrent.Executors
 import kotlin.reflect.KClass
+import kotlin.reflect.KFunction1
 
 /**
  * Wraps the instance of [AggregateEventStream] and:
@@ -23,21 +24,7 @@ class EventStreamSubscriber<A : Aggregate>(
      * Wrapped [AggregateEventStream]
      */
     private val aggregateEventStream: AggregateEventStream<A>,
-    /**
-     * Allows to map some row representation of event to instance of [Event] class
-     */
-    private val eventMapper: EventMapper,
-    /**
-     * When we store event to DB we just store the row bytes of the event (most likely json representation).
-     * Also, the event meta-information is stored - id, timestamp, aggregateId and the NAME of the event.
-     * The NAME is mapped to the class of corresponding event. So we ask this function - which class is mapped to the name?
-     * to correctly deserialize the row content of the event.
-     */
-    private val nameToEventClassFunc: (String) -> KClass<Event<A>>,
-    /**
-     * Maps the event classes to corresponding business logic that should be performed once the event of the class is fired.
-     */
-    private val handlers: Map<KClass<out Event<A>>, suspend (Event<A>) -> Unit>
+    private val readerStrategy: EventStreamReadingStrategy<A>
 ) {
     @Volatile
     private var active = true
@@ -48,24 +35,8 @@ class EventStreamSubscriber<A : Aggregate>(
         CoroutineName("handlingCoroutine") + Executors.newSingleThreadExecutor()
             .asCoroutineDispatcher() // todo sukhoa customize
     ).launch {
-        while (active) {
-            aggregateEventStream.handleNextRecord { eventRecord ->
-                try {
-                    val event = payloadToEvent(eventRecord.payload, eventRecord.eventTitle)
-                    handlers[event::class]?.invoke(event)
-                    true
-                } catch (e: Exception) {
-                    logger.error("Unexpected exception while handling event in subscriber. Stream: ${aggregateEventStream.streamName}, event record: $eventRecord", e)
-                    false
-                }
-            }
-        }
+        readerStrategy.read(aggregateEventStream)
     }
-
-    private fun payloadToEvent(payload: String, eventTitle: String): Event<A> = eventMapper.toEvent(
-        payload,
-        nameToEventClassFunc(eventTitle)
-    )
 
     /**
      * Stops both the consuming process and the underlying event stream process
@@ -82,7 +53,8 @@ class EventStreamSubscriber<A : Aggregate>(
     class EventStreamSubscriptionBuilder<A : Aggregate>(
         private val wrapped: AggregateEventStream<A>,
         private val eventMapper: EventMapper,
-        private val nameToEventClassFunc: (String) -> KClass<Event<A>>,
+        private val nameToEventClassFunc: KFunction1<String, KClass<Event<A>>>,
+        private val activeReaderManager: EventStreamReaderManager,
     ) {
         private val handlers = mutableMapOf<KClass<out Event<A>>, suspend (Event<A>) -> Unit>()
 
@@ -94,7 +66,7 @@ class EventStreamSubscriber<A : Aggregate>(
             return this
         }
 
-        fun subscribe() = EventStreamSubscriber(wrapped, eventMapper, nameToEventClassFunc, handlers)
+        fun subscribe() = EventStreamSubscriber(wrapped, SingleEventStreamReadingStrategy(activeReaderManager, eventMapper, nameToEventClassFunc, handlers))
     }
 }
 
@@ -103,5 +75,6 @@ class EventStreamSubscriber<A : Aggregate>(
  */
 fun <A : Aggregate> AggregateEventStream<A>.toSubscriptionBuilder(
     eventMapper: EventMapper,
-    nameToEventClassFunc: (String) -> KClass<Event<A>>
-) = EventStreamSubscriptionBuilder(this, eventMapper, nameToEventClassFunc)
+    nameToEventClassFunc: KFunction1<String, KClass<Event<A>>>,
+    activeReaderManager: EventStreamReaderManager
+) = EventStreamSubscriptionBuilder(this, eventMapper, nameToEventClassFunc, activeReaderManager)
