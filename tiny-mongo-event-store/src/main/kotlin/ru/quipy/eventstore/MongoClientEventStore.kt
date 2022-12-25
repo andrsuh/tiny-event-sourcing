@@ -128,11 +128,11 @@ class MongoClientEventStore(
     }
 
     override fun updateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader) {
-        TODO("Not yet implemented")
+        insetOrUpdateEntityByIdAndVersion("event-stream-active-readers", updatedActiveReader)
     }
 
     override fun tryReplaceActiveStreamReader(expectedVersion: Long, newActiveReader: ActiveEventStreamReader): Boolean {
-        TODO("Not yet implemented")
+        return tryReplaceWithOptimisticLock("event-stream-active-readers", expectedVersion, newActiveReader)
     }
 
     override fun commitStreamReadIndex(readIndex: EventStreamReadIndex) {
@@ -174,5 +174,52 @@ class MongoClientEventStore(
     } catch (e: MongoDuplicateKeyException) {
         logger.info("Entity concurrent update led to clashing. Entity: $entity, table name: $tableName", e)
         null
+    }
+
+    private inline fun <reified T> insetOrUpdateEntityByIdAndVersion(
+        tableName: String, replacement: T, expectedVersion: Long? = null
+    ): T? where T : Versioned, T : Unique<*> {
+        val document = entityConverter.convertObjectToBsonDocument(replacement)
+        document.remove("_id")
+
+        val result = databaseFactory.getDatabase()
+            .getCollection(tableName)
+            .findOneAndReplace(
+                and(eq("_id", replacement.id), eq("version", expectedVersion ?: replacement.version)),
+                document,
+                FindOneAndReplaceOptions()
+                    .upsert(true)
+                    .returnDocument(ReturnDocument.AFTER)
+            ) ?: return null
+
+        return entityConverter.convertBsonDocumentToObject(result, T::class)
+    }
+
+    private inline fun <reified E> tryReplaceWithOptimisticLock(
+        tableName: String,
+        expectedVersion: Long,
+        entity: E
+    ): Boolean where E : Versioned, E : Unique<*> {
+        while (true) {
+            val existingDocument = findOne(tableName, entity.id!!)
+
+            if (existingDocument != null) {
+                val updateResult = insetOrUpdateEntityByIdAndVersion(tableName, entity, expectedVersion)
+                return updateResult != null
+            } else {
+                try {
+                    val document = entityConverter.convertObjectToBsonDocument(entity)
+
+                    exceptionTranslator.withTranslation {
+                        databaseFactory.getDatabase().getCollection(tableName).insertOne(document)
+                    }
+
+                    return true
+                } catch (e: MongoDuplicateKeyException) {
+                    logger.info("Entity concurrent update led to clashing. Entity: $entity, table name: $tableName", e)
+                    continue
+                }
+            }
+        }
     }
 }
