@@ -42,7 +42,7 @@ class BufferedAggregateEventStream<A : Aggregate>(
     @Volatile
     private var resetInfo = NO_RESET_REQUIRED
 
-    private var active = AtomicBoolean(true)
+    private var active = AtomicBoolean(false)
 
     private var suspended = AtomicBoolean(false)
 
@@ -62,16 +62,16 @@ class BufferedAggregateEventStream<A : Aggregate>(
                 "Unexpected error in aggregate event stream ${streamName}. Index $readingIndex. Relaunching",
                 th
             )
-            eventStreamJob = launchEventStream()
+            eventStreamJob = launchJob()
         } else {
             logger.warn("Stopped event stream coroutine. Stream: $streamName, index $readingIndex")
         }
     }
 
     @Volatile
-    private var eventStreamJob = launchEventStream()
+    private var eventStreamJob: Job? = null
 
-    private fun launchEventStream() =
+    private fun launchJob() =
         CoroutineScope(CoroutineName("reading-$streamName-coroutine") + dispatcher).launch {
             // initial delay
             delay(5_000)
@@ -174,6 +174,15 @@ class BufferedAggregateEventStream<A : Aggregate>(
         }
     }
 
+    override fun launchEventStream() {
+        if (!active.compareAndSet(false, true)) {
+            logger.warn("Failed to CAS active state to 'true' for stream $streamName.")
+            return
+        }
+
+        eventStreamJob = launchJob()
+    }
+
     override suspend fun handleNextRecord(eventProcessingFunction: suspend (EventRecord) -> Boolean) {
         val receive = eventsChannel.receive()
         try {
@@ -194,8 +203,11 @@ class BufferedAggregateEventStream<A : Aggregate>(
         if (!active.compareAndSet(true, false)) return
         // todo sukhoa think of committing last read index
 
-        if (eventStreamJob.isActive) {
-            eventStreamJob.cancel()
+        if (eventStreamJob == null)
+            return
+
+        if (eventStreamJob!!.isActive) {
+            eventStreamJob!!.cancel()
         }
     }
 

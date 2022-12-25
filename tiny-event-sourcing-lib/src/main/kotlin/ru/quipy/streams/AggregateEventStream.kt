@@ -23,6 +23,7 @@ interface AggregateEventStream<A : Aggregate> {
 
     val readingIndex: Long
 
+    fun launchEventStream()
     /**
      * Allows to handle next event. Suspends until event is supplied.
      */

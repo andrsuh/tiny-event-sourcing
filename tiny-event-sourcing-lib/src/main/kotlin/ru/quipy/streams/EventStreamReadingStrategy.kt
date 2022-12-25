@@ -1,5 +1,6 @@
 package ru.quipy.streams
 
+import kotlinx.coroutines.delay
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import ru.quipy.domain.Aggregate
@@ -74,7 +75,7 @@ class SingleEventStreamReadingStrategy<A : Aggregate>(
     private val handlers: Map<KClass<out Event<A>>, suspend (Event<A>) -> Unit>,
 ) : EventStreamReadingStrategy<A> {
     private val logger: Logger = LoggerFactory.getLogger(SingleEventStreamReadingStrategy::class.java)
-    private val nextReaderAliveCheck: Duration = 10.seconds
+    private val nextReaderAliveCheck: Duration = 15.seconds
 
     @Volatile
     private var isActive = true
@@ -83,8 +84,10 @@ class SingleEventStreamReadingStrategy<A : Aggregate>(
         while (isActive) {
             if (streamManager.isReaderAlive(stream.streamName)) {
                 logger.debug("Reader of stream ${stream.streamName} is alive. Waiting $nextReaderAliveCheck before continuing...")
-                Thread.sleep(nextReaderAliveCheck.inWholeMilliseconds)
+                delay(nextReaderAliveCheck.inWholeMilliseconds)
             } else if (streamManager.tryInterceptReading(stream.streamName)) {
+                stream.launchEventStream()
+
                 val commonReader = CommonEventStreamReadingStrategy(streamManager, eventMapper, nameToEventClassFunc, handlers)
                 commonReader.read(stream)
             } else {
