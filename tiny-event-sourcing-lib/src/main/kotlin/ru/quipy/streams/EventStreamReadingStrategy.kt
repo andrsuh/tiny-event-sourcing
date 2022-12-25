@@ -7,7 +7,6 @@ import ru.quipy.domain.ActiveEventStreamReader
 import ru.quipy.domain.Aggregate
 import ru.quipy.domain.Event
 import ru.quipy.mapper.EventMapper
-import java.util.*
 import kotlin.reflect.KClass
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -15,6 +14,7 @@ import kotlin.time.Duration.Companion.seconds
 
 interface EventStreamReadingStrategy<A : Aggregate> {
     suspend fun read(stream: AggregateEventStream<A>)
+    fun stop()
 }
 
 class CommonEventStreamReadingStrategy<A : Aggregate>(
@@ -61,6 +61,10 @@ class CommonEventStreamReadingStrategy<A : Aggregate>(
         payload,
         nameToEventClassFunc(eventTitle)
     )
+
+    override fun stop() {
+        isActive = false
+    }
 }
 
 class SingleEventStreamReadingStrategy<A : Aggregate>(
@@ -72,8 +76,11 @@ class SingleEventStreamReadingStrategy<A : Aggregate>(
     private val logger: Logger = LoggerFactory.getLogger(SingleEventStreamReadingStrategy::class.java)
     private val nextReaderAliveCheck: Duration = 1.seconds
 
+    @Volatile
+    private var isActive = true
+
     override suspend fun read(stream: AggregateEventStream<A>) {
-        while (true) {
+        while (isActive) {
             if (streamManager.isReaderAlive(stream.streamName)) {
                 Thread.sleep(nextReaderAliveCheck.inWholeMilliseconds)
             } else if (streamManager.tryInterceptReading(stream.streamName)) {
@@ -81,6 +88,10 @@ class SingleEventStreamReadingStrategy<A : Aggregate>(
                 commonReader.read(stream)
             } else continue
         }
+    }
+
+    override fun stop() {
+        isActive = false
     }
 }
 

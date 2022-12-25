@@ -26,9 +26,6 @@ class EventStreamSubscriber<A : Aggregate>(
     private val aggregateEventStream: AggregateEventStream<A>,
     private val readerStrategy: EventStreamReadingStrategy<A>
 ) {
-    @Volatile
-    private var active = true
-
     private val logger: Logger = LoggerFactory.getLogger(EventStreamSubscriber::class.java)
 
     private val subscriptionCoroutine: Job = CoroutineScope(
@@ -42,7 +39,7 @@ class EventStreamSubscriber<A : Aggregate>(
      * Stops both the consuming process and the underlying event stream process
      */
     fun stopAndDestroy() {
-        active = false
+        readerStrategy.stop()
         subscriptionCoroutine.cancel()
         aggregateEventStream.stopAndDestroy()
     }
