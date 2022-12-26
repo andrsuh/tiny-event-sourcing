@@ -10,7 +10,6 @@ import kotlin.time.Duration.Companion.minutes
 interface EventStreamReaderManager {
     fun isReaderAlive(streamName: String): Boolean
     fun tryInterceptReading(streamName: String): Boolean
-    fun initReaderState(streamName: String)
     fun updateReaderState(streamName: String, readingIndex: Long)
 }
 
@@ -46,19 +45,6 @@ class ActiveEventStreamReaderManager(
         }
 
         return false
-    }
-
-    override fun initReaderState(streamName: String) {
-        val activeReader: ActiveEventStreamReader? = eventStore.getActiveStreamReader(streamName)
-
-        val initialActiveReaderRecord = ActiveEventStreamReader(
-            activeReader?.id ?: streamName,
-            activeReader?.version ?: 1,
-            activeReader?.readPosition ?: 0,
-            lastInteraction = System.currentTimeMillis(),
-        )
-
-        eventStore.updateActiveStreamReader(initialActiveReaderRecord)
     }
 
     override fun updateReaderState(streamName: String, readingIndex: Long) {

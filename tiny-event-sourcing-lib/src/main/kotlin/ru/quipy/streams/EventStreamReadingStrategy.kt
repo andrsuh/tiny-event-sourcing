@@ -45,6 +45,7 @@ class CommonEventStreamReadingStrategy<A : Aggregate>(
     override suspend fun read(stream: AggregateEventStream<A>) {
         logger.info("Starting reading stream ${stream.streamName}...")
 
+        stream.launchEventStream()
         activityJob = runActivityUpdate(stream)
 
         while (isActive) {
@@ -108,9 +109,6 @@ class SingleEventStreamReadingStrategy<A : Aggregate>(
                 logger.debug("Reader of stream ${stream.streamName} is alive. Waiting $nextReaderAliveCheck before continuing...")
                 delay(nextReaderAliveCheck.inWholeMilliseconds)
             } else if (streamManager.tryInterceptReading(stream.streamName)) {
-                stream.launchEventStream()
-                streamManager.initReaderState(stream.streamName)
-
                 reader = CommonEventStreamReadingStrategy(streamManager, eventMapper, nameToEventClassFunc, handlers)
                 reader!!.read(stream)
             } else {
