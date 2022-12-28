@@ -53,20 +53,12 @@ class EventSourcingLibConfig {
     fun subscriptionManager(
         eventStreamManager: AggregateEventStreamManager,
         aggregateRegistry: AggregateRegistry,
-        eventMapper: JsonEventMapper,
-        eventStore: EventStore
+        eventMapper: JsonEventMapper
     ) = AggregateSubscriptionsManager(
         eventStreamManager,
-        streamReaderManager(eventStore),
         aggregateRegistry,
         eventMapper
     )
-
-    @ConditionalOnBean(EventStore::class)
-    @ConditionalOnMissingBean
-    fun streamReaderManager(
-        eventStore: EventStore
-    ) = ActiveEventStreamReaderManager(eventStore)
 
     @Bean
     @ConditionalOnBean(EventStore::class)

@@ -31,7 +31,6 @@ import kotlin.reflect.full.memberFunctions
  */
 class AggregateSubscriptionsManager(
     private val eventsStreamManager: AggregateEventStreamManager,
-    private val activeReaderManager: EventStreamReaderManager,
     private val aggregateRegistry: AggregateRegistry,
     private val eventMapper: EventMapper
 ) {
@@ -75,7 +74,7 @@ class AggregateSubscriptionsManager(
 
         val subscriptionBuilder =
             eventsStreamManager.createEventStream(streamName, aggregateClass, subscriberInfo.retry)
-                .toSubscriptionBuilder(eventMapper, eventInfo::getEventTypeByName, activeReaderManager)
+                .toSubscriptionBuilder(eventMapper, eventInfo::getEventTypeByName)
 
         subscriberClass.memberFunctions.filter { // method has annotation filter
             it.findAnnotations(SubscribeEvent::class).size == 1
@@ -134,7 +133,7 @@ class AggregateSubscriptionsManager(
 
         val subscriptionBuilder =
             eventsStreamManager.createEventStream(subscriberName, aggregateClass, retryConf)
-                .toSubscriptionBuilder(eventMapper, eventInfo::getEventTypeByName, activeReaderManager)
+                .toSubscriptionBuilder(eventMapper, eventInfo::getEventTypeByName)
 
         handlersBlock.invoke(EventHandlersRegistrar(subscriptionBuilder)) // todo sukhoa maybe extension? .createRegistrar?
 
