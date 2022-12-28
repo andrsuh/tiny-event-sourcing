@@ -3,19 +3,14 @@ package ru.quipy.streams
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import ru.quipy.database.EventStore
 import ru.quipy.domain.Aggregate
 import ru.quipy.domain.EventRecord
-import ru.quipy.domain.EventStreamReadIndex
 import ru.quipy.streams.annotation.RetryConf
 import ru.quipy.streams.annotation.RetryFailedStrategy.SKIP_EVENT
 import ru.quipy.streams.annotation.RetryFailedStrategy.SUSPEND
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 
 class BufferedAggregateEventStream<A : Aggregate>(
