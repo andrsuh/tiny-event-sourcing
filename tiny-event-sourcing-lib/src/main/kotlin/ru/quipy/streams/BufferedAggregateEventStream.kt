@@ -162,6 +162,8 @@ class BufferedAggregateEventStream<A : Aggregate>(
         if (!active.compareAndSet(true, false)) return
         // todo sukhoa think of committing last read index
 
+        eventStoreReader.stop()
+
         if (eventStreamJob.isActive) {
             eventStreamJob.cancel()
         }
