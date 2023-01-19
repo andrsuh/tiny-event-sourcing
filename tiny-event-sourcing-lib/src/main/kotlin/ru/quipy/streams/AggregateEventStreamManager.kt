@@ -31,14 +31,24 @@ class AggregateEventStreamManager(
         val eventInfo = (aggregateRegistry.getEventInfo(aggregateClass)
             ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered"))
 
+        val eventsChannel = EventsChannel()
+
+        val eventStoreReader = EventStoreReader(
+            eventStore,
+            eventsChannel,
+            streamName,
+            eventInfo.aggregateEventsTableName,
+            retryConfig,
+            eventStreamListener,
+            eventStreamsDispatcher)
+
         val existing = eventStreams.putIfAbsent(
             streamName, BufferedAggregateEventStream<A>(
                 streamName,
                 eventSourcingProperties.streamReadPeriod,
                 eventSourcingProperties.streamBatchSize,
-                eventInfo.aggregateEventsTableName,
-                retryConfig,
-                eventStore,
+                eventsChannel,
+                eventStoreReader,
                 eventStreamListener,
                 eventStreamsDispatcher
             )
@@ -60,16 +70,12 @@ class AggregateEventStreamManager(
     }
 
     fun streamsInfo() = eventStreams.map { (_, stream) ->
-        StreamInfo(
-            stream.streamName,
-            stream.readingIndex
-        )
+        StreamInfo(stream.streamName)
     }.toList()
 
     fun getStreamByName(name: String) = eventStreams[name]
 
     data class StreamInfo(
-        val streamName: String,
-        val readingIndex: Long
+        val streamName: String
     )
 }

@@ -21,18 +21,10 @@ import ru.quipy.domain.EventRecord
 interface AggregateEventStream<A : Aggregate> {
     val streamName: String
 
-    val readingIndex: Long
-
-    fun launchEventStream()
     /**
      * Allows to handle next event. Suspends until event is supplied.
      */
     suspend fun handleNextRecord(eventProcessingFunction: suspend (EventRecord) -> Boolean)
-
-    /**
-     * We can "replay" events in the stream by resetting it to desired reading index
-     */
-    fun resetToReadingIndex(version: Long)
 
     /**
      * Stops a process that reads events from DB
