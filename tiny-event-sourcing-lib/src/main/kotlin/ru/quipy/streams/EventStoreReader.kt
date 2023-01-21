@@ -62,10 +62,12 @@ class EventStoreReader(
         var processingRecordTimestamp: Long
 
         eventsBatch.forEach { eventRecord ->
+            logger.trace("Processing event from batch: $eventRecord. Current read index: ${streamReadIndex.readIndex}.")
             processingRecordTimestamp = eventRecord.createdAt
 
             feedToHandling(streamReadIndex.readIndex, eventRecord) {
                 eventStreamNotifier.onRecordHandledSuccessfully(streamName, eventRecord.eventTitle)
+                streamReadIndex = EventStreamReadIndex(streamName, processingRecordTimestamp, streamReadIndex.version)
 
                 if (processedRecords++ % 10 == 0L)
                     commitReadIndex(processingRecordTimestamp)
@@ -106,7 +108,7 @@ class EventStoreReader(
                 if (streamManager.isReaderAlive(streamName)) {
                     logger.debug("Reader of stream $streamName is alive. Waiting $nextReaderAliveCheck before continuing...")
                     delay(nextReaderAliveCheck.inWholeMilliseconds)
-                } else if (streamManager.tryInterceptReading(streamName)) {3
+                } else if (streamManager.tryInterceptReading(streamName)) {
                     ensureTableExists()
                     syncReaderIndex()
                     isReaderPrimary.set(true)
