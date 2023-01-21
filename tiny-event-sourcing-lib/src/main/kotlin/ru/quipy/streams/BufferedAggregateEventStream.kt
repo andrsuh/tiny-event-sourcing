@@ -63,9 +63,13 @@ class BufferedAggregateEventStream<A : Aggregate>(
 
     override suspend fun handleNextRecord(eventProcessingFunction: suspend (EventRecord) -> Boolean) {
         val receive = eventsChannel.receiveEvent()
+        logger.trace("Event ${receive.record} was received for handling")
+
         try {
             eventProcessingFunction(receive.record).also {
                 if (!it) logger.info("Processing function return false for event record: ${receive.record} at index: ${receive.readIndex}`")
+
+                logger.trace("Sending confirmation on receiving event ${receive.record}")
                 eventsChannel.sendConfirmation(EventsChannel.EventConsumedAck(receive.readIndex, successful = it))
             }
         } catch (e: Exception) {
