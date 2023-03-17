@@ -196,6 +196,13 @@
                             <goal>compile</goal>
                         </goals>
                     </execution>
+                    <execution>
+                        <id>test-compile</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>test-compile</goal>
+                        </goals>
+                    </execution>
                 </executions>
                 <configuration>
                     <args>
@@ -341,6 +348,11 @@
                                 </goals>
                             </execution>
                         </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>3.0.0</version>
                     </plugin>
                 </plugins>
             </build>
