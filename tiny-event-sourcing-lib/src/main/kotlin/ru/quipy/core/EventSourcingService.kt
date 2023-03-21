@@ -6,6 +6,8 @@ import ru.quipy.core.exceptions.EventRecordOptimisticLockException
 import ru.quipy.database.EventStore
 import ru.quipy.domain.*
 import ru.quipy.mapper.EventMapper
+import ru.quipy.saga.SagaInfo
+import ru.quipy.saga.SagaStep
 import kotlin.experimental.ExperimentalTypeInference
 import kotlin.reflect.KClass
 
@@ -27,16 +29,16 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
         aggregateRegistry.getStateTransitionInfo<ID, A, S>(aggregateClass)
             ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered")
 
-    fun <E : Event<A>> create(command: (a: S) -> E): E {
+    fun <E : Event<A>> create(sagaStep: SagaStep? = null, command: (a: S) -> E): E {
         val emptyAggregateState = aggregateInfo.emptyStateCreator.invoke()
-        return tryUpdate(emptyAggregateState, 0, command)
+        return tryUpdate(emptyAggregateState, 0, command, sagaStep)
     }
 
     @OptIn(ExperimentalTypeInference::class)
     @OverloadResolutionByLambdaReturnType
-    fun <E : Event<A>> create(command: (a: S) -> List<E>): List<E> {
+    fun <E : Event<A>> create(sagaStep: SagaStep? = null, command: (a: S) -> List<E>): List<E> {
         val emptyAggregateState = aggregateInfo.emptyStateCreator.invoke()
-        return tryUpdate(emptyAggregateState, 0, command)
+        return tryUpdate(emptyAggregateState, 0, command, sagaStep)
     }
 
     /**
@@ -61,17 +63,17 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
      * The number of attempts is limited and can be configured by "spinLockMaxAttempts" property of [EventSourcingProperties].
      *
      */
-    fun <E : Event<A>> update(aggregateId: ID, command: (S) -> E): E {
+    fun <E : Event<A>> update(aggregateId: ID, sagaStep: SagaStep? = null, command: (S) -> E): E {
         return updateWithSpinLock(aggregateId) { aggregateState, version ->
-            tryUpdate(aggregateState, version, command)
+            tryUpdate(aggregateState, version, command, sagaStep)
         }
     }
 
     @OptIn(ExperimentalTypeInference::class)
     @OverloadResolutionByLambdaReturnType
-    fun <E : Event<A>> update(aggregateId: ID, command: (S) -> List<E>): List<E> {
+    fun <E : Event<A>> update(aggregateId: ID, sagaStep: SagaStep? = null, command: (S) -> List<E>): List<E> {
         return updateWithSpinLock(aggregateId) { aggregateState, version ->
-            tryUpdate(aggregateState, version, command)
+            tryUpdate(aggregateState, version, command, sagaStep)
         }
     }
 
@@ -163,17 +165,19 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
     private fun <E : Event<A>> tryUpdate(
         aggregateState: S,
         currentStateVersion: Long, // todo sukhoa state should include version
-        command: (S) -> E
+        command: (S) -> E,
+        sagaStep: SagaStep? = null
     ): E {
         val multiEventCommand = { state: S -> listOf(command(state)) }
 
-        return tryUpdate(aggregateState, currentStateVersion, multiEventCommand).first()
+        return tryUpdate(aggregateState, currentStateVersion, multiEventCommand, sagaStep).first()
     }
 
     private fun <E : Event<A>> tryUpdate(
         aggregateState: S,
         currentStateVersion: Long,
-        command: (S) -> List<E>
+        command: (S) -> List<E>,
+        sagaStep: SagaStep? = null
     ): List<E> {
         var updatedVersion = currentStateVersion
 
@@ -189,6 +193,13 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
                 .getStateTransitionFunction(newEvent.name)
                 .performTransition(aggregateState, newEvent)
             newEvent.version = ++updatedVersion
+            if (sagaStep != null) {
+                newEvent.sagaContext.ctx[sagaStep.sagaName] = SagaInfo(
+                    sagaStep.sagaInstanceId,
+                    sagaStep.sagaStepId,
+                    sagaStep.prevStep
+                )
+            }
         }
 
         val aggregateId = aggregateState.getId()

@@ -1,5 +1,6 @@
 package ru.quipy.domain
 
+import ru.quipy.saga.SagaContext
 import java.util.*
 
 interface Versioned {
@@ -26,6 +27,7 @@ fun interface AggregateStateTransitionFunction<A : Aggregate, E : Event<A>, S : 
 abstract class Event<A : Aggregate>(
     override val id: UUID = UUID.randomUUID(),
     val name: String,
+    val sagaContext: SagaContext = SagaContext(),
     override var version: Long = 0L, // this is aggregate version actually or the event count number
     var createdAt: Long = System.currentTimeMillis(),
 ) : Versioned, Unique<UUID>
