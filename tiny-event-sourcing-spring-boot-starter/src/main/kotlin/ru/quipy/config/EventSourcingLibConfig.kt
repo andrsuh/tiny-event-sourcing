@@ -10,8 +10,12 @@ import org.springframework.context.annotation.Configuration
 import ru.quipy.core.*
 import ru.quipy.database.EventStore
 import ru.quipy.mapper.JsonEventMapper
+import ru.quipy.saga.SagaManager
+import ru.quipy.saga.aggregate.api.SagaStepAggregate
+import ru.quipy.saga.aggregate.logic.SagaStepAggregateState
 import ru.quipy.streams.AggregateEventStreamManager
 import ru.quipy.streams.AggregateSubscriptionsManager
+import java.util.*
 
 @Configuration
 class EventSourcingLibConfig {
@@ -70,4 +74,36 @@ class EventSourcingLibConfig {
     ) = EventSourcingServiceFactory(
         aggregateRegistry, eventMapper, eventStore, eventSourcingProperties
     )
+
+    @Bean(initMethod = "init")
+    fun sagaStepAggregateRegistry() =
+        SeekingForSuitableClassesAggregateRegistry(
+            BasicAggregateRegistry(),
+            EventSourcingProperties(
+                autoScanEnabled = true,
+                scanPackage = "ru/quipy/saga/aggregate"
+            ),
+        )
+
+    @Bean
+    @ConditionalOnBean(EventStore::class)
+    fun sagaStepEsService(
+        sagaStepAggregateRegistry: AggregateRegistry,
+        eventMapper: JsonEventMapper,
+        eventStore: EventStore
+    ) = EventSourcingService<UUID, SagaStepAggregate, SagaStepAggregateState>(
+        SagaStepAggregate::class,
+        sagaStepAggregateRegistry,
+        eventMapper,
+        EventSourcingProperties(
+            autoScanEnabled = true,
+            scanPackage = "ru/quipy/saga/aggregate"
+        ),
+        eventStore
+    )
+
+    @Bean
+    fun sagaManager(
+        sagaStepEsService: EventSourcingService<UUID, SagaStepAggregate, SagaStepAggregateState>
+    ) = SagaManager(sagaStepEsService)
 }

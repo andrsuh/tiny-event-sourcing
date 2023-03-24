@@ -47,8 +47,8 @@
         <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
         <awaitility.version>4.2.0</awaitility.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
-        <tiny-event-sourcing-spring-boot-starter.version>2.2.2</tiny-event-sourcing-spring-boot-starter.version>
-        <tiny-mongo-event-store-spring-boot-starter.version>2.2.2</tiny-mongo-event-store-spring-boot-starter.version>
+        <tiny-event-sourcing-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-event-sourcing-spring-boot-starter.version>
+        <tiny-mongo-event-store-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-mongo-event-store-spring-boot-starter.version>
     </properties>
 
     <dependencyManagement>
