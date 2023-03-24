@@ -2,19 +2,19 @@ package ru.quipy.saga
 
 import ru.quipy.core.EventSourcingService
 import ru.quipy.saga.aggregate.api.SagaStepAggregate
-import ru.quipy.saga.aggregate.logic.SagaStep
+import ru.quipy.saga.aggregate.logic.SagaStepAggregateState
 import java.util.*
 
 class SagaManager(
-    private val sagaStepEsService: EventSourcingService<UUID, SagaStepAggregate, SagaStep>
+    private val sagaStepEsService: EventSourcingService<UUID, SagaStepAggregate, SagaStepAggregateState>
 ) {
-    fun launchSaga(sagaName: String, stepName: String): ru.quipy.saga.SagaStep {
+    fun launchSaga(sagaName: String, stepName: String): SagaStep {
         val sagaStep = SagaStep(sagaName, stepName)
         sagaStepEsService.create { it.startSagaStep(sagaStep) }
         return sagaStep
     }
 
-    fun performSagaStep(sagaName: String, stepName: String, sagaContext: SagaContext): ru.quipy.saga.SagaStep {
+    fun performSagaStep(sagaName: String, stepName: String, sagaContext: SagaContext): SagaStep {
         if (!sagaContext.ctx.containsKey(sagaName))
             throw IllegalArgumentException("The name of the saga $sagaName does not match the context")
 

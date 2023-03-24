@@ -6,7 +6,7 @@ import ru.quipy.saga.SagaStep
 import ru.quipy.saga.aggregate.api.*
 import java.util.UUID
 
-class SagaStep: AggregateState<UUID, SagaStepAggregate> {
+class SagaStepAggregateState: AggregateState<UUID, SagaStepAggregate> {
     private lateinit var sagaName: String
     private lateinit var sagaInstanceId: UUID
     private var sagaSteps = mutableListOf<UUID>()
