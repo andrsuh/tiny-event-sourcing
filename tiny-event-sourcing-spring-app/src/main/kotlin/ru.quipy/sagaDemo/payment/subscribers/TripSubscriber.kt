@@ -25,7 +25,9 @@ class TripSubscriber(
             `when`(TripReservationStartedEvent::class) { event ->
                 val sagaContext = sagaManager
                     .withContextGiven(event.sagaContext)
-                    .performSagaStep("TRIP_RESERVATION", "process payment").sagaContext
+                    .launchSaga("TRIP_RESERVATION2", "process payment2")
+                    .performSagaStep("TRIP_RESERVATION", "process payment")
+                    .sagaContext
 
                 paymentEsService.create(sagaContext) { it.processPayment(event.tripId,100) }
             }

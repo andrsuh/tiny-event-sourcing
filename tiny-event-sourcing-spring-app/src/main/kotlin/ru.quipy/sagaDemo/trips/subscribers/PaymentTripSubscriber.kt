@@ -22,8 +22,11 @@ class PaymentTripSubscriber (
     fun init() {
         subscriptionsManager.createSubscriber(PaymentAggregate::class, "trips::payment-subscriber") {
             `when`(PaymentCanceledEvent::class) { event ->
-                val sagaStep = sagaManager.performSagaStep("TRIP_RESERVATION", "payment failed", event.sagaContext)
-                tripEsService.update(event.paymentId, sagaStep) { it.cancelTrip(event.paymentId) }
+                val sagaContext = sagaManager
+                    .withContextGiven(event.sagaContext)
+                    .performSagaStep("TRIP_RESERVATION", "payment failed").sagaContext
+
+                tripEsService.update(event.paymentId, sagaContext) { it.cancelTrip(event.paymentId) }
             }
         }
     }

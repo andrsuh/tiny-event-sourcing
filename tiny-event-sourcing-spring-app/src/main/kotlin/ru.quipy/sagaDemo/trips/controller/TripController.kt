@@ -17,8 +17,11 @@ class TripController(
 
     @GetMapping
     fun reserveTrip() : TripReservationStartedEvent {
-        val sagaStep = sagaManager.launchSaga("TRIP_RESERVATION", "start reservation")
-        return tripEsService.create(sagaStep) { it.startReservationTrip() }
+        val sagaContext = sagaManager
+            .withContextGiven()
+            .launchSaga("TRIP_RESERVATION", "start reservation").sagaContext
+
+        return tripEsService.create(sagaContext) { it.startReservationTrip() }
     }
 
     @DeleteMapping("/{id}")

@@ -24,7 +24,10 @@ class PaymentSubscriber (
             `when`(PaymentSucceededEvent::class) { event ->
                 val sagaContext = sagaManager
                     .withContextGiven(event.sagaContext)
-                    .performSagaStep("TRIP_RESERVATION", "reservation flight").sagaContext
+                    .launchSaga("TRIP_RESERVATION3", "reservation flight3")
+                    .performSagaStep("TRIP_RESERVATION", "reservation flight")
+                    .performSagaStep("TRIP_RESERVATION2", "reservation flight2")
+                    .sagaContext
 
                 flightEsService.create(sagaContext) { it.reserveFlight(event.paymentId) }
             }
