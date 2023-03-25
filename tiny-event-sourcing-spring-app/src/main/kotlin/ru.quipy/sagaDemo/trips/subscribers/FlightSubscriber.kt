@@ -22,8 +22,11 @@ class FlightSubscriber (
     fun init() {
         subscriptionsManager.createSubscriber(FlightAggregate::class, "trips::flights-subscriber") {
             `when`(FlightReservedEvent::class) { event ->
-                val sagaStep = sagaManager.performSagaStep("TRIP_RESERVATION", "finish reservation", event.sagaContext)
-                tripEsService.update(event.flightReservationId, sagaStep) { it.confirmTrip(event.flightReservationId) }
+                val sagaContext = sagaManager
+                    .withContextGiven(event.sagaContext)
+                    .performSagaStep("TRIP_RESERVATION", "finish reservation").sagaContext
+
+                tripEsService.update(event.flightReservationId, sagaContext) { it.confirmTrip(event.flightReservationId) }
             }
         }
     }

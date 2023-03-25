@@ -3,7 +3,7 @@ package ru.quipy.saga
 import java.util.*
 
 data class SagaContext(
-    val ctx: MutableMap<String, SagaInfo> = mutableMapOf()
+    val ctx: Map<String, SagaInfo> = mapOf()
 )
 
 data class SagaInfo(

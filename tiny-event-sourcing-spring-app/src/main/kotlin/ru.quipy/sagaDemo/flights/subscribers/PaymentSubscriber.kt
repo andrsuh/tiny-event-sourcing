@@ -22,8 +22,11 @@ class PaymentSubscriber (
     fun init() {
         subscriptionsManager.createSubscriber(PaymentAggregate::class, "flights::payment-subscriber") {
             `when`(PaymentSucceededEvent::class) { event ->
-                val sagaStep = sagaManager.performSagaStep("TRIP_RESERVATION", "reservation flight", event.sagaContext)
-                flightEsService.create(sagaStep) { it.reserveFlight(event.paymentId) }
+                val sagaContext = sagaManager
+                    .withContextGiven(event.sagaContext)
+                    .performSagaStep("TRIP_RESERVATION", "reservation flight").sagaContext
+
+                flightEsService.create(sagaContext) { it.reserveFlight(event.paymentId) }
             }
         }
     }

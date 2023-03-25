@@ -14,19 +14,33 @@ class SagaManager(
         return sagaStep
     }
 
-    fun performSagaStep(sagaName: String, stepName: String, sagaContext: SagaContext): SagaStep {
+    fun withContextGiven(sagaContext: SagaContext) = SagaInvoker(sagaContext)
+
+    private fun performSagaStep(sagaName: String, stepName: String, sagaContext: SagaContext): SagaContext {
         if (!sagaContext.ctx.containsKey(sagaName))
             throw IllegalArgumentException("The name of the saga $sagaName does not match the context")
 
-        val prevSagaInfo = sagaContext.ctx[sagaName]
+        val sagaInfo = sagaContext.ctx[sagaName]
+
         val sagaStep = SagaStep(
             sagaName,
             stepName,
-            sagaInstanceId = prevSagaInfo!!.sagaInstanceId,
-            prevStep = prevSagaInfo.sagaStepId
+            sagaInstanceId = sagaInfo!!.sagaInstanceId,
+            prevStep = sagaInfo.sagaStepId
         )
+        val event = sagaStepEsService.update(sagaStep.sagaInstanceId) { it.processSagaStep(sagaStep) }
 
-        sagaStepEsService.update(sagaStep.sagaInstanceId) { it.processSagaStep(sagaStep) }
-        return sagaStep
+        return SagaContext(sagaContext.ctx.toMutableMap().also {
+            it[sagaName] = SagaInfo(event.sagaInstanceId, event.sagaStepId, event.prevStep)
+        })
+    }
+
+    inner class SagaInvoker(
+        val sagaContext: SagaContext
+    ) {
+        fun performSagaStep(sagaName: String, stepName: String): SagaInvoker {
+            val updatedContext = performSagaStep(sagaName, stepName, sagaContext)
+            return SagaInvoker(updatedContext)
+        }
     }
 }
