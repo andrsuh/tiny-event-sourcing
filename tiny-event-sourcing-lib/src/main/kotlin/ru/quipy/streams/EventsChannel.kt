@@ -5,40 +5,29 @@ import kotlinx.coroutines.channels.Channel
 import ru.quipy.domain.EventRecord
 
 class EventsChannel {
-    private val eventsChannel: Channel<EventRecordForHandling> = Channel(
-        capacity = Channel.RENDEZVOUS,
-        onBufferOverflow = BufferOverflow.SUSPEND
+    private val eventsChannel: Channel<EventRecord> = Channel(
+            capacity = Channel.RENDEZVOUS,
+            onBufferOverflow = BufferOverflow.SUSPEND
     )
 
-    private val acknowledgesChannel: Channel<EventConsumedAck> = Channel(
-        capacity = Channel.RENDEZVOUS,
-        onBufferOverflow = BufferOverflow.SUSPEND
+    private val acknowledgesChannel: Channel<Boolean> = Channel(
+            capacity = Channel.RENDEZVOUS,
+            onBufferOverflow = BufferOverflow.SUSPEND
     )
 
-    suspend fun sendEvent(eventRecord: EventRecordForHandling) {
+    suspend fun sendEvent(eventRecord: EventRecord) {
         eventsChannel.send(eventRecord)
     }
 
-    suspend fun receiveEvent(): EventRecordForHandling {
+    suspend fun receiveEvent(): EventRecord {
         return eventsChannel.receive()
     }
 
-    suspend fun sendConfirmation(confirmation: EventConsumedAck) {
-        acknowledgesChannel.send(confirmation)
+    suspend fun sendConfirmation(isConfirmed: Boolean) {
+        acknowledgesChannel.send(isConfirmed)
     }
 
     suspend fun receiveConfirmation(): Boolean {
-        val eventConsumedAck = acknowledgesChannel.receive()
-        return eventConsumedAck.successful
+        return acknowledgesChannel.receive()
     }
-
-    class EventRecordForHandling(
-        val readIndex: Long,
-        val record: EventRecord,
-    )
-
-    class EventConsumedAck(
-        val readIndex: Long,
-        val successful: Boolean,
-    )
 }

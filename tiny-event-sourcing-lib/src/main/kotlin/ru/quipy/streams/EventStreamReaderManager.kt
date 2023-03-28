@@ -2,10 +2,9 @@ package ru.quipy.streams
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import ru.quipy.core.EventSourcingProperties
 import ru.quipy.database.EventStore
 import ru.quipy.domain.ActiveEventStreamReader
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
 
 interface EventStreamReaderManager {
     fun isReaderAlive(streamName: String): Boolean
@@ -15,16 +14,16 @@ interface EventStreamReaderManager {
 
 class ActiveEventStreamReaderManager(
     private val eventStore: EventStore,
+    private val config: EventSourcingProperties
 ) : EventStreamReaderManager {
     private val logger: Logger = LoggerFactory.getLogger(ActiveEventStreamReaderManager::class.java)
-    private val maxActiveReaderInactivityPeriod: Duration = 5.minutes
 
     override fun isReaderAlive(streamName: String): Boolean {
         val activeStreamReader: ActiveEventStreamReader = eventStore.getActiveStreamReader(streamName) ?: return false
         val lastInteraction = activeStreamReader.lastInteraction
         val currentTime = System.currentTimeMillis()
 
-        if (currentTime - lastInteraction > maxActiveReaderInactivityPeriod.inWholeMilliseconds) {
+        if (currentTime - lastInteraction > config.maxActiveReaderInactivityPeriod.inWholeMilliseconds) {
             logger.warn("Reader of stream $streamName is not alive. Last interaction time: $lastInteraction.")
             return false
         }
@@ -51,10 +50,10 @@ class ActiveEventStreamReaderManager(
         val activeReader: ActiveEventStreamReader? = eventStore.getActiveStreamReader(streamName)
 
         val updatedActiveReader = ActiveEventStreamReader(
-            activeReader?.id ?: streamName,
-            activeReader?.version ?: 1,
-            readingIndex,
-            lastInteraction = System.currentTimeMillis(),
+                activeReader?.id ?: streamName,
+                activeReader?.version ?: 1,
+                readingIndex,
+                lastInteraction = System.currentTimeMillis(),
         )
 
         eventStore.updateActiveStreamReader(updatedActiveReader)

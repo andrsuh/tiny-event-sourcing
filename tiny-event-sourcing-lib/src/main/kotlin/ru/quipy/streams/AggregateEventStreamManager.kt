@@ -24,31 +24,33 @@ class AggregateEventStreamManager(
     private val eventStreams = ConcurrentHashMap<String, AggregateEventStream<*>>()
 
     fun <A : Aggregate> createEventStream(
-        streamName: String,
-        aggregateClass: KClass<A>,
-        retryConfig: RetryConf = RetryConf(3, RetryFailedStrategy.SKIP_EVENT)
+            streamName: String,
+            aggregateClass: KClass<A>,
+            retryConfig: RetryConf = RetryConf(3, RetryFailedStrategy.SKIP_EVENT)
     ): AggregateEventStream<A> {
         val eventInfo = (aggregateRegistry.getEventInfo(aggregateClass)
-            ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered"))
+                ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered"))
+
+        val streamManager: EventStreamReaderManager = ActiveEventStreamReaderManager(eventStore, eventSourcingProperties)
+
+        val eventStoreReader = EventStoreReader(
+                eventStore,
+                streamName,
+                eventInfo.aggregateEventsTableName,
+                streamManager,
+                eventStreamListener,
+                eventStreamsDispatcher)
 
         val eventsChannel = EventsChannel()
 
-        val eventStoreReader = EventStoreReader(
-            eventStore,
-            eventsChannel,
-            streamName,
-            eventInfo.aggregateEventsTableName,
-            retryConfig,
-            eventStreamListener,
-            eventStreamsDispatcher)
-
         val existing = eventStreams.putIfAbsent(
-            streamName, BufferedAggregateEventStream<A>(
+                streamName, BufferedAggregateEventStream<A>(
                 streamName,
                 eventSourcingProperties.streamReadPeriod,
                 eventSourcingProperties.streamBatchSize,
                 eventsChannel,
                 eventStoreReader,
+                retryConfig,
                 eventStreamListener,
                 eventStreamsDispatcher
             )
@@ -76,6 +78,6 @@ class AggregateEventStreamManager(
     fun getStreamByName(name: String) = eventStreams[name]
 
     data class StreamInfo(
-        val streamName: String
+            val streamName: String
     )
 }

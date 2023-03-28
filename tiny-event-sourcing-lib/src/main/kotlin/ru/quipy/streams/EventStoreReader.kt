@@ -6,15 +6,13 @@ import org.slf4j.LoggerFactory
 import ru.quipy.database.EventStore
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
-import ru.quipy.streams.annotation.RetryConf
-import ru.quipy.streams.annotation.RetryFailedStrategy
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 interface EventReader {
     suspend fun read(batchSize: Int): List<EventRecord>
-    fun commitReadIndex(index: Long)
+    fun postProcessRecord(eventRecord: EventRecord)
 
     /**
      * We can "replay" events in the stream by resetting it to desired reading index
@@ -25,10 +23,9 @@ interface EventReader {
 
 class EventStoreReader(
     private val eventStore: EventStore,
-    private val eventsChannel: EventsChannel,
     private val streamName: String,
     private val tableName: String,
-    private val retryConfig: RetryConf,
+    private val streamManager: EventStreamReaderManager,
     private val eventStreamNotifier: EventStreamNotifier,
     private val dispatcher: CoroutineDispatcher
 ) : EventReader {
@@ -39,7 +36,6 @@ class EventStoreReader(
     private val logger: Logger = LoggerFactory.getLogger(EventStoreReader::class.java)
     private val nextReaderAliveCheck: Duration = 15.seconds
 
-    private val streamManager: EventStreamReaderManager = ActiveEventStreamReaderManager(eventStore)
     private val isReaderPrimary: AtomicBoolean = AtomicBoolean(false)
     private val isScanActive: Boolean = true
 
@@ -55,36 +51,19 @@ class EventStoreReader(
 
         checkAndResetIndexIfRequired()
 
-        val eventsBatch = eventStore.findBatchOfEventRecordAfter(tableName, streamReadIndex.readIndex, batchSize)
+        val eventRecords = eventStore.findBatchOfEventRecordAfter(tableName, streamReadIndex.readIndex, batchSize)
+        eventStreamNotifier.onBatchRead(streamName, eventRecords.size)
 
-        eventStreamNotifier.onBatchRead(streamName, eventsBatch.size)
-
-        var processingRecordTimestamp: Long
-
-        eventsBatch.forEach { eventRecord ->
-            logger.trace("Processing event from batch: $eventRecord. Current read index: ${streamReadIndex.readIndex}.")
-            processingRecordTimestamp = eventRecord.createdAt
-
-            feedToHandling(streamReadIndex.readIndex, eventRecord) {
-                eventStreamNotifier.onRecordHandledSuccessfully(streamName, eventRecord.eventTitle)
-                streamReadIndex = EventStreamReadIndex(streamName, processingRecordTimestamp, streamReadIndex.version)
-
-                if (processedRecords++ % 10 == 0L)
-                    commitReadIndex(processingRecordTimestamp)
-            }
-        }
-
-        return eventsBatch
+        return eventRecords
     }
 
-    override fun commitReadIndex(index: Long) {
-        EventStreamReadIndex(streamName, index, streamReadIndex.version + 1L).also {
-            logger.info("Committing index for $streamName, index: ${index}, current version: ${streamReadIndex.version}")
-            eventStore.commitStreamReadIndex(it)
-            eventStreamNotifier.onReadIndexCommitted(streamName, it.readIndex)
-        }
+    override fun postProcessRecord(eventRecord: EventRecord) {
+        val processingRecordTimestamp = eventRecord.createdAt
 
-        syncReaderIndex()
+        streamReadIndex = EventStreamReadIndex(streamName, processingRecordTimestamp, streamReadIndex.version)
+
+        if (processedRecords++ % 10 == 0L)
+            commitReadIndex(processingRecordTimestamp)
     }
 
     override fun resetReadIndex(resetInfo: ReadIndexResetInfo) {
@@ -100,6 +79,16 @@ class EventStoreReader(
 
         if (isScanActive)
             scanJob.cancel()
+    }
+
+    private fun commitReadIndex(index: Long) {
+        EventStreamReadIndex(streamName, index, streamReadIndex.version + 1L).also {
+            logger.info("Committing index for $streamName, index: ${index}, current version: ${streamReadIndex.version}")
+            eventStore.commitStreamReadIndex(it)
+            eventStreamNotifier.onReadIndexCommitted(streamName, it.readIndex)
+        }
+
+        syncReaderIndex()
     }
 
     private fun launchEventStoreReaderScanJob(): Job {
@@ -127,32 +116,6 @@ class EventStoreReader(
         }
     }
 
-    private suspend fun feedToHandling(readingIndex: Long, event: EventRecord, beforeNextPerform: () -> Unit) {
-        for (attemptNum in 1..retryConfig.maxAttempts) {
-            eventsChannel.sendEvent(EventsChannel.EventRecordForHandling(readingIndex, event))
-            if (eventsChannel.receiveConfirmation()) {
-                beforeNextPerform()
-                return
-            }
-
-            if (attemptNum == retryConfig.maxAttempts) {
-                when (retryConfig.lastAttemptFailedStrategy) {
-                    RetryFailedStrategy.SKIP_EVENT -> {
-                        logger.error("Event stream: $streamName. Retry attempts failed $attemptNum times. SKIPPING...")
-                        beforeNextPerform()
-                        return
-                    }
-                    RetryFailedStrategy.SUSPEND -> {
-                        logger.error("Event stream: $streamName. Retry attempts failed $attemptNum times. SUSPENDING THE HOLE STREAM...")
-                        eventStreamNotifier.onRecordSkipped(streamName, event.eventTitle, attemptNum)
-                        delay(Long.MAX_VALUE) // todo sukhoa find the way better
-                    }
-                }
-            }
-            eventStreamNotifier.onRecordHandlingRetry(streamName, event.eventTitle, attemptNum)
-        }
-    }
-
     private fun syncReaderIndex() {
         eventStore.findStreamReadIndex(streamName)?.also {
             streamReadIndex = it
@@ -175,5 +138,5 @@ class EventStoreReader(
 }
 
 class ReadIndexResetInfo(
-    val resetIndex: Long
+        val resetIndex: Long
 )

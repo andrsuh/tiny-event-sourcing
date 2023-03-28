@@ -13,6 +13,7 @@ import ru.quipy.mapper.JsonEventMapper
 import ru.quipy.streams.ActiveEventStreamReaderManager
 import ru.quipy.streams.AggregateEventStreamManager
 import ru.quipy.streams.AggregateSubscriptionsManager
+import kotlin.time.Duration.Companion.seconds
 
 @Configuration
 class EventSourcingLibConfig {
@@ -27,7 +28,7 @@ class EventSourcingLibConfig {
     @Bean
     @ConfigurationProperties(prefix = "event.sourcing")
     @ConditionalOnMissingBean
-    fun configProperties() = EventSourcingProperties()
+    fun configProperties() = EventSourcingProperties(maxActiveReaderInactivityPeriod = 30.seconds)
 
     @Bean(initMethod = "init")
     @ConditionalOnMissingBean

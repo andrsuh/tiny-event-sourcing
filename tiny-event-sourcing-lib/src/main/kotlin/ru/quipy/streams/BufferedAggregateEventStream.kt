@@ -4,17 +4,20 @@ import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import ru.quipy.domain.Aggregate
 import ru.quipy.domain.EventRecord
+import ru.quipy.streams.annotation.RetryConf
+import ru.quipy.streams.annotation.RetryFailedStrategy
 import java.util.concurrent.atomic.AtomicBoolean
 
 
 class BufferedAggregateEventStream<A : Aggregate>(
-    override val streamName: String,
-    private val streamReadPeriod: Long, // todo sukhoa wrong naming
-    private val streamBatchSize: Int,
-    private val eventsChannel: EventsChannel,
-    private val eventReader: EventReader,
-    private val eventStreamNotifier: EventStreamNotifier,
-    private val dispatcher: CoroutineDispatcher
+        override val streamName: String,
+        private val streamReadPeriod: Long, // todo sukhoa wrong naming
+        private val streamBatchSize: Int,
+        private val eventsChannel: EventsChannel,
+        private val eventReader: EventReader,
+        private val retryConfig: RetryConf,
+        private val eventStreamNotifier: EventStreamNotifier,
+        private val dispatcher: CoroutineDispatcher
 ) : AggregateEventStream<A> {
     companion object {
         private val logger = LoggerFactory.getLogger(BufferedAggregateEventStream::class.java)
@@ -26,8 +29,8 @@ class BufferedAggregateEventStream<A : Aggregate>(
     private val eventStreamCompletionHandler: CompletionHandler = { th: Throwable? ->
         if (active.get()) {
             logger.error(
-                "Unexpected error in aggregate event stream ${streamName}. Relaunching...",
-                th
+                    "Unexpected error in aggregate event stream ${streamName}. Relaunching...",
+                    th
             )
             eventStreamJob = launchJob()
         } else {
@@ -39,46 +42,55 @@ class BufferedAggregateEventStream<A : Aggregate>(
     private var eventStreamJob: Job = launchJob()
 
     private fun launchJob() =
-        CoroutineScope(CoroutineName("reading-$streamName-coroutine") + dispatcher).launch {
-            // initial delay
-            delay(5_000)
-            eventStreamNotifier.onStreamLaunched(streamName)
+            CoroutineScope(CoroutineName("reading-$streamName-coroutine") + dispatcher).launch {
+                // initial delay
+                delay(5_000)
+                eventStreamNotifier.onStreamLaunched(streamName)
 
-            while (active.get()) {
-                while (suspended.get()) {
-                    logger.info("Suspending stream $streamName...")
-                    delay(5_000)
+                while (active.get()) {
+                    while (suspended.get()) {
+                        logger.info("Suspending stream $streamName...")
+                        delay(5_000)
+                    }
+
+                    val eventsBatch = eventReader.read(streamBatchSize)
+
+                    if (eventsBatch.isEmpty()) {
+                        delay(streamReadPeriod)
+                        continue
+                    }
+
+                    eventsBatch.forEach { eventRecord ->
+                        logger.trace("Processing event from batch: $eventRecord.")
+
+                        feedToHandling(eventRecord) {
+                            eventStreamNotifier.onRecordHandledSuccessfully(streamName, eventRecord.eventTitle)
+                            eventReader.postProcessRecord(eventRecord)
+                        }
+                    }
                 }
-
-                val eventsBatch = eventReader.read(streamBatchSize)
-
-                if (eventsBatch.isEmpty()) {
-                    delay(streamReadPeriod)
-                    continue
-                }
+            }.also {
+                it.invokeOnCompletion(eventStreamCompletionHandler)
             }
-        }.also {
-            it.invokeOnCompletion(eventStreamCompletionHandler)
-        }
 
     override suspend fun handleNextRecord(eventProcessingFunction: suspend (EventRecord) -> Boolean) {
-        val receive = eventsChannel.receiveEvent()
-        logger.trace("Event ${receive.record} was received for handling")
+        val receivedRecord = eventsChannel.receiveEvent()
+        logger.trace("Event $receivedRecord was received for handling")
 
         try {
-            eventProcessingFunction(receive.record).also {
-                if (!it) logger.info("Processing function return false for event record: ${receive.record} at index: ${receive.readIndex}`")
+            eventProcessingFunction(receivedRecord).also {
+                if (!it) logger.info("Processing function return false for event record: $receivedRecord")
 
-                logger.trace("Sending confirmation on receiving event ${receive.record}")
-                eventsChannel.sendConfirmation(EventsChannel.EventConsumedAck(receive.readIndex, successful = it))
+                logger.trace("Sending confirmation on receiving event $receivedRecord")
+                eventsChannel.sendConfirmation(isConfirmed = it)
             }
         } catch (e: Exception) {
             logger.error(
-                "Error while invoking event handling function at index: ${receive.readIndex} event record: ${receive.record}",
-                e
+                    "Error while invoking event handling function on event record: $receivedRecord",
+                    e
             )
 
-            eventsChannel.sendConfirmation(EventsChannel.EventConsumedAck(receive.readIndex, successful = false))
+            eventsChannel.sendConfirmation(isConfirmed = false)
         }
     }
 
@@ -100,5 +112,32 @@ class BufferedAggregateEventStream<A : Aggregate>(
     override fun resume() {
         logger.info("Resuming stream $streamName...")
         suspended.set(false)
+    }
+
+    private suspend fun feedToHandling(event: EventRecord, beforeNextPerform: () -> Unit) {
+        for (attemptNum in 1..retryConfig.maxAttempts) {
+            eventsChannel.sendEvent(event)
+
+            if (eventsChannel.receiveConfirmation()) {
+                beforeNextPerform()
+                return
+            }
+
+            if (attemptNum == retryConfig.maxAttempts) {
+                when (retryConfig.lastAttemptFailedStrategy) {
+                    RetryFailedStrategy.SKIP_EVENT -> {
+                        logger.error("Event stream: $streamName. Retry attempts failed $attemptNum times. SKIPPING...")
+                        beforeNextPerform()
+                        return
+                    }
+                    RetryFailedStrategy.SUSPEND -> {
+                        logger.error("Event stream: $streamName. Retry attempts failed $attemptNum times. SUSPENDING THE HOLE STREAM...")
+                        eventStreamNotifier.onRecordSkipped(streamName, event.eventTitle, attemptNum)
+                        delay(Long.MAX_VALUE) // todo sukhoa find the way better
+                    }
+                }
+            }
+            eventStreamNotifier.onRecordHandlingRetry(streamName, event.eventTitle, attemptNum)
+        }
     }
 }
