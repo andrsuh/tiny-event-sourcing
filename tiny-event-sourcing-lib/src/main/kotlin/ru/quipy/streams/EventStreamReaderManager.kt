@@ -7,7 +7,7 @@ import ru.quipy.database.EventStore
 import ru.quipy.domain.ActiveEventStreamReader
 
 interface EventStreamReaderManager {
-    fun isReaderAlive(streamName: String): Boolean
+    fun hasActiveReader(streamName: String): Boolean
     fun tryInterceptReading(streamName: String): Boolean
     fun updateReaderState(streamName: String, readingIndex: Long)
 }
@@ -18,7 +18,7 @@ class ActiveEventStreamReaderManager(
 ) : EventStreamReaderManager {
     private val logger: Logger = LoggerFactory.getLogger(ActiveEventStreamReaderManager::class.java)
 
-    override fun isReaderAlive(streamName: String): Boolean {
+    override fun hasActiveReader(streamName: String): Boolean {
         val activeStreamReader: ActiveEventStreamReader = eventStore.getActiveStreamReader(streamName) ?: return false
         val lastInteraction = activeStreamReader.lastInteraction
         val currentTime = System.currentTimeMillis()

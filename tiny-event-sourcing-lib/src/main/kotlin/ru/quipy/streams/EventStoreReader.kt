@@ -94,7 +94,7 @@ class EventStoreReader(
     private fun launchEventStoreReaderScanJob(): Job {
         return CoroutineScope(CoroutineName("reading-$streamName-coroutine") + dispatcher).launch {
             while (isScanActive) {
-                if (streamManager.isReaderAlive(streamName)) {
+                if (streamManager.hasActiveReader(streamName)) {
                     logger.debug("Reader of stream $streamName is alive. Waiting $nextReaderAliveCheck before continuing...")
                     delay(nextReaderAliveCheck.inWholeMilliseconds)
                 } else if (streamManager.tryInterceptReading(streamName)) {
