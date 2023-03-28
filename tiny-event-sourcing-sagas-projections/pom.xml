@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <packaging>jar</packaging>
 
-    <name>tiny-event-sourcing-spring-app</name>
+    <name>tiny-event-sourcing-sagas-projections</name>
     <description>Tiny event sourcing framework</description>
     <developers>
         <developer>
@@ -24,12 +24,12 @@
             </name>
         </developer>
     </developers>
-    <url>https://github.com/andrsuh/tiny-event-sourcing/tree/master-2.0/tiny-event-sourcing-spring-app</url>
-    <scm>
-        <connection>scm:git:git://github.com/andrsuh/tiny-event-sourcing.git</connection>
-        <developerConnection>scm:git:ssh://github.com:andrsuh/tiny-event-sourcing.git</developerConnection>
-        <url>https://github.com/andrsuh/tiny-event-sourcing/tree/master-2.0/tiny-event-sourcing-spring-app</url>
-    </scm>
+<!--    <url>https://github.com/andrsuh/tiny-event-sourcing/tree/master-2.0/tiny-event-sourcing-spring-app</url>-->
+<!--    <scm>-->
+<!--        <connection>scm:git:git://github.com/andrsuh/tiny-event-sourcing.git</connection>-->
+<!--        <developerConnection>scm:git:ssh://github.com:andrsuh/tiny-event-sourcing.git</developerConnection>-->
+<!--        <url>https://github.com/andrsuh/tiny-event-sourcing/tree/master-2.0/tiny-event-sourcing-spring-app</url>-->
+<!--    </scm>-->
     <licenses>
         <license>
             <name>Apache License 2.0</name>
@@ -37,7 +37,7 @@
         </license>
     </licenses>
     <groupId>ru.quipy</groupId>
-    <artifactId>tiny-event-sourcing-spring-app</artifactId>
+    <artifactId>tiny-event-sourcing-sagas-projections</artifactId>
     <version>2.3.0-SNAPSHOT</version>
 
     <properties>
@@ -49,7 +49,6 @@
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
         <tiny-event-sourcing-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-event-sourcing-spring-boot-starter.version>
         <tiny-mongo-event-store-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-mongo-event-store-spring-boot-starter.version>
-        <tiny-event-sourcing-sagas-projections.version>2.3.0-SNAPSHOT</tiny-event-sourcing-sagas-projections.version>
     </properties>
 
     <dependencyManagement>
@@ -78,20 +77,9 @@
         </dependency>
 
         <dependency>
-            <artifactId>tiny-event-sourcing-sagas-projections</artifactId>
-            <groupId>ru.quipy</groupId>
-            <version>${tiny-event-sourcing-sagas-projections.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.boot</groupId>-->
-<!--            <artifactId>spring-boot-starter-data-mongodb</artifactId>-->
-<!--        </dependency>-->
 
         <dependency>
             <groupId>org.awaitility</groupId>
@@ -224,8 +212,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>6</source>
-                    <target>6</target>
+                    <source>11</source>
+                    <target>11</target>
                 </configuration>
             </plugin>
         </plugins>
