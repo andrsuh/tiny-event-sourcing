@@ -38,6 +38,7 @@ class AggregateEventStreamManager(
                 streamName,
                 eventInfo.aggregateEventsTableName,
                 streamManager,
+                eventSourcingProperties,
                 eventStreamListener,
                 eventStreamsDispatcher)
 

@@ -3,12 +3,11 @@ package ru.quipy.streams
 import kotlinx.coroutines.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import ru.quipy.core.EventSourcingProperties
 import ru.quipy.database.EventStore
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 interface EventReader {
     suspend fun read(batchSize: Int): List<EventRecord>
@@ -26,6 +25,7 @@ class EventStoreReader(
     private val streamName: String,
     private val tableName: String,
     private val streamManager: EventStreamReaderManager,
+    private val config: EventSourcingProperties,
     private val eventStreamNotifier: EventStreamNotifier,
     private val dispatcher: CoroutineDispatcher
 ) : EventReader {
@@ -34,24 +34,32 @@ class EventStoreReader(
     }
 
     private val logger: Logger = LoggerFactory.getLogger(EventStoreReader::class.java)
-    private val nextReaderAliveCheck: Duration = 15.seconds
 
-    private val isReaderPrimary: AtomicBoolean = AtomicBoolean(false)
-    private val isScanActive: Boolean = true
+    private val isActiveReader: AtomicBoolean = AtomicBoolean(false)
+    private val isHealthcheckActive: AtomicBoolean = AtomicBoolean(true)
 
-    private val scanJob: Job = launchEventStoreReaderScanJob()
+    private var healthCheckJob: Job = launchEventStoreReaderHealthCheckJob()
 
-    private var streamReadIndex: EventStreamReadIndex = EventStreamReadIndex(streamName, readIndex = 0L, version = 0L)
+    private val healthCheckJobCompletionHandler: CompletionHandler = { th: Throwable? ->
+        if (isHealthcheckActive.get()) {
+            logger.error("Unexpected error in event store reader ${streamName}. Relaunching...", th)
+            healthCheckJob = launchEventStoreReaderHealthCheckJob()
+        } else {
+            logger.warn("Stopped event store reader coroutine of stream $streamName")
+        }
+    }
+
+    private var eventStoreReadIndex: EventStreamReadIndex = EventStreamReadIndex(streamName, readIndex = 0L, version = 0L)
     private var indexResetInfo: ReadIndexResetInfo = NO_RESET_REQUIRED
     private var processedRecords = 0L
 
     override suspend fun read(batchSize: Int): List<EventRecord> {
-        if (!isReaderPrimary.get())
+        if (!isActiveReader.get())
             return emptyList()
 
         checkAndResetIndexIfRequired()
 
-        val eventRecords = eventStore.findBatchOfEventRecordAfter(tableName, streamReadIndex.readIndex, batchSize)
+        val eventRecords = eventStore.findBatchOfEventRecordAfter(tableName, eventStoreReadIndex.readIndex, batchSize)
         eventStreamNotifier.onBatchRead(streamName, eventRecords.size)
 
         return eventRecords
@@ -60,30 +68,30 @@ class EventStoreReader(
     override fun postProcessRecord(eventRecord: EventRecord) {
         val processingRecordTimestamp = eventRecord.createdAt
 
-        streamReadIndex = EventStreamReadIndex(streamName, processingRecordTimestamp, streamReadIndex.version)
+        eventStoreReadIndex = EventStreamReadIndex(streamName, processingRecordTimestamp, eventStoreReadIndex.version)
 
-        if (processedRecords++ % 10 == 0L)
+        if (processedRecords++ % config.recordReadIndexCommitPeriod == 0L)
             commitReadIndex(processingRecordTimestamp)
     }
 
     override fun resetReadIndex(resetInfo: ReadIndexResetInfo) {
-        if (streamReadIndex.version < 1)
-            throw IllegalArgumentException("Can't reset to non existing version: ${streamReadIndex.version}")
+        if (eventStoreReadIndex.version < 1)
+            throw IllegalArgumentException("Can't reset to non existing version: ${eventStoreReadIndex.version}")
 
         indexResetInfo = resetInfo
     }
 
     override fun stop() {
-        if (isReaderPrimary.get())
-            isReaderPrimary.set(false)
+        if (isActiveReader.get())
+            isActiveReader.set(false)
 
-        if (isScanActive)
-            scanJob.cancel()
+        if (isHealthcheckActive.get())
+            healthCheckJob.cancel()
     }
 
     private fun commitReadIndex(index: Long) {
-        EventStreamReadIndex(streamName, index, streamReadIndex.version + 1L).also {
-            logger.info("Committing index for $streamName, index: ${index}, current version: ${streamReadIndex.version}")
+        EventStreamReadIndex(streamName, index, eventStoreReadIndex.version + 1L).also {
+            logger.info("Committing index for $streamName, index: ${index}, current version: ${eventStoreReadIndex.version}")
             eventStore.commitStreamReadIndex(it)
             eventStreamNotifier.onReadIndexCommitted(streamName, it.readIndex)
         }
@@ -91,21 +99,23 @@ class EventStoreReader(
         syncReaderIndex()
     }
 
-    private fun launchEventStoreReaderScanJob(): Job {
+    private fun launchEventStoreReaderHealthCheckJob(): Job {
         return CoroutineScope(CoroutineName("reading-$streamName-coroutine") + dispatcher).launch {
-            while (isScanActive) {
+            while (isHealthcheckActive.get()) {
                 if (streamManager.hasActiveReader(streamName)) {
-                    logger.debug("Reader of stream $streamName is alive. Waiting $nextReaderAliveCheck before continuing...")
-                    delay(nextReaderAliveCheck.inWholeMilliseconds)
+                    logger.debug("Reader of stream $streamName is alive. Waiting ${config.eventReaderHealthCheckPeriod.inWholeMilliseconds} before continuing...")
+                    delay(config.eventReaderHealthCheckPeriod.inWholeMilliseconds)
                 } else if (streamManager.tryInterceptReading(streamName)) {
                     ensureTableExists()
                     syncReaderIndex()
-                    isReaderPrimary.set(true)
+                    isActiveReader.set(true)
                 } else {
                     logger.info("Failed to intercept reading of stream $streamName, because someone else succeeded first.")
                     continue
                 }
             }
+        }.also {
+            it.invokeOnCompletion(healthCheckJobCompletionHandler)
         }
     }
 
@@ -118,7 +128,7 @@ class EventStoreReader(
 
     private fun syncReaderIndex() {
         eventStore.findStreamReadIndex(streamName)?.also {
-            streamReadIndex = it
+            eventStoreReadIndex = it
             logger.info("Reader index synced for $streamName. Index: ${it.readIndex}, version: ${it.version}")
             eventStreamNotifier.onReadIndexSynced(streamName, it.readIndex)
         }
@@ -126,9 +136,9 @@ class EventStoreReader(
 
     private fun checkAndResetIndexIfRequired() {
         if (indexResetInfo != NO_RESET_REQUIRED) {
-            val updatedReadIndex = EventStreamReadIndex(streamName, indexResetInfo.resetIndex, streamReadIndex.version)
+            val updatedReadIndex = EventStreamReadIndex(streamName, indexResetInfo.resetIndex, eventStoreReadIndex.version)
 
-            streamReadIndex = updatedReadIndex
+            eventStoreReadIndex = updatedReadIndex
             logger.warn("Index for stream $streamName forcibly reset to ${indexResetInfo.resetIndex}")
 
             indexResetInfo = NO_RESET_REQUIRED
