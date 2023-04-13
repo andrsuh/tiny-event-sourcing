@@ -17,7 +17,7 @@ data class UserCreatedEvent(
     name = USER_CREATED
 )
 
-@DomainEvent(name = USER_CREATED)
+@DomainEvent(name = USER_CREATED_CART)
 data class UserCreatedCartEvent(
     val userId: UUID,
     val cartId: UUID,
