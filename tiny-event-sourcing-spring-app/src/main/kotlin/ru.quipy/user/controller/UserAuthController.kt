@@ -11,16 +11,18 @@ import java.util.*
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 import ru.quipy.user.api.UserRegisterDTO
 import ru.quipy.user.service.UserMongo
 
 @RestController
+@RequestMapping("/auth")
 class UserAuthController (
     val userESService: EventSourcingService<UUID, UserAggregate, UserAggregateState>,
     val usersRepository: UserRepository,
     val passwordEncoder: BCryptPasswordEncoder
 ) {
-    @PostMapping("/auth/create")
+    @PostMapping("/registration")
     fun createUser(@RequestBody userRegisterDTO: UserRegisterDTO): Any {
         if (usersRepository.findOneByEmail(userRegisterDTO.email) != null) {
             return ResponseEntity<Any>(null, HttpStatus.CONFLICT)

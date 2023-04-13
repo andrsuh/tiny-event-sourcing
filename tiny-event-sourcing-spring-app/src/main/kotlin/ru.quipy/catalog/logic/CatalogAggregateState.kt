@@ -7,11 +7,14 @@ import java.util.UUID
 
 class CatalogAggregateState: AggregateState<UUID, CatalogAggregate> {
     private lateinit var itemId: UUID
-    private lateinit var description: String
-    private var amount: Int = 0
-    private var price: Int = 0
+    private var description: String? = null
+    private var amount: Int? = null
+    private var price: Int? = null
 
     override fun getId(): UUID? = itemId
+    fun getDescription(): String? = description
+    fun getAmount(): Int? = amount
+    fun getPrice(): Int? = price
 
     fun resetField(target: Any, fieldName: String) {
         val field = target.javaClass.getDeclaredField(fieldName)

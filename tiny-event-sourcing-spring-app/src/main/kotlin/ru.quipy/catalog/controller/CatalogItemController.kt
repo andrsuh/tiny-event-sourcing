@@ -9,8 +9,10 @@ import ru.quipy.catalog.service.CatalogItemMongo
 import ru.quipy.catalog.service.CatalogItemRepository
 import ru.quipy.core.EventSourcingService
 import java.util.*
+import kotlin.collections.ArrayList
 
-@RestController("/catalog")
+@RestController()
+@RequestMapping("/catalog")
 class CatalogItemController (
         val catalogItemESService: EventSourcingService<UUID, CatalogAggregate, CatalogAggregateState>,
         val catalogItemRepository: CatalogItemRepository,
@@ -56,4 +58,27 @@ class CatalogItemController (
         return catalogItemESService.update(id){it.updateItemAmount(id = id, catalogItemDTO.amount)}
     }
 
+    @GetMapping
+    fun getItem(): Any {
+        val result = ArrayList<CreateCatalogItemDTO>()
+        for (item in catalogItemRepository.findAll()) {
+            result.add(
+                    CreateCatalogItemDTO(
+                            title = item.title,
+                            description =
+                            if (catalogItemESService.getState(item.aggregateId)!!.getDescription() != null)
+                                catalogItemESService.getState(item.aggregateId)!!.getDescription()!!
+                            else item.title,
+                            price = if (catalogItemESService.getState(item.aggregateId)!!.getPrice() != null)
+                                catalogItemESService.getState(item.aggregateId)!!.getPrice()!!
+                            else item.price,
+                            amount = if (catalogItemESService.getState(item.aggregateId)!!.getAmount() != null)
+                                catalogItemESService.getState(item.aggregateId)!!.getAmount()!!
+                            else item.amount,
+                    )
+            )
+        }
+
+        return result
+    }
 }
