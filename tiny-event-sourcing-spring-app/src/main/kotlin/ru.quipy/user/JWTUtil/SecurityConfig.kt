@@ -24,7 +24,7 @@ open class SecurityConfig(
         return authenticationManagerBuilder.build()
     }
 
-    @Bean
+   @Bean
     open fun filterChain(http: HttpSecurity): SecurityFilterChain {
         val authenticationManager = authManager(http)
         // Put your endpoint to create/sign, otherwise spring will secure it as
@@ -32,6 +32,7 @@ open class SecurityConfig(
         http.authorizeRequests()
             .antMatchers("/admin/**").hasAnyAuthority("ROLE_ADMIN")
             .antMatchers("/auth/**").permitAll()
+            .antMatchers("/catalog/**").permitAll()
             .anyRequest().authenticated().and().csrf().disable()
             .authenticationManager(authenticationManager)
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
@@ -40,7 +41,6 @@ open class SecurityConfig(
 
         return http.build()
     }
-
     @Bean
     open fun bCryptPasswordEncoder(): BCryptPasswordEncoder {
         return BCryptPasswordEncoder()
