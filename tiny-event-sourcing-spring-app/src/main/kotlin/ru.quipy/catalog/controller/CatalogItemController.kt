@@ -50,7 +50,7 @@ class CatalogItemController (
     }
 
     @PatchMapping("/amount/{id}")
-    fun updateItemPrice(@PathVariable id: UUID, @RequestBody catalogItemDTO: UpdateCatalogItemAmountDTO): Any {
+    fun updateAmountPrice(@PathVariable id: UUID, @RequestBody catalogItemDTO: UpdateCatalogItemAmountDTO): Any {
         if (catalogItemRepository.findOneByTitle(catalogItemDTO.title) == null) {
             return ResponseEntity<Any>(null, HttpStatus.BAD_REQUEST)
         }
