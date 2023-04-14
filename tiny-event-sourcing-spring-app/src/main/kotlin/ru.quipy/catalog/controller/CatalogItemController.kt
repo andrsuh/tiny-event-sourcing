@@ -55,6 +55,10 @@ class CatalogItemController (
             return ResponseEntity<Any>(null, HttpStatus.BAD_REQUEST)
         }
 
+        if (catalogItemDTO.amount < 0){
+            return ResponseEntity<Any>("Error: amount cannot be below zero", HttpStatus.BAD_REQUEST)
+        }
+
         return catalogItemESService.update(id){it.updateItemAmount(id = id, catalogItemDTO.amount)}
     }
 
@@ -70,6 +74,9 @@ class CatalogItemController (
                 else
                     catalogItemRepository.findOneByTitle(catalogItemDTO.title).amount
         val left = amount!! - catalogItemDTO.amount
+        if (left < 0){
+            return ResponseEntity<Any>("Error: there is no so much items", HttpStatus.BAD_REQUEST)
+        }
 
         return catalogItemESService.update(id){it.updateItemAmount(id = id, left)}
     }
