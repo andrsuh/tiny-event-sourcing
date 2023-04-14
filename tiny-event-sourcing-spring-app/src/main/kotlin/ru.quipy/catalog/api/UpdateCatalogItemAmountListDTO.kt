@@ -5,4 +5,4 @@ import java.util.UUID
 
 data class UpdateCatalogItemAmountListDTO
 @ConstructorProperties("titles", "ids","amounts")
-constructor(val titles: List<String>, val ids: List<UUID>, val amounts: List<UInt>)
+constructor(val titles: List<String>, val ids: List<UUID>, val amounts: List<Int>)
