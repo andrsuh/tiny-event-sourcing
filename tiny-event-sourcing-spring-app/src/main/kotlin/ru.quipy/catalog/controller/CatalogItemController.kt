@@ -81,12 +81,36 @@ class CatalogItemController (
         return catalogItemESService.update(id){it.updateItemAmount(id = id, left)}
     }
 
+    @PatchMapping("/return")
+    fun returnItems(@RequestBody catalogItemDTO: UpdateCatalogItemAmountListDTO): Any {
+        if (catalogItemDTO.titles.size != catalogItemDTO.ids.size && catalogItemDTO.ids.size != catalogItemDTO.amounts.size){
+            return ResponseEntity<Any>(null, HttpStatus.UNPROCESSABLE_ENTITY)
+        }
+
+        for (i in 0 until catalogItemDTO.titles.size){
+            val title = catalogItemDTO.titles[i]
+            val id = catalogItemDTO.ids[i]
+            val backAmount = catalogItemDTO.amounts[i]
+            if (catalogItemRepository.findOneByTitle(title) != null){
+                val amount =
+                        if (catalogItemESService.getState(id)!!.getAmount() != null)
+                            catalogItemESService.getState(id)!!.getAmount()
+                        else
+                            catalogItemRepository.findOneByTitle(title).amount
+                val left = amount!! + backAmount.toInt()
+                catalogItemESService.update(id){it.updateItemAmount(id = id, left)}
+            }
+        }
+
+        return  ResponseEntity<Any>("", HttpStatus.OK)
+    }
+
     @GetMapping
     fun getItem(): Any {
-        val result = ArrayList<CreateCatalogItemDTO>()
+        val result = ArrayList<GetCatalogItemsDTO>()
         for (item in catalogItemRepository.findAll()) {
             result.add(
-                    CreateCatalogItemDTO(
+                    GetCatalogItemsDTO(
                             title = item.title,
                             description =
                             if (catalogItemESService.getState(item.aggregateId)!!.getDescription() != null)
@@ -98,6 +122,7 @@ class CatalogItemController (
                             amount = if (catalogItemESService.getState(item.aggregateId)!!.getAmount() != null)
                                 catalogItemESService.getState(item.aggregateId)!!.getAmount()!!
                             else item.amount,
+                            id = catalogItemESService.getState(item.aggregateId)!!.getId()!!
                     )
             )
         }
