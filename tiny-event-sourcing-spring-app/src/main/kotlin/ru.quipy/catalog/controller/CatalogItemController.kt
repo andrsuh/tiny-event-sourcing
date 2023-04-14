@@ -58,6 +58,22 @@ class CatalogItemController (
         return catalogItemESService.update(id){it.updateItemAmount(id = id, catalogItemDTO.amount)}
     }
 
+    @PatchMapping("/buy/{id}")
+    fun buyItem(@PathVariable id: UUID, @RequestBody catalogItemDTO: UpdateCatalogItemAmountDTO): Any {
+        if (catalogItemRepository.findOneByTitle(catalogItemDTO.title) == null) {
+            return ResponseEntity<Any>(null, HttpStatus.BAD_REQUEST)
+        }
+
+        val amount =
+                if (catalogItemESService.getState(id)!!.getAmount() != null)
+                    catalogItemESService.getState(id)!!.getAmount()
+                else
+                    catalogItemRepository.findOneByTitle(catalogItemDTO.title).amount
+        val left = amount!! - catalogItemDTO.amount
+
+        return catalogItemESService.update(id){it.updateItemAmount(id = id, left)}
+    }
+
     @GetMapping
     fun getItem(): Any {
         val result = ArrayList<CreateCatalogItemDTO>()
