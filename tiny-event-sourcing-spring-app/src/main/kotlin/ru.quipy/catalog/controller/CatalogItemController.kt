@@ -50,20 +50,67 @@ class CatalogItemController (
     }
 
     @PatchMapping("/amount/{id}")
-    fun updateItemPrice(@PathVariable id: UUID, @RequestBody catalogItemDTO: UpdateCatalogItemAmountDTO): Any {
+    fun updateAmountPrice(@PathVariable id: UUID, @RequestBody catalogItemDTO: UpdateCatalogItemAmountDTO): Any {
         if (catalogItemRepository.findOneByTitle(catalogItemDTO.title) == null) {
             return ResponseEntity<Any>(null, HttpStatus.BAD_REQUEST)
+        }
+
+        if (catalogItemDTO.amount < 0){
+            return ResponseEntity<Any>("Error: amount cannot be below zero", HttpStatus.BAD_REQUEST)
         }
 
         return catalogItemESService.update(id){it.updateItemAmount(id = id, catalogItemDTO.amount)}
     }
 
+    @PatchMapping("/buy/{id}")
+    fun buyItem(@PathVariable id: UUID, @RequestBody catalogItemDTO: UpdateCatalogItemAmountDTO): Any {
+        if (catalogItemRepository.findOneByTitle(catalogItemDTO.title) == null) {
+            return ResponseEntity<Any>(null, HttpStatus.BAD_REQUEST)
+        }
+
+        val amount =
+                if (catalogItemESService.getState(id)!!.getAmount() != null)
+                    catalogItemESService.getState(id)!!.getAmount()
+                else
+                    catalogItemRepository.findOneByTitle(catalogItemDTO.title).amount
+        val left = amount!! - catalogItemDTO.amount
+        if (left < 0){
+            return ResponseEntity<Any>("Error: there is no so much items", HttpStatus.BAD_REQUEST)
+        }
+
+        return catalogItemESService.update(id){it.updateItemAmount(id = id, left)}
+    }
+
+    @PatchMapping("/return")
+    fun returnItems(@RequestBody catalogItemDTO: UpdateCatalogItemAmountListDTO): Any {
+        if (catalogItemDTO.titles.size != catalogItemDTO.ids.size && catalogItemDTO.ids.size != catalogItemDTO.amounts.size){
+            return ResponseEntity<Any>(null, HttpStatus.UNPROCESSABLE_ENTITY)
+        }
+
+        for (i in 0 until catalogItemDTO.titles.size){
+            val title = catalogItemDTO.titles[i]
+            val id = catalogItemDTO.ids[i]
+            val backAmount = catalogItemDTO.amounts[i]
+            if (catalogItemRepository.findOneByTitle(title) != null){
+                val amount =
+                        if (catalogItemESService.getState(id)!!.getAmount() != null)
+                            catalogItemESService.getState(id)!!.getAmount()
+                        else
+                            catalogItemRepository.findOneByTitle(title).amount
+                val left = amount!! + backAmount.toInt()
+                catalogItemESService.update(id){it.updateItemAmount(id = id, left)}
+            }
+        }
+
+        return  ResponseEntity<Any>("", HttpStatus.OK)
+    }
+
     @GetMapping
     fun getItem(): Any {
-        val result = ArrayList<CreateCatalogItemDTO>()
+        val result = ArrayList<GetCatalogItemsDTO>()
         for (item in catalogItemRepository.findAll()) {
             result.add(
-                    CreateCatalogItemDTO(
+                    GetCatalogItemsDTO(
                             title = item.title,
                             description =
                             if (catalogItemESService.getState(item.aggregateId)!!.getDescription() != null)
@@ -75,6 +122,7 @@ class CatalogItemController (
                             amount = if (catalogItemESService.getState(item.aggregateId)!!.getAmount() != null)
                                 catalogItemESService.getState(item.aggregateId)!!.getAmount()!!
                             else item.amount,
+                            id = catalogItemESService.getState(item.aggregateId)!!.getId()!!
                     )
             )
         }
