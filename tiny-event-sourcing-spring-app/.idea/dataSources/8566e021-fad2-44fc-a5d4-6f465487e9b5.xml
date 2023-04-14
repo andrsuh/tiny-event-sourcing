@@ -98,15 +98,15 @@
       <DasType>Int64|12s</DasType>
       <Position>1</Position>
     </column>
-    <column id="31" parent="9" name="payload">
-      <DasType>String|12s</DasType>
-      <Position>1</Position>
-    </column>
-    <column id="32" parent="9" name="createdAt">
+    <column id="31" parent="9" name="createdAt">
       <DasType>Int64|12s</DasType>
       <Position>1</Position>
     </column>
-    <column id="33" parent="9" name="eventTitle">
+    <column id="32" parent="9" name="eventTitle">
+      <DasType>String|12s</DasType>
+      <Position>1</Position>
+    </column>
+    <column id="33" parent="9" name="payload">
       <DasType>String|12s</DasType>
       <Position>1</Position>
     </column>
