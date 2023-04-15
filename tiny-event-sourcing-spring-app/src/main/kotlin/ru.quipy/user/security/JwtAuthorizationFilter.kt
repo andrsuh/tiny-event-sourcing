@@ -1,4 +1,4 @@
-package ru.quipy.user.JWTUtil
+package ru.quipy.user.security
 
 import JwtTokenUtil
 import org.springframework.http.HttpHeaders.AUTHORIZATION

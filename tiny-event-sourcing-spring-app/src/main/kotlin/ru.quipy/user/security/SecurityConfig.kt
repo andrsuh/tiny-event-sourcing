@@ -1,4 +1,4 @@
-package ru.quipy.user.JWTUtil
+package ru.quipy.user.security
 
 import JwtTokenUtil
 import org.springframework.context.annotation.Bean
@@ -27,12 +27,8 @@ open class SecurityConfig(
    @Bean
     open fun filterChain(http: HttpSecurity): SecurityFilterChain {
         val authenticationManager = authManager(http)
-        // Put your endpoint to create/sign, otherwise spring will secure it as
-        // well you won't be able to do any request
         http.authorizeRequests()
-            .antMatchers("/admin/**").hasAnyAuthority("ROLE_ADMIN")
-            .antMatchers("/auth/**").permitAll()
-            .antMatchers("/catalog/**").permitAll()
+            .antMatchers("/signUp**").permitAll()
             .anyRequest().authenticated().and().csrf().disable()
             .authenticationManager(authenticationManager)
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()

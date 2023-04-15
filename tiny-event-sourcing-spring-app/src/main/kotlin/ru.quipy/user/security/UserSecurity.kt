@@ -1,4 +1,4 @@
-package ru.quipy.user.JWTUtil
+package ru.quipy.user.security
 
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails

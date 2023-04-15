@@ -2,38 +2,35 @@ package ru.quipy.user.controller
 
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.web.bind.annotation.*
 import ru.quipy.core.EventSourcingService
 import ru.quipy.user.api.UserAggregate
+import ru.quipy.user.api.UserRegisterDTO
 import ru.quipy.user.logic.UserAggregateState
+import ru.quipy.user.service.UserMongo
 import ru.quipy.user.service.UserRepository
 import java.util.*
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import ru.quipy.user.api.UserRegisterDTO
-import ru.quipy.user.service.UserMongo
+
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping()
 class UserAuthController (
-    val userESService: EventSourcingService<UUID, UserAggregate, UserAggregateState>,
-    val usersRepository: UserRepository,
-    val passwordEncoder: BCryptPasswordEncoder
+        val userEsService: EventSourcingService<UUID, UserAggregate, UserAggregateState>,
+        val usersRepository: UserRepository,
+        val passwordEncoder: BCryptPasswordEncoder
 ) {
-    @PostMapping("/registration")
-    fun createUser(@RequestBody userRegisterDTO: UserRegisterDTO): Any {
-        if (usersRepository.findOneByEmail(userRegisterDTO.email) != null) {
+    @PostMapping("/signUp")
+    fun registration(@RequestBody request: UserRegisterDTO): Any {
+        if (usersRepository.findOneByEmail(request.email) != null) {
             return ResponseEntity<Any>(null, HttpStatus.CONFLICT)
         }
-        return usersRepository.save(
-            UserMongo(
-            email = userRegisterDTO.email,
-            password =  passwordEncoder.encode(userRegisterDTO.password),
-            aggregateId = userESService.create { it.createUser() }.userId,
-            role = "user"
-        )
-        )
+        return usersRepository.save(UserMongo(
+                email = request.email,
+                password =  passwordEncoder.encode(request.password),
+                aggregateId = userEsService.create { it.createUser() }.userId,
+                role = "user"
+        ))
     }
 }

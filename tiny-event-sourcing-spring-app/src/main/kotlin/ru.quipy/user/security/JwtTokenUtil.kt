@@ -6,12 +6,12 @@ import java.util.*
 @Component
 class JwtTokenUtil {
 
-    private val secret = "ppo"
+    private val secret = "SUPA_DUPA_MEGA_PERGA_SECRETQWEQWEQWEqweqw231__12312"
     private val expiration = 6000000
 
     fun generateToken(email: String): String =
         Jwts.builder().setSubject(email).setExpiration(Date(System.currentTimeMillis() + expiration))
-            .signWith(SignatureAlgorithm.HS512, secret.toByteArray()).compact()
+            .signWith(SignatureAlgorithm.HS256, secret.toByteArray()).compact()
 
     private fun getClaims(token: String) =
         Jwts.parser().setSigningKey(secret.toByteArray()).parseClaimsJws(token).body
