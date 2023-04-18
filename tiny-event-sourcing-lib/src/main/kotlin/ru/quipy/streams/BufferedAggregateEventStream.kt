@@ -32,6 +32,8 @@ class BufferedAggregateEventStream<A : Aggregate>(
                     "Unexpected error in aggregate event stream ${streamName}. Relaunching...",
                     th
             )
+
+            eventReader.resume()
             eventStreamJob = launchJob()
         } else {
             logger.warn("Stopped event stream $streamName coroutine")

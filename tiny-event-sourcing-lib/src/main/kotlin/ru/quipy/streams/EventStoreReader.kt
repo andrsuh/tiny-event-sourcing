@@ -7,6 +7,7 @@ import ru.quipy.core.EventSourcingProperties
 import ru.quipy.database.EventStore
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
 interface EventReader {
@@ -18,6 +19,7 @@ interface EventReader {
      */
     fun resetReadIndex(resetInfo: ReadIndexResetInfo)
     fun stop()
+    fun resume()
 }
 
 class EventStoreReader(
@@ -35,19 +37,12 @@ class EventStoreReader(
 
     private val logger: Logger = LoggerFactory.getLogger(EventStoreReader::class.java)
 
+    private val readerId = UUID.randomUUID().toString()
+
     private val isActiveReader: AtomicBoolean = AtomicBoolean(false)
     private val isHealthcheckActive: AtomicBoolean = AtomicBoolean(true)
 
     private var healthCheckJob: Job = launchEventStoreReaderHealthCheckJob()
-
-    private val healthCheckJobCompletionHandler: CompletionHandler = { th: Throwable? ->
-        if (isHealthcheckActive.get()) {
-            logger.error("Unexpected error in event store reader ${streamName}. Relaunching...", th)
-            healthCheckJob = launchEventStoreReaderHealthCheckJob()
-        } else {
-            logger.warn("Stopped event store reader coroutine of stream $streamName")
-        }
-    }
 
     private var eventStoreReadIndex: EventStreamReadIndex = EventStreamReadIndex(streamName, readIndex = 0L, version = 0L)
     private var indexResetInfo: ReadIndexResetInfo = NO_RESET_REQUIRED
@@ -89,6 +84,10 @@ class EventStoreReader(
             healthCheckJob.cancel()
     }
 
+    override fun resume() {
+        healthCheckJob = launchEventStoreReaderHealthCheckJob()
+    }
+
     private fun commitReadIndex(index: Long) {
         EventStreamReadIndex(streamName, index, eventStoreReadIndex.version + 1L).also {
             logger.info("Committing index for $streamName, index: ${index}, current version: ${eventStoreReadIndex.version}")
@@ -100,12 +99,15 @@ class EventStoreReader(
     }
 
     private fun launchEventStoreReaderHealthCheckJob(): Job {
-        return CoroutineScope(CoroutineName("reading-$streamName-coroutine") + dispatcher).launch {
+        return CoroutineScope(CoroutineName("reading-$streamName-event-store-coroutine") + dispatcher).launch {
             while (isHealthcheckActive.get()) {
                 if (streamManager.hasActiveReader(streamName)) {
                     logger.debug("Reader of stream $streamName is alive. Waiting ${config.eventReaderHealthCheckPeriod.inWholeMilliseconds} before continuing...")
                     delay(config.eventReaderHealthCheckPeriod.inWholeMilliseconds)
-                } else if (streamManager.tryInterceptReading(streamName)) {
+                } else if (streamManager.findActiveReader(streamName)?.readerId == readerId) {
+                    logger.debug("Current reader if active reader of stream $streamName. Updating its state...")
+                    streamManager.updateReaderState(streamName, readerId, eventStoreReadIndex.readIndex)
+                } else if (streamManager.tryInterceptReading(streamName, readerId)) {
                     ensureTableExists()
                     syncReaderIndex()
                     isActiveReader.set(true)
@@ -115,7 +117,14 @@ class EventStoreReader(
                 }
             }
         }.also {
-            it.invokeOnCompletion(healthCheckJobCompletionHandler)
+            it.invokeOnCompletion { th: Throwable? ->
+                if (isHealthcheckActive.get()) {
+                    logger.error("Unexpected error in event store reader ${streamName}. Relaunching...", th)
+                    healthCheckJob = launchEventStoreReaderHealthCheckJob()
+                } else {
+                    logger.warn("Stopped event store reader coroutine of stream $streamName")
+                }
+            }
         }
     }
 

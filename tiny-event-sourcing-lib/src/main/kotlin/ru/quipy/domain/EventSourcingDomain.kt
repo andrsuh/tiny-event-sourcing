@@ -61,6 +61,7 @@ class EventStreamReadIndex(
 class ActiveEventStreamReader(
     override val id: String, // Represents the stream name.
     override var version: Long,
+    val readerId: String,
     val readPosition: Long,
     val lastInteraction: Long
 ) : Unique<String>, Versioned

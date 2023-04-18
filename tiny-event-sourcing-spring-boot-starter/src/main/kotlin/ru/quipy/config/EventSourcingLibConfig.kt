@@ -28,7 +28,7 @@ class EventSourcingLibConfig {
     @Bean
     @ConfigurationProperties(prefix = "event.sourcing")
     @ConditionalOnMissingBean
-    fun configProperties() = EventSourcingProperties(maxActiveReaderInactivityPeriod = 30.seconds)
+    fun configProperties() = EventSourcingProperties()
 
     @Bean(initMethod = "init")
     @ConditionalOnMissingBean

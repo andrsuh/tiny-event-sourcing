@@ -7,9 +7,10 @@ import ru.quipy.database.EventStore
 import ru.quipy.domain.ActiveEventStreamReader
 
 interface EventStreamReaderManager {
+    fun findActiveReader(streamName: String): ActiveEventStreamReader?
     fun hasActiveReader(streamName: String): Boolean
-    fun tryInterceptReading(streamName: String): Boolean
-    fun updateReaderState(streamName: String, readingIndex: Long)
+    fun tryInterceptReading(streamName: String, readerId: String): Boolean
+    fun updateReaderState(streamName: String, readerId: String, readingIndex: Long)
 }
 
 class ActiveEventStreamReaderManager(
@@ -17,6 +18,10 @@ class ActiveEventStreamReaderManager(
     private val config: EventSourcingProperties
 ) : EventStreamReaderManager {
     private val logger: Logger = LoggerFactory.getLogger(ActiveEventStreamReaderManager::class.java)
+
+    override fun findActiveReader(streamName: String): ActiveEventStreamReader? {
+        return eventStore.getActiveStreamReader(streamName)
+    }
 
     override fun hasActiveReader(streamName: String): Boolean {
         val activeStreamReader: ActiveEventStreamReader = eventStore.getActiveStreamReader(streamName) ?: return false
@@ -32,26 +37,36 @@ class ActiveEventStreamReaderManager(
         return true
     }
 
-    override fun tryInterceptReading(streamName: String): Boolean {
+    override fun tryInterceptReading(streamName: String, readerId: String): Boolean {
         val currentActiveReader: ActiveEventStreamReader? = eventStore.getActiveStreamReader(streamName)
-        val newActiveReader = createNewActiveReader(streamName, currentActiveReader)
+
+        if (currentActiveReader != null && currentActiveReader.readerId == readerId) {
+            logger.info("An attempt to intercept reading of stream $streamName by its active reader $readerId")
+            return false
+        }
+
+        val newActiveReader = createNewActiveReader(streamName, readerId, currentActiveReader)
 
         val expectedVersion = currentActiveReader?.version ?: 0
 
         if (eventStore.tryReplaceActiveStreamReader(expectedVersion, newActiveReader)) {
-            logger.info("Event stream reader of stream $streamName has been switched from [${currentActiveReader?.id}] to [${newActiveReader.id}]")
+            logger.info("Event stream reader of stream $streamName has been switched from [${currentActiveReader?.readerId}] to [${newActiveReader.readerId}]")
             return true
         }
 
         return false
     }
 
-    override fun updateReaderState(streamName: String, readingIndex: Long) {
+    override fun updateReaderState(streamName: String, readerId: String, readingIndex: Long) {
         val activeReader: ActiveEventStreamReader? = eventStore.getActiveStreamReader(streamName)
+
+        if (activeReader != null && activeReader.readerId != readerId)
+            return
 
         val updatedActiveReader = ActiveEventStreamReader(
                 activeReader?.id ?: streamName,
                 activeReader?.version ?: 1,
+                readerId,
                 readingIndex,
                 lastInteraction = System.currentTimeMillis(),
         )
@@ -59,11 +74,11 @@ class ActiveEventStreamReaderManager(
         eventStore.updateActiveStreamReader(updatedActiveReader)
     }
 
-    private fun createNewActiveReader(streamName: String, currentActiveReader: ActiveEventStreamReader?): ActiveEventStreamReader {
+    private fun createNewActiveReader(streamName: String, readerId: String, currentActiveReader: ActiveEventStreamReader?): ActiveEventStreamReader {
         val newVersion: Long = (currentActiveReader?.version ?: 1) + 1
         val readPosition: Long = currentActiveReader?.readPosition ?: 1
         val lastInteraction: Long = System.currentTimeMillis()
 
-        return ActiveEventStreamReader(streamName, newVersion, readPosition, lastInteraction)
+        return ActiveEventStreamReader(streamName, newVersion, readerId, readPosition, lastInteraction)
     }
 }
