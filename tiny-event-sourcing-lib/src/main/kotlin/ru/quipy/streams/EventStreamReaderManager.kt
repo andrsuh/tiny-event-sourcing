@@ -63,9 +63,11 @@ class ActiveEventStreamReaderManager(
         if (activeReader != null && activeReader.readerId != readerId)
             return
 
+        val version = if (activeReader?.version != null) activeReader.version + 1 else 1
+
         val updatedActiveReader = ActiveEventStreamReader(
                 activeReader?.id ?: streamName,
-                activeReader?.version ?: 1,
+                version,
                 readerId,
                 readingIndex,
                 lastInteraction = System.currentTimeMillis(),
