@@ -2,7 +2,6 @@ package ru.quipy
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.awaitility.kotlin.await
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -128,7 +127,7 @@ class ActiveStreamReaderTest {
         val activeEventStreamReaderManager = ActiveEventStreamReaderManager(eventStore, properties)
         val reader = UUID.randomUUID().toString()
 
-        activeEventStreamReaderManager.updateReaderState("test-stream", reader, readingIndex = 0L)
+        activeEventStreamReaderManager.tryUpdateReaderState("test-stream", reader, readingIndex = 0L)
 
         val hasActiveReader = activeEventStreamReaderManager.hasActiveReader("test-stream")
 
@@ -140,7 +139,7 @@ class ActiveStreamReaderTest {
         val activeEventStreamReaderManager = ActiveEventStreamReaderManager(eventStore, properties)
         val reader = UUID.randomUUID().toString()
 
-        activeEventStreamReaderManager.updateReaderState("test-stream", reader, readingIndex = 0L)
+        activeEventStreamReaderManager.tryUpdateReaderState("test-stream", reader, readingIndex = 0L)
 
         val waitTimeSeconds = properties.maxActiveReaderInactivityPeriod.inWholeSeconds + properties.eventReaderHealthCheckPeriod.inWholeSeconds
 

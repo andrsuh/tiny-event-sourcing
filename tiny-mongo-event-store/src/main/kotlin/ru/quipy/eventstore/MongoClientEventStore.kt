@@ -127,8 +127,8 @@ class MongoClientEventStore(
         return entityConverter.convertBsonDocumentToObject(document, ActiveEventStreamReader::class)
     }
 
-    override fun updateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader) {
-        insetOrUpdateEntityByIdAndVersion("event-stream-active-readers", updatedActiveReader)
+    override fun tryUpdateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader): Boolean {
+        return insetOrUpdateEntityByIdAndVersion("event-stream-active-readers", updatedActiveReader, expectedVersion = updatedActiveReader.version - 1) != null
     }
 
     override fun tryReplaceActiveStreamReader(expectedVersion: Long, newActiveReader: ActiveEventStreamReader): Boolean {

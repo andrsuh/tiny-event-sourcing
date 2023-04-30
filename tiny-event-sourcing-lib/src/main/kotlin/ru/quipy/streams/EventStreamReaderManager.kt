@@ -10,7 +10,7 @@ interface EventStreamReaderManager {
     fun findActiveReader(streamName: String): ActiveEventStreamReader?
     fun hasActiveReader(streamName: String): Boolean
     fun tryInterceptReading(streamName: String, readerId: String): Boolean
-    fun updateReaderState(streamName: String, readerId: String, readingIndex: Long)
+    fun tryUpdateReaderState(streamName: String, readerId: String, readingIndex: Long): Boolean
 }
 
 class ActiveEventStreamReaderManager(
@@ -57,11 +57,8 @@ class ActiveEventStreamReaderManager(
         return false
     }
 
-    override fun updateReaderState(streamName: String, readerId: String, readingIndex: Long) {
+    override fun tryUpdateReaderState(streamName: String, readerId: String, readingIndex: Long): Boolean {
         val activeReader: ActiveEventStreamReader? = eventStore.getActiveStreamReader(streamName)
-
-        if (activeReader != null && activeReader.readerId != readerId)
-            return
 
         val version = if (activeReader?.version != null) activeReader.version + 1 else 1
 
@@ -73,7 +70,7 @@ class ActiveEventStreamReaderManager(
                 lastInteraction = System.currentTimeMillis(),
         )
 
-        eventStore.updateActiveStreamReader(updatedActiveReader)
+        return eventStore.tryUpdateActiveStreamReader(updatedActiveReader)
     }
 
     private fun createNewActiveReader(streamName: String, readerId: String, currentActiveReader: ActiveEventStreamReader?): ActiveEventStreamReader {

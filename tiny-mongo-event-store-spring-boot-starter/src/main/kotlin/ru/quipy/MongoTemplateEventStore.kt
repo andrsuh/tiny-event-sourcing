@@ -89,16 +89,12 @@ open class MongoTemplateEventStore : EventStore {
         return mongoTemplate.findById(streamName, "event-stream-active-readers") // todo sukhoa make configurable?
     }
 
-    override fun updateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader) {
-        mongoTemplate.insetOrUpdateEntityByIdAndVersion("event-stream-active-readers", updatedActiveReader)
+    override fun tryUpdateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader): Boolean {
+        return mongoTemplate.insetOrUpdateEntityByIdAndVersion("event-stream-active-readers", updatedActiveReader, expectedVersion = updatedActiveReader.version - 1) != null
     }
 
     override fun tryReplaceActiveStreamReader(expectedVersion: Long, newActiveReader: ActiveEventStreamReader): Boolean {
-        return mongoTemplate.tryReplaceWithOptimisticLock(
-            "event-stream-active-readers",
-            expectedVersion,
-            newActiveReader
-        )
+        return mongoTemplate.tryReplaceWithOptimisticLock("event-stream-active-readers", expectedVersion, newActiveReader)
     }
 
     override fun commitStreamReadIndex(readIndex: EventStreamReadIndex) {
@@ -131,15 +127,20 @@ inline fun <reified E> MongoTemplate.updateWithLatestVersion(
 
 inline fun <reified E> MongoTemplate.insetOrUpdateEntityByIdAndVersion(
     tableName: String,
-    replacement: E
+    replacement: E,
+    expectedVersion: Long? = null
 ): E? where E : Versioned, E : Unique<*> {
-    return update(E::class.java)
-        .inCollection(tableName)
-        .matching(Query.query(Criteria.where("_id").`is`(replacement.id).and("version").`is`(replacement.version)))
-        .replaceWith(replacement)
-        .withOptions(FindAndReplaceOptions.options().upsert().returnNew())
-        .findAndReplace()
-        .orElse(null)
+    return try {
+        update(E::class.java)
+                .inCollection(tableName)
+                .matching(Query.query(Criteria.where("_id").`is`(replacement.id).and("version").`is`(expectedVersion ?: replacement.version)))
+                .replaceWith(replacement)
+                .withOptions(FindAndReplaceOptions.options().upsert().returnNew())
+                .findAndReplace()
+                .orElse(null)
+    } catch (e: DuplicateKeyException) {
+        null
+    }
 }
 
 inline fun <reified E> MongoTemplate.tryReplaceWithOptimisticLock(

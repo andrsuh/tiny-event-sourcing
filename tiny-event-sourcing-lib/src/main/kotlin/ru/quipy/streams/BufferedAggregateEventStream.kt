@@ -33,7 +33,6 @@ class BufferedAggregateEventStream<A : Aggregate>(
                     th
             )
 
-            eventReader.resume()
             eventStreamJob = launchJob()
         } else {
             logger.warn("Stopped event stream $streamName coroutine")

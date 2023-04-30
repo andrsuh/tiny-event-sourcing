@@ -5,10 +5,12 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import ru.quipy.core.EventSourcingProperties
 import ru.quipy.database.EventStore
+import ru.quipy.domain.ActiveEventStreamReader
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 interface EventReader {
     suspend fun read(batchSize: Int): List<EventRecord>
@@ -38,6 +40,7 @@ class EventStoreReader(
     private val logger: Logger = LoggerFactory.getLogger(EventStoreReader::class.java)
 
     private val readerId = UUID.randomUUID().toString()
+    private val version: AtomicLong = AtomicLong(1L)
 
     private val isActiveReader: AtomicBoolean = AtomicBoolean(false)
     private val isHealthcheckActive: AtomicBoolean = AtomicBoolean(true)
@@ -80,8 +83,10 @@ class EventStoreReader(
         if (isActiveReader.get())
             isActiveReader.set(false)
 
-        if (isHealthcheckActive.get())
+        if (isHealthcheckActive.get()) {
+            isHealthcheckActive.set(false)
             healthCheckJob.cancel()
+        }
     }
 
     override fun resume() {
@@ -101,19 +106,28 @@ class EventStoreReader(
     private fun launchEventStoreReaderHealthCheckJob(): Job {
         return CoroutineScope(CoroutineName("reading-$streamName-event-store-coroutine") + dispatcher).launch {
             while (isHealthcheckActive.get()) {
+                val activeReader: ActiveEventStreamReader? = streamManager.findActiveReader(streamName)
+
+                if (activeReader?.readerId == readerId) {
+                    logger.debug("Current reader is active reader of stream $streamName and is alive. Updating its state...")
+                    if (streamManager.tryUpdateReaderState(streamName, readerId, eventStoreReadIndex.readIndex)) {
+                        delay(config.eventReaderHealthCheckPeriod.inWholeMilliseconds)
+                        continue
+                    }
+                }
+
                 if (streamManager.hasActiveReader(streamName)) {
                     logger.debug("Reader of stream $streamName is alive. Waiting ${config.eventReaderHealthCheckPeriod.inWholeMilliseconds} before continuing...")
                     delay(config.eventReaderHealthCheckPeriod.inWholeMilliseconds)
-                } else if (streamManager.findActiveReader(streamName)?.readerId == readerId) {
-                    logger.debug("Current reader if active reader of stream $streamName. Updating its state...")
-                    streamManager.updateReaderState(streamName, readerId, eventStoreReadIndex.readIndex)
-                } else if (streamManager.tryInterceptReading(streamName, readerId)) {
+                    continue
+                }
+
+                if (streamManager.tryInterceptReading(streamName, readerId)) {
                     ensureTableExists()
                     syncReaderIndex()
                     isActiveReader.set(true)
                 } else {
-                    logger.info("Failed to intercept reading of stream $streamName, because someone else succeeded first.")
-                    continue
+                    logger.debug("Failed to intercept reading of stream $streamName, because someone else succeeded first.")
                 }
             }
         }.also {
