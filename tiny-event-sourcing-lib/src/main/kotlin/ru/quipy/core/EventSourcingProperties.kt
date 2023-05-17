@@ -8,5 +8,6 @@ class EventSourcingProperties (
     var streamBatchSize: Int = 200,
     var autoScanEnabled: Boolean = false,
     var scanPackage: String? = null,
-    var spinLockMaxAttempts: Int = 25
+    var spinLockMaxAttempts: Int = 25,
+    var sagasEnabled: Boolean = true
 )

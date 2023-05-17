@@ -192,16 +192,19 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
             throw e
         }
 
-        sagaContext.causationId = sagaContext.currentEventId
-        sagaContext.currentEventId = UUID.randomUUID()
-        sagaContext.correlationId = sagaContext.correlationId ?: UUID.randomUUID()
+        if (eventSourcingProperties.sagasEnabled) {
+            sagaContext.causationId = sagaContext.currentEventId
+            sagaContext.currentEventId = UUID.randomUUID()
+            sagaContext.correlationId = sagaContext.correlationId ?: UUID.randomUUID()
+        }
 
         newEvents.forEach { newEvent ->
             aggregateInfo
                 .getStateTransitionFunction(newEvent.name)
                 .performTransition(aggregateState, newEvent)
             newEvent.version = ++updatedVersion
-            newEvent.sagaContext = sagaContext
+            if (eventSourcingProperties.sagasEnabled)
+                newEvent.sagaContext = sagaContext
         }
 
         val aggregateId = aggregateState.getId()
