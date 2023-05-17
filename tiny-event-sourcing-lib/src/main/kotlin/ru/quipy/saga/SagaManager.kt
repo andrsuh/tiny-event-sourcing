@@ -29,7 +29,7 @@ class SagaManager(
             )
         })
 
-        sagaStepEsService.create { it.startSagaStep(sagaStep) }
+        sagaStepEsService.create { it.launchSagaStep(sagaStep) }
 
         return processedContext
     }
@@ -70,7 +70,7 @@ class SagaManager(
         processedContext.causationId = sagaContext.causationId
         processedContext.currentEventId = sagaContext.currentEventId
 
-        sagaStepEsService.update(sagaStep.sagaInstanceId) { it.processSagaStep(sagaStep) }
+        sagaStepEsService.update(sagaStep.sagaInstanceId) { it.initiateSagaStep(sagaStep) }
 
         return processedContext
     }

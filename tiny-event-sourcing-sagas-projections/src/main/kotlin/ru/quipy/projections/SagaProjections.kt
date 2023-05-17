@@ -1,5 +1,6 @@
 package ru.quipy.projections
 
+import org.slf4j.LoggerFactory
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.repository.MongoRepository
@@ -14,22 +15,40 @@ class SagaProjections(
     private val sagaProjectionsRepository: SagaProjectionsRepository,
     private val subscriptionsManager: AggregateSubscriptionsManager
 ) {
+    private val logger = LoggerFactory.getLogger(SagaProjections::class.java)
 
     @PostConstruct
     fun init() {
-        subscriptionsManager.createSubscriber(SagaStepAggregate::class, "local-sagas-launch::sagas-projections") {
-            `when`(SagaStepStartedEvent::class) { event ->
-                val saga = Saga(event.sagaInstanceId.toString(), event.sagaName)
-                saga.sagaSteps.add(SagaStep(event.stepName, event.sagaStepId.toString(), event.prevSteps.toString()))
-                sagaProjectionsRepository.save(saga)
-            }
-        }
+        subscriptionsManager.createSubscriber(SagaStepAggregate::class, "local-sagas::sagas-projections") {
+            `when`(SagaStepLaunchedEvent::class) { event ->
+                val sagaName = event.sagaName
+                val stepId = event.sagaStepId.toString()
+                val stepName = event.stepName
 
-        subscriptionsManager.createSubscriber(SagaStepAggregate::class, "local-sagas-process::sagas-projections") {
-            `when`(SagaStepProcessedEvent::class) { event ->
-                val saga = sagaProjectionsRepository.findById(event.sagaInstanceId.toString()).get()
-                saga.sagaSteps.add(SagaStep(event.stepName, event.sagaStepId.toString(), event.prevSteps.toString()))
+                val saga = Saga(event.sagaInstanceId.toString(), sagaName)
+
+                saga.sagaSteps.add(SagaStep(stepName, stepId, event.prevSteps.toString(), event.createdAt.toString()))
                 sagaProjectionsRepository.save(saga)
+
+                logger.info("Started initiated Saga Event: $sagaName. Step: $stepName, id:$stepId")
+            }
+
+            `when`(SagaStepInitiatedEvent::class) { event ->
+                val sagaName = event.sagaName
+                val stepId = event.sagaStepId.toString()
+                val stepName = event.stepName
+
+                val saga = sagaProjectionsRepository.findById(event.sagaInstanceId.toString()).get()
+                saga.sagaSteps.add(
+                    SagaStep(
+                        event.stepName,
+                        event.sagaStepId.toString(),
+                        event.prevSteps.toString(),
+                        event.createdAt.toString()
+                    )
+                )
+                sagaProjectionsRepository.save(saga)
+                logger.info("Initiated Saga Event: $sagaName. Step: $stepName, id:$stepId")
             }
         }
     }
@@ -46,7 +65,8 @@ data class Saga(
 data class SagaStep(
     val stepName: String,
     val sagaStepId: String,
-    val prevStepId: String?
+    val prevStepsId: String?,
+    val initiatedAt: String
 )
 
 @Repository

@@ -10,10 +10,11 @@ class SagaStepAggregateState : AggregateState<UUID, SagaStepAggregate> {
     private lateinit var sagaName: String
     private lateinit var sagaInstanceId: UUID
     private var sagaSteps = mutableListOf<UUID>()
+    private var processedSagaSteps = mutableListOf<UUID>()
     override fun getId() = sagaInstanceId
 
-    fun startSagaStep(sagaStep: SagaStep): SagaStepStartedEvent {
-        return SagaStepStartedEvent(
+    fun launchSagaStep(sagaStep: SagaStep): SagaStepLaunchedEvent {
+        return SagaStepLaunchedEvent(
             sagaStep.sagaName,
             sagaStep.stepName,
             sagaStep.sagaStepId,
@@ -22,25 +23,79 @@ class SagaStepAggregateState : AggregateState<UUID, SagaStepAggregate> {
         )
     }
 
-    fun processSagaStep(sagaStep: SagaStep): SagaStepProcessedEvent {
+    fun initiateSagaStep(sagaStep: SagaStep): SagaStepInitiatedEvent {
+        if (sagaSteps.contains(sagaStep.sagaStepId)) {
+            throw IllegalStateException("Duplicate step: $sagaStep")
+        }
+
+        return SagaStepInitiatedEvent(
+            sagaStep.sagaName,
+            sagaStep.stepName,
+            sagaStep.sagaStepId,
+            sagaStep.sagaInstanceId,
+            sagaStep.prevSteps
+        )
+    }
+
+    fun processSagaStep(sagaStep: SagaStep, eventName: String): SagaStepProcessedEvent {
+        if (processedSagaSteps.contains(sagaStep.sagaStepId)) {
+            throw IllegalStateException("Duplicate step: $sagaStep")
+        }
+
         return SagaStepProcessedEvent(
             sagaStep.sagaName,
             sagaStep.stepName,
             sagaStep.sagaStepId,
             sagaStep.sagaInstanceId,
-            sagaStep.prevSteps
+            sagaStep.prevSteps,
+            eventName
+        )
+    }
+
+    fun containsProcessedSagaStep(sagaStepId: UUID): Boolean {
+        return processedSagaSteps.contains(sagaStepId)
+    }
+
+    fun processMinSaga(
+        correlationId: UUID,
+        currentEventId: UUID,
+        eventName: String,
+        causationId: UUID? = null
+    ): MinSagaProcessedEvent {
+        if (processedSagaSteps.contains(currentEventId)) {
+            throw IllegalStateException("Duplicate step: $correlationId")
+        }
+
+        return MinSagaProcessedEvent(
+            correlationId,
+            currentEventId,
+            causationId,
+            eventName
         )
     }
 
     @StateTransitionFunc
-    fun startSagaStep(sagaStepEvent: SagaStepStartedEvent) {
+    fun launchSagaStep(sagaStepEvent: SagaStepLaunchedEvent) {
         sagaName = sagaStepEvent.sagaName
         sagaInstanceId = sagaStepEvent.sagaInstanceId
         sagaSteps.add(sagaStepEvent.sagaStepId)
     }
 
     @StateTransitionFunc
-    fun processSagaStep(sagaStepEvent: SagaStepProcessedEvent) {
+    fun initiateSagaStep(sagaStepEvent: SagaStepInitiatedEvent) {
         sagaSteps.add(sagaStepEvent.sagaStepId)
+    }
+
+    @StateTransitionFunc
+    fun processSagaStep(sagaStepEvent: SagaStepProcessedEvent) {
+        processedSagaSteps.add(sagaStepEvent.sagaStepId)
+    }
+
+    @StateTransitionFunc
+    fun processMinSaga(sagaEvent: MinSagaProcessedEvent) {
+        if (!this::sagaInstanceId.isInitialized) {
+            sagaInstanceId = sagaEvent.correlationId
+        }
+        processedSagaSteps.add(sagaEvent.currentEventId)
     }
 }

@@ -4,27 +4,51 @@ import ru.quipy.core.annotations.DomainEvent
 import ru.quipy.domain.Event
 import java.util.UUID
 
-const val SAGA_STEP_STARTED = "SAGA_STEP_STARTED_EVENT"
+const val SAGA_STEP_LAUNCHED = "SAGA_STEP_LAUNCHED_EVENT"
+const val SAGA_STEP_INITIATED = "SAGA_STEP_INITIATED_EVENT"
 const val SAGA_STEP_PROCESSED = "SAGA_STEP_PROCESSED_EVENT"
+const val MIN_SAGA_PROCESSED = "MIN_SAGA_PROCESSED_EVENT"
 
-@DomainEvent(SAGA_STEP_STARTED)
-data class SagaStepStartedEvent (
+@DomainEvent(SAGA_STEP_LAUNCHED)
+data class SagaStepLaunchedEvent(
     val sagaName: String,
     val stepName: String,
     val sagaStepId: UUID,
     val sagaInstanceId: UUID,
     val prevSteps: Set<UUID> = setOf()
 ) : Event<SagaStepAggregate>(
-    name = SAGA_STEP_STARTED,
+    name = SAGA_STEP_LAUNCHED,
+)
+
+@DomainEvent(SAGA_STEP_INITIATED)
+data class SagaStepInitiatedEvent(
+    val sagaName: String,
+    val stepName: String,
+    val sagaStepId: UUID,
+    val sagaInstanceId: UUID,
+    val prevSteps: Set<UUID> = setOf()
+) : Event<SagaStepAggregate>(
+    name = SAGA_STEP_INITIATED,
 )
 
 @DomainEvent(SAGA_STEP_PROCESSED)
-data class SagaStepProcessedEvent (
+data class SagaStepProcessedEvent(
     val sagaName: String,
     val stepName: String,
     val sagaStepId: UUID,
     val sagaInstanceId: UUID,
-    val prevSteps: Set<UUID> = setOf()
+    val prevSteps: Set<UUID> = setOf(),
+    val eventName: String
 ) : Event<SagaStepAggregate>(
     name = SAGA_STEP_PROCESSED,
+)
+
+@DomainEvent(MIN_SAGA_PROCESSED)
+data class MinSagaProcessedEvent(
+    val correlationId: UUID,
+    val currentEventId: UUID,
+    val causationId: UUID?,
+    val eventName: String
+) : Event<SagaStepAggregate>(
+    name = MIN_SAGA_PROCESSED,
 )
