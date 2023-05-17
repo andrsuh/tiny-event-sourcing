@@ -6,30 +6,30 @@ import ru.quipy.saga.SagaStep
 import ru.quipy.saga.aggregate.api.*
 import java.util.UUID
 
-class SagaStepAggregateState: AggregateState<UUID, SagaStepAggregate> {
+class SagaStepAggregateState : AggregateState<UUID, SagaStepAggregate> {
     private lateinit var sagaName: String
     private lateinit var sagaInstanceId: UUID
     private var sagaSteps = mutableListOf<UUID>()
     override fun getId() = sagaInstanceId
 
-    fun startSagaStep(sagaStep: SagaStep) : SagaStepStartedEvent {
+    fun startSagaStep(sagaStep: SagaStep): SagaStepStartedEvent {
         return SagaStepStartedEvent(
             sagaStep.sagaName,
             sagaStep.stepName,
             sagaStep.sagaStepId,
             sagaStep.sagaInstanceId,
-            sagaStep.prevStep
-            )
+            sagaStep.prevSteps
+        )
     }
 
-    fun processSagaStep(sagaStep: SagaStep) : SagaStepProcessedEvent {
+    fun processSagaStep(sagaStep: SagaStep): SagaStepProcessedEvent {
         return SagaStepProcessedEvent(
             sagaStep.sagaName,
             sagaStep.stepName,
             sagaStep.sagaStepId,
             sagaStep.sagaInstanceId,
-            sagaStep.prevStep
-            )
+            sagaStep.prevSteps
+        )
     }
 
     @StateTransitionFunc

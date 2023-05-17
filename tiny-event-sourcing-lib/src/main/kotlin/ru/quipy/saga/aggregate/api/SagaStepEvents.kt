@@ -13,7 +13,7 @@ data class SagaStepStartedEvent (
     val stepName: String,
     val sagaStepId: UUID,
     val sagaInstanceId: UUID,
-    val prevStep: UUID?,
+    val prevSteps: Set<UUID> = setOf()
 ) : Event<SagaStepAggregate>(
     name = SAGA_STEP_STARTED,
 )
@@ -24,7 +24,7 @@ data class SagaStepProcessedEvent (
     val stepName: String,
     val sagaStepId: UUID,
     val sagaInstanceId: UUID,
-    val prevStep: UUID?,
+    val prevSteps: Set<UUID> = setOf()
 ) : Event<SagaStepAggregate>(
     name = SAGA_STEP_PROCESSED,
 )

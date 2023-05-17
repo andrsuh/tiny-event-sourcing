@@ -18,8 +18,8 @@ class TripController(
     @GetMapping
     fun reserveTrip() : TripReservationStartedEvent {
         val sagaContext = sagaManager
-            .withContextGiven()
-            .launchSaga("TRIP_RESERVATION", "start reservation").sagaContext
+            .launchSaga("TRIP_RESERVATION", "start reservation")
+            .sagaContext
 
         return tripEsService.create(sagaContext) { it.startReservationTrip() }
     }

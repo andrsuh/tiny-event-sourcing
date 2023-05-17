@@ -8,23 +8,42 @@ import java.util.*
 class SagaManager(
     private val sagaStepEsService: EventSourcingService<UUID, SagaStepAggregate, SagaStepAggregateState>
 ) {
-    private fun launchSaga(sagaName: String, stepName: String, sagaContext: SagaContext): SagaContext {
+    private fun launchSaga(
+        sagaName: String,
+        stepName: String,
+        sagaStepId: UUID?,
+        sagaContext: SagaContext
+    ): SagaContext {
         if (sagaContext.ctx.containsKey(sagaName))
             throw IllegalArgumentException("The name of the saga $sagaName is already in the context")
 
-        val sagaStep = SagaStep(sagaName, stepName)
+        val sagaStep = SagaStep(sagaName, stepName, sagaStepId ?: UUID.randomUUID())
 
-        val event = sagaStepEsService.create { it.startSagaStep(sagaStep) }
-
-        return SagaContext(sagaContext.ctx.toMutableMap().also {
-            it[sagaName] = SagaInfo(event.sagaInstanceId, event.sagaStepId, event.prevStep)
+        val processedContext = SagaContext(sagaContext.ctx.toMutableMap().also {
+            it[sagaName] = SagaInfo(
+                sagaStep.sagaInstanceId,
+                sagaStep.stepName,
+                sagaStep.sagaStepId,
+                sagaStep.prevSteps,
+                mapOf(sagaStep.sagaStepId to sagaStep.prevSteps)
+            )
         })
+
+        sagaStepEsService.create { it.startSagaStep(sagaStep) }
+
+        return processedContext
     }
 
     fun withContextGiven(sagaContext: SagaContext) = SagaInvoker(sagaContext)
-    fun withContextGiven() = SagaInvoker(SagaContext())
+    fun launchSaga(sagaName: String, stepName: String) =
+        SagaInvoker(SagaContext()).launchSaga(sagaName, stepName)
 
-    private fun performSagaStep(sagaName: String, stepName: String, sagaContext: SagaContext): SagaContext {
+    private fun performSagaStep(
+        sagaName: String,
+        stepName: String,
+        sagaStepId: UUID?,
+        sagaContext: SagaContext,
+    ): SagaContext {
         if (!sagaContext.ctx.containsKey(sagaName))
             throw IllegalArgumentException("The name of the saga $sagaName does not match the context")
 
@@ -33,27 +52,40 @@ class SagaManager(
         val sagaStep = SagaStep(
             sagaName,
             stepName,
+            sagaStepId ?: UUID.randomUUID(),
             sagaInstanceId = sagaInfo!!.sagaInstanceId,
-            prevStep = sagaInfo.sagaStepId
+            prevSteps = sagaInfo.stepIdPrevStepsIdsAssociation.keys
         )
-        val event = sagaStepEsService.update(sagaStep.sagaInstanceId) { it.processSagaStep(sagaStep) }
 
-        return SagaContext(sagaContext.ctx.toMutableMap().also {
-            it[sagaName] = SagaInfo(event.sagaInstanceId, event.sagaStepId, event.prevStep)
+        val processedContext = SagaContext(sagaContext.ctx.toMutableMap().also {
+            it[sagaName] = SagaInfo(
+                sagaStep.sagaInstanceId,
+                sagaStep.stepName,
+                sagaStep.sagaStepId,
+                sagaStep.prevSteps,
+                mapOf(sagaStep.sagaStepId to sagaStep.prevSteps)
+            )
         })
+
+        sagaStepEsService.update(sagaStep.sagaInstanceId) { it.processSagaStep(sagaStep) }
+
+        return processedContext
     }
 
     inner class SagaInvoker(
-        val sagaContext: SagaContext
+        val sagaContext: SagaContext,
+        private var currentSagaStepId: UUID? = null
     ) {
         fun launchSaga(sagaName: String, stepName: String): SagaInvoker {
-            val updatedContext = launchSaga(sagaName, stepName, sagaContext)
-            return SagaInvoker(updatedContext)
+            val updatedContext = launchSaga(sagaName, stepName, currentSagaStepId, sagaContext)
+            currentSagaStepId = updatedContext.ctx[sagaName]!!.sagaStepId
+            return SagaInvoker(updatedContext, currentSagaStepId)
         }
 
         fun performSagaStep(sagaName: String, stepName: String): SagaInvoker {
-            val updatedContext = performSagaStep(sagaName, stepName, sagaContext)
-            return SagaInvoker(updatedContext)
+            val updatedContext = performSagaStep(sagaName, stepName, currentSagaStepId, sagaContext)
+            currentSagaStepId = updatedContext.ctx[sagaName]!!.sagaStepId
+            return SagaInvoker(updatedContext, currentSagaStepId)
         }
     }
 }

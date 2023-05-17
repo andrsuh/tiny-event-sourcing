@@ -5,9 +5,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
-import ru.quipy.saga.aggregate.api.SagaStepAggregate
-import ru.quipy.saga.aggregate.api.SagaStepProcessedEvent
-import ru.quipy.saga.aggregate.api.SagaStepStartedEvent
+import ru.quipy.saga.aggregate.api.*
 import ru.quipy.streams.AggregateSubscriptionsManager
 import javax.annotation.PostConstruct
 
@@ -22,7 +20,7 @@ class SagaProjections(
         subscriptionsManager.createSubscriber(SagaStepAggregate::class, "local-sagas-launch::sagas-projections") {
             `when`(SagaStepStartedEvent::class) { event ->
                 val saga = Saga(event.sagaInstanceId.toString(), event.sagaName)
-                saga.sagaSteps.add(SagaStep(event.stepName, event.sagaStepId.toString(), event.prevStep.toString()))
+                saga.sagaSteps.add(SagaStep(event.stepName, event.sagaStepId.toString(), event.prevSteps.toString()))
                 sagaProjectionsRepository.save(saga)
             }
         }
@@ -30,7 +28,7 @@ class SagaProjections(
         subscriptionsManager.createSubscriber(SagaStepAggregate::class, "local-sagas-process::sagas-projections") {
             `when`(SagaStepProcessedEvent::class) { event ->
                 val saga = sagaProjectionsRepository.findById(event.sagaInstanceId.toString()).get()
-                saga.sagaSteps.add(SagaStep(event.stepName, event.sagaStepId.toString(), event.prevStep.toString()))
+                saga.sagaSteps.add(SagaStep(event.stepName, event.sagaStepId.toString(), event.prevSteps.toString()))
                 sagaProjectionsRepository.save(saga)
             }
         }
