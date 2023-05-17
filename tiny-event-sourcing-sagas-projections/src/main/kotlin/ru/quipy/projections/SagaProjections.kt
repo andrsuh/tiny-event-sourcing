@@ -50,6 +50,22 @@ class SagaProjections(
                 sagaProjectionsRepository.save(saga)
                 logger.info("Initiated Saga Event: $sagaName. Step: $stepName, id:$stepId")
             }
+
+            `when`(SagaStepProcessedEvent::class) { event ->
+                val saga = sagaProjectionsRepository.findById(event.sagaInstanceId.toString()).get()
+
+                val sagaName = event.sagaName
+                val stepId = event.sagaStepId.toString()
+                val stepName = event.stepName
+
+                val sagaStep = saga.sagaSteps.find { it.sagaStepId == stepId }
+                sagaStep?.processedAt = event.createdAt.toString()
+                sagaStep?.eventName = event.eventName
+
+                sagaProjectionsRepository.save(saga)
+
+                logger.info("Processed Saga Event: $sagaName. Step: $stepName, id:$stepId")
+            }
         }
     }
 }
@@ -58,7 +74,7 @@ class SagaProjections(
 data class Saga(
     @Id
     val sagaInstanceId: String,
-    val sagaName: String,
+    val sagaName: String?,
     val sagaSteps: MutableList<SagaStep> = mutableListOf()
 )
 
@@ -66,7 +82,9 @@ data class SagaStep(
     val stepName: String,
     val sagaStepId: String,
     val prevStepsId: String?,
-    val initiatedAt: String
+    val initiatedAt: String,
+    var processedAt: String? = null,
+    var eventName: String? = null
 )
 
 @Repository

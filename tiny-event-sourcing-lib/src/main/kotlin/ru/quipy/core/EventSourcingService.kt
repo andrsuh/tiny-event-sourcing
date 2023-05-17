@@ -213,7 +213,8 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
                 aggregateId,
                 it.version,
                 it.name,
-                eventMapper.eventToString(it)
+                eventMapper.eventToString(it),
+                it.sagaContext
             )
         }
 

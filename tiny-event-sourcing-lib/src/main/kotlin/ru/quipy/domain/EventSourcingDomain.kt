@@ -39,6 +39,7 @@ data class EventRecord(
     val aggregateVersion: Long,
     val eventTitle: String,
     val payload: String,
+    var sagaContext: SagaContext? = SagaContext(),
     val createdAt: Long = System.currentTimeMillis()
 ) : Unique<String>
 

@@ -54,6 +54,10 @@ class BasicAggregateRegistry : AggregateRegistry {
         return aggregatesInfo[clazz]?.let { it.stateInfo as AggregateStateInfo<ID, A, S> }
     }
 
+    override fun getAllAggregates(): List<KClass<Aggregate>> {
+        return aggregatesInfo.toMap().keys.map { it as KClass<Aggregate> }
+    }
+
     class AggregateInfo {
         var eventInfo: EventInfo<*>? = null
         var stateInfo: AggregateStateInfo<*, *, *>? = null
