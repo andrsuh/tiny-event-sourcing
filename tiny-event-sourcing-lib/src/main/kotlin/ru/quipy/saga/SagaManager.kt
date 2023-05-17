@@ -66,6 +66,9 @@ class SagaManager(
                 mapOf(sagaStep.sagaStepId to sagaStep.prevSteps)
             )
         })
+        processedContext.correlationId = sagaContext.correlationId
+        processedContext.causationId = sagaContext.causationId
+        processedContext.currentEventId = sagaContext.currentEventId
 
         sagaStepEsService.update(sagaStep.sagaInstanceId) { it.processSagaStep(sagaStep) }
 

@@ -3,7 +3,10 @@ package ru.quipy.saga
 import java.util.*
 
 data class SagaContext(
-    val ctx: Map<String, SagaInfo> = mapOf()
+    val ctx: Map<String, SagaInfo> = mapOf(),
+    var correlationId: UUID? = null,
+    var currentEventId: UUID? = null,
+    var causationId: UUID? = null
 )
 
 data class SagaInfo(
@@ -37,5 +40,5 @@ operator fun SagaContext.plus(other: SagaContext): SagaContext {
         }
     }
 
-    return SagaContext(combinedCtx)
+    return SagaContext(combinedCtx, correlationId, currentEventId, causationId)
 }

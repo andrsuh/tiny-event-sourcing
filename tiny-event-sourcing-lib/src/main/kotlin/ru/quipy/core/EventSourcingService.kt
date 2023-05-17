@@ -7,7 +7,7 @@ import ru.quipy.database.EventStore
 import ru.quipy.domain.*
 import ru.quipy.mapper.EventMapper
 import ru.quipy.saga.SagaContext
-import ru.quipy.saga.SagaInfo
+import java.util.*
 import kotlin.experimental.ExperimentalTypeInference
 import kotlin.reflect.KClass
 
@@ -71,7 +71,11 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
 
     @OptIn(ExperimentalTypeInference::class)
     @OverloadResolutionByLambdaReturnType
-    fun <E : Event<A>> update(aggregateId: ID, sagaContext: SagaContext = SagaContext(), command: (S) -> List<E>): List<E> {
+    fun <E : Event<A>> update(
+        aggregateId: ID,
+        sagaContext: SagaContext = SagaContext(),
+        command: (S) -> List<E>
+    ): List<E> {
         return updateWithSpinLock(aggregateId) { aggregateState, version ->
             tryUpdate(aggregateState, version, command, sagaContext)
         }
@@ -187,6 +191,10 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
             logger.warn("Exception thrown during aggregate update: ", e)
             throw e
         }
+
+        sagaContext.causationId = sagaContext.currentEventId
+        sagaContext.currentEventId = UUID.randomUUID()
+        sagaContext.correlationId = sagaContext.correlationId ?: UUID.randomUUID()
 
         newEvents.forEach { newEvent ->
             aggregateInfo
