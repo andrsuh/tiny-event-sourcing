@@ -3,18 +3,29 @@ package ru.quipy.streams
 import kotlinx.coroutines.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import ru.quipy.core.AggregateRegistry
 import ru.quipy.core.EventSourcingProperties
 import ru.quipy.database.EventStore
 import ru.quipy.domain.ActiveEventStreamReader
+import ru.quipy.domain.Aggregate
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.*
 import java.util.concurrent.atomic.AtomicLong
 
+/**
+ * Allows to read batches of event-records from some underlying storage (event bus, event store).
+ * It shouldn't be shared among several threads as this will break the order of the stream events.
+ * And the class is not basically thread-safe since it's not needed to be such by his nature.
+ */
 interface EventReader {
     suspend fun read(batchSize: Int): List<EventRecord>
-    fun postProcessRecord(eventRecord: EventRecord)
+
+    /**
+     * Used to inform that the given record is successfully consumed.
+     * NOTE!!! The records should be acked in the same order they were read from the stream
+     */
+    fun acknowledgeRecord(eventRecord: EventRecord)
 
     /**
      * We can "replay" events in the stream by resetting it to desired reading index
@@ -27,12 +38,19 @@ interface EventReader {
 class EventStoreReader(
     private val eventStore: EventStore,
     private val streamName: String,
-    private val tableName: String,
+    aggregateInfo: AggregateRegistry.BasicAggregateInfo<Aggregate>,
     private val streamManager: EventStreamReaderManager,
-    private val config: EventSourcingProperties,
+    config: EventSourcingProperties,
     private val eventStreamNotifier: EventStreamNotifier,
     private val dispatcher: CoroutineDispatcher
 ) : EventReader {
+
+    private val eventStoreTableName = aggregateInfo.aggregateEventsTableName
+
+    private val commitIndexEachNMessages = config.recordReadIndexCommitPeriod
+    private val healthcheckPeriodInMillis =
+        config.eventReaderHealthCheckPeriod.inWholeMilliseconds + kotlin.random.Random.nextLong(config.eventReaderHealthCheckPeriod.inWholeMilliseconds / 5)
+
     companion object {
         private val NO_RESET_REQUIRED = ReadIndexResetInfo(-1)
     }
@@ -42,34 +60,48 @@ class EventStoreReader(
     private val readerId = UUID.randomUUID().toString()
     private val version: AtomicLong = AtomicLong(1L)
 
-    private val isActiveReader: AtomicBoolean = AtomicBoolean(false)
-    private val isHealthcheckActive: AtomicBoolean = AtomicBoolean(true)
+    // Relevant in cluster mode when there are multiple instances of the app and respectively the multiple instances of the
+    // readers at the same time. Only one of them can be "active" at any time
+    @Volatile
+    private var meIsActiveReader: Boolean = false
+
+    @Volatile
+    private var isHealthcheckActive: Boolean = true
 
     private var healthCheckJob: Job = launchEventStoreReaderHealthCheckJob()
 
-    private var eventStoreReadIndex: EventStreamReadIndex = EventStreamReadIndex(streamName, readIndex = 0L, version = 0L)
+    private var eventStoreReadIndex: EventStreamReadIndex =
+        EventStreamReadIndex(streamName, readIndex = 0L, version = 0L)
+
+    // This variable can signal that someone requested the "reset" of the stream.
+    // Reset enable the stream to "replay" events that have already been processed
     private var indexResetInfo: ReadIndexResetInfo = NO_RESET_REQUIRED
     private var processedRecords = 0L
 
     override suspend fun read(batchSize: Int): List<EventRecord> {
-        if (!isActiveReader.get())
+        if (!meIsActiveReader) {
+            logger.debug("Skip reading by reader id $readerId, stream $streamName has another active reader")
             return emptyList()
+        }
 
         checkAndResetIndexIfRequired()
 
-        val eventRecords = eventStore.findBatchOfEventRecordAfter(tableName, eventStoreReadIndex.readIndex, batchSize)
+        val eventRecords =
+            eventStore.findBatchOfEventRecordAfter(eventStoreTableName, eventStoreReadIndex.readIndex, batchSize)
         eventStreamNotifier.onBatchRead(streamName, eventRecords.size)
 
         return eventRecords
     }
 
-    override fun postProcessRecord(eventRecord: EventRecord) {
-        val processingRecordTimestamp = eventRecord.createdAt
+    override fun acknowledgeRecord(eventRecord: EventRecord) {
+        if (!meIsActiveReader || eventRecord.createdAt < eventStoreReadIndex.readIndex) return
 
-        eventStoreReadIndex = EventStreamReadIndex(streamName, processingRecordTimestamp, eventStoreReadIndex.version)
+        val processedRecordTs = eventRecord.createdAt
 
-        if (processedRecords++ % config.recordReadIndexCommitPeriod == 0L)
-            commitReadIndex(processingRecordTimestamp)
+        eventStoreReadIndex = EventStreamReadIndex(streamName, processedRecordTs, eventStoreReadIndex.version)
+
+        if (processedRecords++ % commitIndexEachNMessages == 0L)
+            commitReadIndex(processedRecordTs)
     }
 
     override fun resetReadIndex(resetInfo: ReadIndexResetInfo) {
@@ -80,22 +112,22 @@ class EventStoreReader(
     }
 
     override fun stop() {
-        if (isActiveReader.get())
-            isActiveReader.set(false)
+        if (meIsActiveReader) meIsActiveReader = false
 
-        if (isHealthcheckActive.get()) {
-            isHealthcheckActive.set(false)
+        if (isHealthcheckActive) {
+            isHealthcheckActive = false
             healthCheckJob.cancel()
         }
     }
 
     override fun resume() {
+        isHealthcheckActive = true
         healthCheckJob = launchEventStoreReaderHealthCheckJob()
     }
 
     private fun commitReadIndex(index: Long) {
         EventStreamReadIndex(streamName, index, eventStoreReadIndex.version + 1L).also {
-            logger.info("Committing index for $streamName, index: ${index}, current version: ${eventStoreReadIndex.version}")
+            logger.debug("Committing index for $streamName-$readerId, index: ${index}, updated version: ${it.version}")
             eventStore.commitStreamReadIndex(it)
             eventStreamNotifier.onReadIndexCommitted(streamName, it.readIndex)
         }
@@ -105,34 +137,30 @@ class EventStoreReader(
 
     private fun launchEventStoreReaderHealthCheckJob(): Job {
         return CoroutineScope(CoroutineName("reading-$streamName-event-store-coroutine") + dispatcher).launch {
-            while (isHealthcheckActive.get()) {
+            delay(healthcheckPeriodInMillis) // initial delay to handle the simultaneous stream reader starts
+            while (isHealthcheckActive) {
                 val activeReader: ActiveEventStreamReader? = streamManager.findActiveReader(streamName)
 
-                if (activeReader?.readerId == readerId) {
-                    logger.debug("Current reader is active reader of stream $streamName and is alive. Updating its state...")
-                    if (streamManager.tryUpdateReaderState(streamName, readerId, eventStoreReadIndex.readIndex)) {
-                        delay(config.eventReaderHealthCheckPeriod.inWholeMilliseconds)
-                        continue
+                if (activeReader.isMe()) {
+                    logger.debug("Current reader $readerId is active reader of stream $streamName and is alive. Updating its state...")
+                    if (performHealthCheck()) {
+                        delay(healthcheckPeriodInMillis)
                     }
-                }
-
-                if (streamManager.hasActiveReader(streamName)) {
-                    logger.debug("Reader of stream $streamName is alive. Waiting ${config.eventReaderHealthCheckPeriod.inWholeMilliseconds} before continuing...")
-                    delay(config.eventReaderHealthCheckPeriod.inWholeMilliseconds)
-                    continue
-                }
-
-                if (streamManager.tryInterceptReading(streamName, readerId)) {
+                } else if (streamManager.hasActiveReader(streamName)) {
+                    logger.debug("Reader of stream $streamName is alive. Waiting $healthcheckPeriodInMillis ms before continuing...")
+                    delay(healthcheckPeriodInMillis)
+                } else if (streamManager.tryInterceptReading(streamName, readerId)) {
                     ensureTableExists()
                     syncReaderIndex()
-                    isActiveReader.set(true)
+                    meIsActiveReader = true
+                    logger.info("Current reader is promoted to active stream $streamName reader $readerId")
                 } else {
-                    logger.debug("Failed to intercept reading of stream $streamName, because someone else succeeded first.")
+                    logger.debug("Failed to intercept reading of stream $streamName id=$readerId, because someone else succeeded first.")
                 }
             }
         }.also {
             it.invokeOnCompletion { th: Throwable? ->
-                if (isHealthcheckActive.get()) {
+                if (isHealthcheckActive) {
                     logger.error("Unexpected error in event store reader ${streamName}. Relaunching...", th)
                     healthCheckJob = launchEventStoreReaderHealthCheckJob()
                 } else {
@@ -142,24 +170,31 @@ class EventStoreReader(
         }
     }
 
+    private fun performHealthCheck(): Boolean {
+        return streamManager.tryUpdateReaderState(streamName, readerId, eventStoreReadIndex.readIndex)
+    }
+
+    private fun ActiveEventStreamReader?.isMe() = this != null && readerId == this@EventStoreReader.readerId
+
     private suspend fun ensureTableExists() {
-        while (!eventStore.tableExists(tableName)) {
+        while (!eventStore.tableExists(eventStoreTableName)) {
             delay(2_000)
-            logger.trace("Event stream $streamName is waiting for $tableName to be created")
+            logger.trace("Event stream $streamName is waiting for $eventStoreTableName to be created")
         }
     }
 
     private fun syncReaderIndex() {
         eventStore.findStreamReadIndex(streamName)?.also {
             eventStoreReadIndex = it
-            logger.info("Reader index synced for $streamName. Index: ${it.readIndex}, version: ${it.version}")
+            logger.debug("Reader index synced for $streamName. Index: ${it.readIndex}, version: ${it.version}")
             eventStreamNotifier.onReadIndexSynced(streamName, it.readIndex)
         }
     }
 
     private fun checkAndResetIndexIfRequired() {
         if (indexResetInfo != NO_RESET_REQUIRED) {
-            val updatedReadIndex = EventStreamReadIndex(streamName, indexResetInfo.resetIndex, eventStoreReadIndex.version)
+            val updatedReadIndex =
+                EventStreamReadIndex(streamName, indexResetInfo.resetIndex, eventStoreReadIndex.version)
 
             eventStoreReadIndex = updatedReadIndex
             logger.warn("Index for stream $streamName forcibly reset to ${indexResetInfo.resetIndex}")
@@ -171,5 +206,5 @@ class EventStoreReader(
 }
 
 class ReadIndexResetInfo(
-        val resetIndex: Long
+    val resetIndex: Long
 )

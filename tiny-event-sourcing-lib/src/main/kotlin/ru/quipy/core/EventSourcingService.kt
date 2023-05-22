@@ -121,7 +121,7 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
     }
 
     private fun getInitialState(aggregateId: ID): Pair<S, Long> =
-        eventStore.findSnapshotByAggregateId(eventSourcingProperties.snapshotTableName, aggregateId)
+        eventStore.findSnapshotByAggregateId(eventSourcingProperties.snapshotTableName, aggregateId) // sukhoa it is hot. we should create property and find snapshot only if it is enabled
             ?.let {
                 it.snapshot as S to it.version
             } ?: (aggregateInfo.emptyStateCreator() to 0L)

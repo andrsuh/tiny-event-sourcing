@@ -1,6 +1,7 @@
 package ru.quipy
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import kotlinx.coroutines.*
 import org.awaitility.kotlin.await
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -18,13 +19,16 @@ import ru.quipy.projectDemo.create
 import ru.quipy.projectDemo.createTag
 import ru.quipy.projectDemo.logic.ProjectAggregateState
 import ru.quipy.projectDemo.logic.tagAssignedApply
-import ru.quipy.streams.ActiveEventStreamReaderManager
-import ru.quipy.streams.AggregateEventStreamManager
-import ru.quipy.streams.AggregateSubscriptionsManager
-import ru.quipy.streams.EventStreamSubscriber
-import java.util.UUID
+import ru.quipy.streams.*
+import java.time.Duration.*
+import java.util.*
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import kotlin.time.Duration.Companion.seconds
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.random.Random.Default.nextDouble
+import kotlin.time.Duration.Companion.milliseconds
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -33,18 +37,40 @@ class ActiveStreamReaderTest {
     @Autowired
     private lateinit var eventStore: EventStore
 
-    private val testId = "4"
-
     private val properties: EventSourcingProperties = EventSourcingProperties(
-            maxActiveReaderInactivityPeriod = 5.seconds,
-            recordReadIndexCommitPeriod = 2,
-            eventReaderHealthCheckPeriodBase = 1.seconds)
+        streamBatchSize = 10,
+        recordReadIndexCommitPeriod = 1,
+        streamReadPeriod = 50, // todo sukhoa actually this is polling period id case batch is empty
+        maxActiveReaderInactivityPeriod = 300.milliseconds,
+        eventReaderHealthCheckPeriod = 50.milliseconds,
+        snapshotFrequency = 10
+    )
+    private val messageProcessingTimeUpTo = 1.milliseconds
 
-    private val registry: AggregateRegistry = SeekingForSuitableClassesAggregateRegistry(BasicAggregateRegistry(), properties)
+    private val streamFailingProbability = 1.0
+
+    private val dispatcher =
+        ThreadPoolExecutor(16, 16, Long.MAX_VALUE, TimeUnit.MILLISECONDS, LinkedBlockingQueue()).asCoroutineDispatcher()
+
+    private val numberOfProjects = 50
+    private val numberOfTagsPerProject = 200
+    private val totalNumberOfEvents = numberOfProjects + (numberOfProjects * numberOfTagsPerProject)
+
+    // 1. all is ok all the messages is processed by one stream
+    // 2. all is ok, but there are some stream's failure. stream is successfully intercepted by another reader and all the events are processed
+    // 3.
+    // !!! Too big batch leads to many clashes as its cached in Buffered stream and cannot be rejected
+    // Too small batch size increases the DB trips
+
+
+    private val registry: AggregateRegistry =
+        SeekingForSuitableClassesAggregateRegistry(BasicAggregateRegistry(), properties)
 
     private val eventMapper: EventMapper = JsonEventMapper(jacksonObjectMapper())
 
     private lateinit var eventStreamManager: AggregateEventStreamManager //= AggregateEventStreamManager(registry, eventStore, properties)
+
+    private lateinit var eventStreamReaderManager: EventStreamReaderManager //= AggregateEventStreamManager(registry, eventStore, properties)
 
     private lateinit var subscriptionsManager: AggregateSubscriptionsManager// = AggregateSubscriptionsManager(eventStreamManager, registry, eventMapper)
 
@@ -59,92 +85,179 @@ class ActiveStreamReaderTest {
             registerStateTransition(TagAssignedToTaskEvent::class, ProjectAggregateState::tagAssignedApply)
         }
 
-        eventStreamManager = AggregateEventStreamManager(registry, eventStore, properties)
+        eventStreamReaderManager = EventStoreStreamReaderManager(eventStore, properties)
+
+        eventStreamManager = AggregateEventStreamManager(registry, eventStore, properties, eventStreamReaderManager)
         subscriptionsManager = AggregateSubscriptionsManager(eventStreamManager, registry, eventMapper)
 
+        eventStreamManager.maintenance {
+            onReadIndexCommitted { streamName, index ->
+                println("Index committed, streamName: $index")
+            }
+        }
+
         demoESService = EventSourcingService(
-                aggregateClass = ProjectAggregate::class,
-                aggregateRegistry = registry,
-                eventStore = eventStore,
-                eventMapper = eventMapper,
-                eventSourcingProperties = properties)
+            aggregateClass = ProjectAggregate::class,
+            aggregateRegistry = registry,
+            eventStore = eventStore,
+            eventMapper = eventMapper,
+            eventSourcingProperties = properties
+        )
     }
 
     @Test
     fun checkActiveReaderIntercepted() {
-        val eventStreamManager1 = AggregateEventStreamManager(registry, eventStore, properties)
-        val eventStreamManager2 = AggregateEventStreamManager(registry, eventStore, properties)
+        var eventsPublished = 0
 
-        val subscriptionManager1 = AggregateSubscriptionsManager(eventStreamManager1, registry, eventMapper)
-        val subscriptionManager2 = AggregateSubscriptionsManager(eventStreamManager2, registry, eventMapper)
+        val start = System.currentTimeMillis()
+        val durations = mutableListOf<Long>()
 
-        val sb1 = StringBuilder()
-        val sb2 = StringBuilder()
-
-        val subscriber1: EventStreamSubscriber<ProjectAggregate> = subscriptionManager1.createSubscriber(ProjectAggregate::class, "ActiveStreamReaderTest") {
-            `when`(TagCreatedEvent::class) { event ->
-                sb1.append(event.tagName).also {
-                    println(sb1.toString())
+        (1..numberOfProjects).map { projectId ->
+            demoESService.create {
+                eventsPublished++
+                it.create(projectId.toString())
+            }
+        }.forEach { createdEvent ->
+            CoroutineScope(dispatcher).launch {
+                for (i in 1..numberOfTagsPerProject) {
+                    demoESService.update(createdEvent.projectId) {
+                        it.createTag("Tag - $i")
+                    }
+                    eventsPublished++
                 }
+                durations.add(System.currentTimeMillis())
             }
         }
 
-        val subscriber2: EventStreamSubscriber<ProjectAggregate> = subscriptionManager2.createSubscriber(ProjectAggregate::class, "ActiveStreamReaderTest") {
-            `when`(TagCreatedEvent::class) { event ->
-                sb2.append(event.tagName).also {
-                    println(sb2.toString())
+        val eventStreamManager1 =
+            AggregateEventStreamManager(registry, eventStore, properties, eventStreamReaderManager)
+        val eventStreamManager2 =
+            AggregateEventStreamManager(registry, eventStore, properties, eventStreamReaderManager)
+
+        val results = ArrayBlockingQueue<StreamHandleResult>(15000)
+        val eventCounter = AtomicInteger(0)
+        val switchingCounter = AtomicInteger(0)
+
+        val stream1 =
+            eventStreamManager1.createEventStream("test-active-subscribers-stream", ProjectAggregate::class).also {
+                CoroutineScope(dispatcher).launch {
+                    while (true) {
+                        it.handleNextRecord {
+                            eventCounter.incrementAndGet()
+                            results.add(StreamHandleResult(1, it.id))
+//                            val processingDelay = nextLong(messageProcessingTimeUpTo.inWholeMilliseconds)
+//                            delay(processingDelay)
+                            true
+                        }
+                    }
                 }
+            }
+
+        val stream2 =
+            eventStreamManager2.createEventStream("test-active-subscribers-stream", ProjectAggregate::class).also {
+                CoroutineScope(dispatcher).launch {
+                    while (true) {
+                        it.handleNextRecord {
+                            eventCounter.incrementAndGet()
+                            results.add(StreamHandleResult(2, it.id))
+//                            val processingDelay = nextLong(messageProcessingTimeUpTo.inWholeMilliseconds)
+//                            delay(processingDelay)
+                            true
+                        }
+                    }
+                }
+            }
+
+        CoroutineScope(dispatcher).launch {
+            val compositeStream = CompositeEventStream(stream1, stream2)
+            while (true) {
+                if (nextDouble(1.0) > streamFailingProbability) {
+                    compositeStream.switchActive()
+                    switchingCounter.incrementAndGet()
+                }
+                delay(properties.maxActiveReaderInactivityPeriod.inWholeMilliseconds)
             }
         }
 
-        demoESService.create {
-            it.create(testId)
-        }
-
-        demoESService.update(testId) {
-            it.createTag("A")
-        }
-
-        subscriber1.stopAndDestroy()
-
-        demoESService.update(testId) {
-            it.createTag("B")
-        }
-
-        demoESService.update(testId) {
-            it.createTag("C")
-        }
-
-        val waitTimeSeconds = properties.maxActiveReaderInactivityPeriod.inWholeSeconds + properties.eventReaderHealthCheckPeriod.inWholeSeconds
-
-        await.atMost(waitTimeSeconds, TimeUnit.SECONDS).until {
-            sb2.toString() == "ABC"
+        runBlocking {
+            await.atMost(200, TimeUnit.SECONDS).pollDelay(ofMillis(500)).until {
+                println("NUM: ${results.distinctBy { it.eventId }.count()}, ${eventCounter.get()}")
+                results.distinctBy { it.eventId }.count() >= totalNumberOfEvents
+            }
+            println("First stream processed: ${results.count { it.streamId == 1 }}")
+            println("Second stream processed: ${results.count { it.streamId == 2 }}")
+            println(
+                "Duplicates stream processed: ${
+                    results.groupBy { it.eventId }.filter { it.value.size > 1 }.count()
+                }"
+            )
+            println("There were: ${switchingCounter.get()} switches")
+            println("ES updates take ${durations.maxOf { it } - start}ms")
         }
     }
 
     @Test
     fun hasActiveReader_ReturnsTrue() {
-        val activeEventStreamReaderManager = ActiveEventStreamReaderManager(eventStore, properties)
+        val eventStoreStreamReaderManager = EventStoreStreamReaderManager(eventStore, properties)
         val reader = UUID.randomUUID().toString()
 
-        activeEventStreamReaderManager.tryUpdateReaderState("test-stream", reader, readingIndex = 0L)
+        eventStoreStreamReaderManager.tryUpdateReaderState("test-stream", reader, readingIndex = 0L)
 
-        val hasActiveReader = activeEventStreamReaderManager.hasActiveReader("test-stream")
+        val hasActiveReader = eventStoreStreamReaderManager.hasActiveReader("test-stream")
 
         assertTrue(hasActiveReader)
     }
 
     @Test
     fun hasActiveReader_ReturnsFalse() {
-        val activeEventStreamReaderManager = ActiveEventStreamReaderManager(eventStore, properties)
+        val eventStoreStreamReaderManager = EventStoreStreamReaderManager(eventStore, properties)
         val reader = UUID.randomUUID().toString()
 
-        activeEventStreamReaderManager.tryUpdateReaderState("test-stream", reader, readingIndex = 0L)
+        eventStoreStreamReaderManager.tryUpdateReaderState("test-stream", reader, readingIndex = 0L)
 
-        val waitTimeSeconds = properties.maxActiveReaderInactivityPeriod.inWholeSeconds + properties.eventReaderHealthCheckPeriod.inWholeSeconds
+        val waitTimeSeconds =
+            properties.maxActiveReaderInactivityPeriod.inWholeSeconds + properties.eventReaderHealthCheckPeriod.inWholeSeconds
 
         await.atMost(waitTimeSeconds, TimeUnit.SECONDS).until {
-            !activeEventStreamReaderManager.hasActiveReader("test-stream")
+            !eventStoreStreamReaderManager.hasActiveReader("test-stream")
         }
     }
+
+    class CompositeEventStream(
+        private val stream1: AggregateEventStream<ProjectAggregate>,
+        private val stream2: AggregateEventStream<ProjectAggregate>
+    ) {
+        var active1 = true
+        var active2 = true
+
+        fun switchActive() {
+            when {
+                active1 && active2 -> {
+                    stream1.suspend()
+                    active1 = false
+                    println("Switched from 1 to 2 initially")
+                }
+                !active1 && active2 -> {
+                    stream1.resume()
+                    active1 = true
+                    stream2.suspend()
+                    active2 = false
+                    println("Switched from 2 to 1")
+                }
+                active1 && !active2 -> {
+                    stream2.resume()
+                    active2 = true
+                    stream1.suspend()
+                    active1 = false
+                    println("Switched from 1 to 2")
+                }
+                else -> Unit // throw IllegalStateException("Both streams are down")
+            }
+        }
+    }
+
+    data class StreamHandleResult(
+        val streamId: Int,
+        val eventId: String,
+    )
 }

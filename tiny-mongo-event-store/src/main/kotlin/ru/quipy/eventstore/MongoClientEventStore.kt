@@ -135,8 +135,8 @@ class MongoClientEventStore(
         return tryReplaceWithOptimisticLock("event-stream-active-readers", expectedVersion, newActiveReader)
     }
 
-    override fun commitStreamReadIndex(readIndex: EventStreamReadIndex) {
-        updateWithLatestVersion("event-stream-read-index", readIndex) // todo sukhoa make configurable?
+    override fun commitStreamReadIndex(readIndex: EventStreamReadIndex): Boolean {
+        return updateWithLatestVersion("event-stream-read-index", readIndex) != null // todo sukhoa make configurable?
     }
 
     private fun findOne(collectionName: String, id: Any): Document? {

@@ -15,8 +15,5 @@ class EventSourcingProperties (
     var spinLockMaxAttempts: Int = 25,
     var maxActiveReaderInactivityPeriod: Duration = 5.minutes,
     var recordReadIndexCommitPeriod: Int = 10,
-    eventReaderHealthCheckPeriodBase: Duration = 15.seconds,
+    val eventReaderHealthCheckPeriod: Duration = 5.seconds,
 )
-{
-    val eventReaderHealthCheckPeriod: Duration = eventReaderHealthCheckPeriodBase + Random.nextInt(from = 0, until = 4).seconds
-}

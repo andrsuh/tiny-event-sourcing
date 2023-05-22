@@ -34,6 +34,8 @@ interface AggregateEventStream<A : Aggregate> {
     fun suspend()
 
     fun resume()
+
+    fun isSuspended(): Boolean
 }
 
 interface EventStreamListener { // todo sukhoa better naming

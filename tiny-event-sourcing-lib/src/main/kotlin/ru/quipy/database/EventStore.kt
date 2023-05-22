@@ -61,5 +61,5 @@ interface EventStore {
 
     fun tryReplaceActiveStreamReader(expectedVersion: Long, newActiveReader: ActiveEventStreamReader): Boolean
 
-    fun commitStreamReadIndex(readIndex: EventStreamReadIndex)
+    fun commitStreamReadIndex(readIndex: EventStreamReadIndex): Boolean
 }

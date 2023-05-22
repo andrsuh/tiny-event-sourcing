@@ -16,6 +16,7 @@ class AggregateEventStreamManager(
     private val aggregateRegistry: AggregateRegistry,
     private val eventStore: EventStore,
     private val eventSourcingProperties: EventSourcingProperties,
+    private val streamManager: EventStreamReaderManager
 ) {
     private val eventStreamListener: EventStreamListenerImpl = EventStreamListenerImpl()// todo sukhoa make injectable
 
@@ -24,28 +25,26 @@ class AggregateEventStreamManager(
     private val eventStreams = ConcurrentHashMap<String, AggregateEventStream<*>>()
 
     fun <A : Aggregate> createEventStream(
-            streamName: String,
-            aggregateClass: KClass<A>,
-            retryConfig: RetryConf = RetryConf(3, RetryFailedStrategy.SKIP_EVENT)
+        streamName: String,
+        aggregateClass: KClass<A>,
+        retryConfig: RetryConf = RetryConf(3, RetryFailedStrategy.SKIP_EVENT)
     ): AggregateEventStream<A> {
-        val eventInfo = (aggregateRegistry.getEventInfo(aggregateClass)
-                ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered"))
+        val aggregateInfo = (aggregateRegistry.basicAggregateInfo(aggregateClass)
+            ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered"))
 
-        val streamManager: EventStreamReaderManager = ActiveEventStreamReaderManager(eventStore, eventSourcingProperties)
-
-        val eventStoreReader = EventStoreReader(
-                eventStore,
-                streamName,
-                eventInfo.aggregateEventsTableName,
-                streamManager,
-                eventSourcingProperties,
-                eventStreamListener,
-                eventStreamsDispatcher)
+        val eventStoreReader = streamManager.createStreamReader(
+            eventStore,
+            streamName,
+            aggregateInfo as AggregateRegistry.BasicAggregateInfo<Aggregate>,
+            eventSourcingProperties,
+            eventStreamListener,
+            eventStreamsDispatcher
+        )
 
         val eventsChannel = EventsChannel()
 
         val existing = eventStreams.putIfAbsent(
-                streamName, BufferedAggregateEventStream<A>(
+            streamName, BufferedAggregateEventStream<A>(
                 streamName,
                 eventSourcingProperties.streamReadPeriod,
                 eventSourcingProperties.streamBatchSize,
@@ -79,6 +78,6 @@ class AggregateEventStreamManager(
     fun getStreamByName(name: String) = eventStreams[name]
 
     data class StreamInfo(
-            val streamName: String
+        val streamName: String
     )
 }

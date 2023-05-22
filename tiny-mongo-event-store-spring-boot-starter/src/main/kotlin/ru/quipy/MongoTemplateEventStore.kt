@@ -97,8 +97,8 @@ open class MongoTemplateEventStore : EventStore {
         return mongoTemplate.tryReplaceWithOptimisticLock("event-stream-active-readers", expectedVersion, newActiveReader)
     }
 
-    override fun commitStreamReadIndex(readIndex: EventStreamReadIndex) {
-        mongoTemplate.updateWithLatestVersion("event-stream-read-index", readIndex) // todo sukhoa make configurable?
+    override fun commitStreamReadIndex(readIndex: EventStreamReadIndex): Boolean {
+        return mongoTemplate.updateWithLatestVersion("event-stream-read-index", readIndex) != null // todo sukhoa make configurable?
     }
 }
 

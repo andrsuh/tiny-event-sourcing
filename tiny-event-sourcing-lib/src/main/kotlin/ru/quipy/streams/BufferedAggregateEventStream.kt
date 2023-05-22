@@ -50,8 +50,8 @@ class BufferedAggregateEventStream<A : Aggregate>(
 
                 while (active.get()) {
                     while (suspended.get()) {
-                        logger.info("Suspending stream $streamName...")
-                        delay(5_000)
+                        logger.debug("Suspending stream $streamName...")
+                        delay(500)
                     }
 
                     val eventsBatch = eventReader.read(streamBatchSize)
@@ -66,7 +66,7 @@ class BufferedAggregateEventStream<A : Aggregate>(
 
                         feedToHandling(eventRecord) {
                             eventStreamNotifier.onRecordHandledSuccessfully(streamName, eventRecord.eventTitle)
-                            eventReader.postProcessRecord(eventRecord)
+                            eventReader.acknowledgeRecord(eventRecord)
                         }
                     }
                 }
@@ -87,7 +87,7 @@ class BufferedAggregateEventStream<A : Aggregate>(
             }
         } catch (e: Exception) {
             logger.error(
-                    "Error while invoking event handling function on event record: $receivedRecord",
+                    "Error while invoking event handling function. Stream: ${streamName}. Event record: $receivedRecord",
                     e
             )
 
@@ -108,12 +108,16 @@ class BufferedAggregateEventStream<A : Aggregate>(
 
     override fun suspend() {
         suspended.set(true)
+        eventReader.stop()
     }
 
     override fun resume() {
         logger.info("Resuming stream $streamName...")
         suspended.set(false)
+        eventReader.resume()
     }
+
+    override fun isSuspended() = suspended.get()
 
     private suspend fun feedToHandling(event: EventRecord, beforeNextPerform: () -> Unit) {
         for (attemptNum in 1..retryConfig.maxAttempts) {
