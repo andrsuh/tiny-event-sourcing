@@ -52,7 +52,13 @@ class EventStreamSubscriber<A : Aggregate>(
             aggregateEventStream.handleNextRecord { eventRecord ->
                 try {
                     val event = payloadToEvent(eventRecord.payload, eventRecord.eventTitle)
-                    handlers[event::class]?.invoke(event)
+                    logger.trace("Event record $eventRecord was converted to event $event")
+
+                    if (!handlers.containsKey(event::class))
+                        logger.error("Cannot handle event ${event.id} (${eventRecord}). No handler in dictionary")
+
+                    val eventHandler = handlers[event::class]
+                    eventHandler?.invoke(event)
                     true
                 } catch (e: Exception) {
                     logger.error("Unexpected exception while handling event in subscriber. Stream: ${aggregateEventStream.streamName}, event record: $eventRecord", e)

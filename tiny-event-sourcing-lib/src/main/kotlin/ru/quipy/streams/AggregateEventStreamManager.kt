@@ -16,6 +16,7 @@ class AggregateEventStreamManager(
     private val aggregateRegistry: AggregateRegistry,
     private val eventStore: EventStore,
     private val eventSourcingProperties: EventSourcingProperties,
+    private val streamManager: EventStreamReaderManager
 ) {
     private val eventStreamListener: EventStreamListenerImpl = EventStreamListenerImpl()// todo sukhoa make injectable
 
@@ -28,17 +29,28 @@ class AggregateEventStreamManager(
         aggregateClass: KClass<A>,
         retryConfig: RetryConf = RetryConf(3, RetryFailedStrategy.SKIP_EVENT)
     ): AggregateEventStream<A> {
-        val eventInfo = (aggregateRegistry.getEventInfo(aggregateClass)
+        val aggregateInfo = (aggregateRegistry.basicAggregateInfo(aggregateClass)
             ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered"))
+
+        val eventStoreReader = streamManager.createStreamReader(
+            eventStore,
+            streamName,
+            aggregateInfo as AggregateRegistry.BasicAggregateInfo<Aggregate>,
+            eventSourcingProperties,
+            eventStreamListener,
+            eventStreamsDispatcher
+        )
+
+        val eventsChannel = EventsChannel()
 
         val existing = eventStreams.putIfAbsent(
             streamName, BufferedAggregateEventStream<A>(
                 streamName,
                 eventSourcingProperties.streamReadPeriod,
                 eventSourcingProperties.streamBatchSize,
-                eventInfo.aggregateEventsTableName,
+                eventsChannel,
+                eventStoreReader,
                 retryConfig,
-                eventStore,
                 eventStreamListener,
                 eventStreamsDispatcher
             )
@@ -60,16 +72,12 @@ class AggregateEventStreamManager(
     }
 
     fun streamsInfo() = eventStreams.map { (_, stream) ->
-        StreamInfo(
-            stream.streamName,
-            stream.readingIndex
-        )
+        StreamInfo(stream.streamName)
     }.toList()
 
     fun getStreamByName(name: String) = eventStreams[name]
 
     data class StreamInfo(
-        val streamName: String,
-        val readingIndex: Long
+        val streamName: String
     )
 }

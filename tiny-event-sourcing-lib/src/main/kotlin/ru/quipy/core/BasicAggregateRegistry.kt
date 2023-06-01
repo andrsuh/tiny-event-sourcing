@@ -46,6 +46,11 @@ class BasicAggregateRegistry : AggregateRegistry {
         }
     }
 
+    override fun <A : Aggregate> basicAggregateInfo(clazz: KClass<A>): BasicAggregateInfo<A>? {
+        return aggregatesInfo[clazz]?.let { (it.eventInfo ?: it.stateInfo) as BasicAggregateInfo<A> }
+    }
+
+
     override fun <A : Aggregate> getEventInfo(clazz: KClass<A>): EventInfo<A>? {
         return aggregatesInfo[clazz]?.let { (it.eventInfo ?: it.stateInfo) as EventInfo<A> }
     }

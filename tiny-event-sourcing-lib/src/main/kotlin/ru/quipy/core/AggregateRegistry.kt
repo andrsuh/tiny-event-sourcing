@@ -39,6 +39,8 @@ interface AggregateRegistry {
         eventRegistrationBlock: StateTransitionsRegistrar<ID, A, S>.() -> Unit
     )
 
+    fun <A : Aggregate> basicAggregateInfo(clazz: KClass<A>): BasicAggregateInfo<A>?
+
     fun <A : Aggregate> getEventInfo(clazz: KClass<A>): EventInfo<A>?
 
     fun <ID, A : Aggregate, S : AggregateState<ID, A>> getStateTransitionInfo(clazz: KClass<A>): AggregateStateInfo<ID, A, S>?

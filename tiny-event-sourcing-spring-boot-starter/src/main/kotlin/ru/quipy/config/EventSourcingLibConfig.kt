@@ -17,6 +17,8 @@ import ru.quipy.saga.aggregate.logic.SagaStepAggregateState
 import ru.quipy.saga.aggregate.stream.SagaEventStream
 import ru.quipy.streams.AggregateEventStreamManager
 import ru.quipy.streams.AggregateSubscriptionsManager
+import ru.quipy.streams.EventStoreStreamReaderManager
+import ru.quipy.streams.EventStreamReaderManager
 import java.util.*
 
 @Configuration
@@ -53,17 +55,27 @@ class EventSourcingLibConfig {
     }
 
 
+    @Bean
+    @ConditionalOnBean(EventStore::class)
+    @ConditionalOnMissingBean(EventStreamReaderManager::class)
+    fun eventStreamReaderManager(
+        eventSourcingProperties: EventSourcingProperties,
+        eventStore: EventStore
+    ) = EventStoreStreamReaderManager(eventStore, eventSourcingProperties)
+
     @Bean(destroyMethod = "destroy")
     @ConditionalOnBean(EventStore::class)
     @ConditionalOnMissingBean
     fun eventStreamManager(
         eventSourcingProperties: EventSourcingProperties,
         aggregateRegistry: AggregateRegistry,
-        eventStore: EventStore
+        eventStore: EventStore,
+        eventStreamReaderManager: EventStreamReaderManager
     ) = AggregateEventStreamManager(
         aggregateRegistry,
         eventStore,
-        eventSourcingProperties
+        eventSourcingProperties,
+        eventStreamReaderManager
     )
 
     @Bean(destroyMethod = "destroy")
@@ -72,7 +84,7 @@ class EventSourcingLibConfig {
     fun subscriptionManager(
         eventStreamManager: AggregateEventStreamManager,
         aggregateRegistry: AggregateRegistry,
-        eventMapper: JsonEventMapper,
+        eventMapper: JsonEventMapper
     ) = AggregateSubscriptionsManager(
         eventStreamManager,
         aggregateRegistry,
