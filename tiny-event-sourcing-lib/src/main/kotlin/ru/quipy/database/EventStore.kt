@@ -57,5 +57,9 @@ interface EventStore {
 
     fun getActiveStreamReader(streamName: String): ActiveEventStreamReader?
 
-    fun commitStreamReadIndex(readIndex: EventStreamReadIndex)
+    fun tryUpdateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader): Boolean
+
+    fun tryReplaceActiveStreamReader(expectedVersion: Long, newActiveReader: ActiveEventStreamReader): Boolean
+
+    fun commitStreamReadIndex(readIndex: EventStreamReadIndex): Boolean
 }

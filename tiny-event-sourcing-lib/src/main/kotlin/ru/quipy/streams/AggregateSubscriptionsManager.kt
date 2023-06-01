@@ -89,6 +89,7 @@ class AggregateSubscriptionsManager(
             it to (it.parameters[1].type.classifier as KClass<Event<A>>)
         }.forEach { (method, event) ->
             subscriptionBuilder.`when`(event) {
+                logger.trace("Binding handling of event $event to method $method")
                 method.call(subscriberInstance, it)
             }
             logger.info(

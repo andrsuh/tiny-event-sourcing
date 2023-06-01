@@ -45,9 +45,9 @@
         <kotlin.version>1.6.21</kotlin.version>
         <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
-        <tiny-event-sourcing-lib.version>2.2.2</tiny-event-sourcing-lib.version>
-        <tiny-mongo-event-store.version>2.2.2</tiny-mongo-event-store.version>
-        <tiny-event-sourcing-spring-boot-starter.version>2.2.2</tiny-event-sourcing-spring-boot-starter.version>
+        <tiny-event-sourcing-lib.version>2.3.0-SNAPSHOT</tiny-event-sourcing-lib.version>
+        <tiny-mongo-event-store.version>2.3.0-SNAPSHOT</tiny-mongo-event-store.version>
+        <tiny-event-sourcing-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-event-sourcing-spring-boot-starter.version>
     </properties>
 
     <dependencyManagement>
@@ -112,6 +112,16 @@
         <repository>
             <id>central</id>
             <url>https://repo1.maven.org/maven2/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>snapshots</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </repository>
     </repositories>
 

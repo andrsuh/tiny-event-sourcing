@@ -47,8 +47,8 @@
         <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
         <awaitility.version>4.2.0</awaitility.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
-        <tiny-event-sourcing-spring-boot-starter.version>2.2.2</tiny-event-sourcing-spring-boot-starter.version>
-        <tiny-mongo-event-store-spring-boot-starter.version>2.2.2</tiny-mongo-event-store-spring-boot-starter.version>
+        <tiny-event-sourcing-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-event-sourcing-spring-boot-starter.version>
+        <tiny-mongo-event-store-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-mongo-event-store-spring-boot-starter.version>
     </properties>
 
     <dependencyManagement>
@@ -166,10 +166,13 @@
         <repository>
             <id>central</id>
             <url>https://repo1.maven.org/maven2/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
         </repository>
         <repository>
-            <id>itmo-snapshots</id>
-            <url>https://itmo-maven.danil.co/artifactory/libs-snapshot</url>
+            <id>snapshots</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>

@@ -12,6 +12,8 @@ import ru.quipy.database.EventStore
 import ru.quipy.mapper.JsonEventMapper
 import ru.quipy.streams.AggregateEventStreamManager
 import ru.quipy.streams.AggregateSubscriptionsManager
+import ru.quipy.streams.EventStoreStreamReaderManager
+import ru.quipy.streams.EventStreamReaderManager
 
 @Configuration
 class EventSourcingLibConfig {
@@ -33,17 +35,27 @@ class EventSourcingLibConfig {
     fun aggregateRegistry(eventSourcingProperties: EventSourcingProperties) =
         SeekingForSuitableClassesAggregateRegistry(BasicAggregateRegistry(), eventSourcingProperties)
 
+    @Bean
+    @ConditionalOnBean(EventStore::class)
+    @ConditionalOnMissingBean(EventStreamReaderManager::class)
+    fun eventStreamReaderManager(
+        eventSourcingProperties: EventSourcingProperties,
+        eventStore: EventStore
+    ) = EventStoreStreamReaderManager(eventStore, eventSourcingProperties)
+
     @Bean(destroyMethod = "destroy")
     @ConditionalOnBean(EventStore::class)
     @ConditionalOnMissingBean
     fun eventStreamManager(
         eventSourcingProperties: EventSourcingProperties,
         aggregateRegistry: AggregateRegistry,
-        eventStore: EventStore
+        eventStore: EventStore,
+        eventStreamReaderManager: EventStreamReaderManager
     ) = AggregateEventStreamManager(
         aggregateRegistry,
         eventStore,
-        eventSourcingProperties
+        eventSourcingProperties,
+        eventStreamReaderManager
     )
 
     @Bean(destroyMethod = "destroy")
@@ -52,7 +64,7 @@ class EventSourcingLibConfig {
     fun subscriptionManager(
         eventStreamManager: AggregateEventStreamManager,
         aggregateRegistry: AggregateRegistry,
-        eventMapper: JsonEventMapper,
+        eventMapper: JsonEventMapper
     ) = AggregateSubscriptionsManager(
         eventStreamManager,
         aggregateRegistry,
