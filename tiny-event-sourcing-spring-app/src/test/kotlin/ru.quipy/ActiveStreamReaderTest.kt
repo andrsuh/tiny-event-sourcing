@@ -45,8 +45,6 @@ class ActiveStreamReaderTest {
         eventReaderHealthCheckPeriod = 50.milliseconds,
         snapshotFrequency = 10
     )
-    private val messageProcessingTimeUpTo = 1.milliseconds
-
     private val streamFailingProbability = 1.0
 
     private val dispatcher =
@@ -145,8 +143,6 @@ class ActiveStreamReaderTest {
                         it.handleNextRecord {
                             eventCounter.incrementAndGet()
                             results.add(StreamHandleResult(1, it.id))
-//                            val processingDelay = nextLong(messageProcessingTimeUpTo.inWholeMilliseconds)
-//                            delay(processingDelay)
                             true
                         }
                     }
@@ -160,8 +156,6 @@ class ActiveStreamReaderTest {
                         it.handleNextRecord {
                             eventCounter.incrementAndGet()
                             results.add(StreamHandleResult(2, it.id))
-//                            val processingDelay = nextLong(messageProcessingTimeUpTo.inWholeMilliseconds)
-//                            delay(processingDelay)
                             true
                         }
                     }
@@ -184,6 +178,7 @@ class ActiveStreamReaderTest {
                 println("NUM: ${results.distinctBy { it.eventId }.count()}, ${eventCounter.get()}")
                 results.distinctBy { it.eventId }.count() >= totalNumberOfEvents
             }
+            // todo sukhoa: ofc test should be rewritten to have some reasonable asserts. Also it shows that we loose events :)
             println("First stream processed: ${results.count { it.streamId == 1 }}")
             println("Second stream processed: ${results.count { it.streamId == 2 }}")
             println(
