@@ -47,13 +47,13 @@ If you don't want to use Spring Boot Starters, you need to add these dependencie
 
 # DDD, Event sourcing and library essentials
 
-All the terms and technics described in this documentation are part of the Domain Driven design (DDD). You **don’t have to have** some specific knowledge or skills in DDD to use this library. But if you would like to get familiar with it we can recommend [Implementing Domain-Driven Design](https://www.amazon.com/Implementing-Domain-Driven-Design-Vaughn-Vernon/dp/0321834577) book by Vaughn Vernon.
+All the terms and technics described in this documentation are part of the Domain Driven design (DDD). You **don’t have to have** some specific knowledge or skills in DDD to use this library. But if you would like to get familiar with it, we can recommend [Implementing Domain-Driven Design](https://www.amazon.com/Implementing-Domain-Driven-Design-Vaughn-Vernon/dp/0321834577) book by Vaughn Vernon.
 
 ## The short definition of **Event Sourcing** and **Domain events**
 
 Event sourcing implies the storing an entity as a set of its changes. In order to get the entity you have to obtain all the changes and “apply” them all in order they were made. This approach can give you many benefits:
 
-- You can have full log of changes with an authorID/timestamps
+- You can have full log of changes with an authorID/timestamps and any other metadata you want
 - You can get the state of any entity at any point of time
 - Other services can listen to the changes and maintain its own local projection of the data they need
 - Any of such listeners may be embedded in your system at any point of time and just “read” all the changes from scratch to initialize their local storages. Or they can just replay all the changes in order to migrate their schema for example
@@ -96,7 +96,7 @@ In event sourcing the command itself doesn’t make any changes (I mean in DB, b
 
 In our library the command of `Aggregate` N can be any function that takes instance of N as a receiver (takes an **aggregate state**) and returns subclass of the `Event<N>`. `N.(?) → Event<N>`. Command can take arbitrary number of parameters needed for update. Command logic might and should throw exceptions in case update fails by any reason. So you can check all business rules, perform validations, check aggregate inner invariants here. See the [example](#define-commands).
 
-![CommandResultsInEvent](images/CommandResultsInEvent.png)
+![CommandResultsInEvent](images/CommandResultsInEventNew.png)
 
 ## **Aggregate state**
 
@@ -105,6 +105,9 @@ Aggregate state represents the state of an aggregate instance after applying som
 Aggregate instance may have a version. It shows the number of events that was applied to the state starting with empty state.
 
 Every new event (change / update) will introduce some changing in an aggregate state. So far as we persist events, not the bare aggregate we will be able to get the state of the aggregate at any point of time by getting all the events up to some version and iteratively "applying" all these events to the aggregate state starting from empty state.
+
+![AggregateStateTransitions](images/AggregareStateTransitions.png)
+
 
 What do we mean by “applying” changes? Interface `AggregateStateTransitionFunction` represents a simple function that takes aggregate state, some aggregate's event and applies the changes described by the event to the state producing the next (updated) state.
 You have to implement the logic of applying for each event of an aggregate. Such a function might be implemented both as the member of the aggregate state and as an extension function of the aggregate state and should be marked with `StateTransitionFunc` annotation.
@@ -116,11 +119,19 @@ The library code during update:
   - Creating the empty aggregate state (your state class **must have an empty constructor** for this purpose)
   - Iteratively applying all the event in the insertion order to it. (snapshots optimization is also available)
 - Tries to apply new event to the current state to check if it is applicable indeed
-- If some parallel process managed to update aggregate earlier than process ran by you (read: they were running simultaneously, but not yours won) you have to repeat your attempt. Just because the state of the aggregate changed and now some of the validations may fail or some invariants may be broken. Library takes care of such cases. You may not to think about the concurrency troubles - your responsibility is just define aggregates, events and business logic - commands with validations and other checks and events with how they should be applied to an aggregate state.
+
+![GeneralAggregateUpdateProcess](images/GeneralAggregateUpdate.png)
+
+And here you can see the example of updating "UserAggregate" instance. Here we change the name of the user with ID=1.
+
+![EventInsertion](images/EventInsertion.png)
 
 See the example of how to define [aggregate state](#define-aggregate-state) and state [transition functions](#define-aggregate-state-transition-functions)
 
-![EventInsertion](images/EventInsertion.png)
+## **Parallel aggregate updates**
+
+If some parallel process managed to update aggregate earlier than process ran by you (read: they were running simultaneously, but not yours won) you have to repeat your attempt. Just because the state of the aggregate changed and now some validations may fail or some invariants may be broken. Library takes care of such cases. You may not to think about the concurrency troubles - your responsibility is just define aggregates, events and business logic - commands with validations and other checks and events with how they should be applied to an aggregate state. We use an **"optimistic locking"** technique. So if several parallel processes tried to update the same aggregate version only one of the updaters succeeds and others will be made to retry their attempts. So practically all the updates under the same aggregate are serializable.
+
 
 ## Library configuration
 
