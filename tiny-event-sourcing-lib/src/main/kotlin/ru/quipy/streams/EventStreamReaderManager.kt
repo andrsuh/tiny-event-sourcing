@@ -89,6 +89,7 @@ class EventStoreStreamReaderManager(
             return true
         }
 
+
         return false
     }
 
