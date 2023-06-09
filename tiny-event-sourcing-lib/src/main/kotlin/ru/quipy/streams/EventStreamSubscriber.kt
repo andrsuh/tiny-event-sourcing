@@ -54,9 +54,6 @@ class EventStreamSubscriber<A : Aggregate>(
                     val event = payloadToEvent(eventRecord.payload, eventRecord.eventTitle)
                     logger.trace("Event record $eventRecord was converted to event $event")
 
-                    if (!handlers.containsKey(event::class))
-                        logger.error("Cannot handle event ${event.id} (${eventRecord}). No handler in dictionary")
-
                     val eventHandler = handlers[event::class]
                     eventHandler?.invoke(event)
                     true
