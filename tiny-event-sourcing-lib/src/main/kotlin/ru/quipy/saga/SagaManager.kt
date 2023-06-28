@@ -8,6 +8,11 @@ import java.util.*
 class SagaManager(
     private val sagaStepEsService: EventSourcingService<UUID, SagaStepAggregate, SagaStepAggregateState>
 ) {
+    fun withContextGiven(sagaContext: SagaContext) = SagaInvoker(sagaContext)
+
+    fun launchSaga(sagaName: String, stepName: String) =
+        SagaInvoker(SagaContext()).launchSaga(sagaName, stepName)
+
     private fun launchSaga(
         sagaName: String,
         stepName: String,
@@ -19,24 +24,10 @@ class SagaManager(
 
         val sagaStep = SagaStep(sagaName, stepName, sagaStepId ?: UUID.randomUUID())
 
-        val processedContext = SagaContext(sagaContext.ctx.toMutableMap().also {
-            it[sagaName] = SagaInfo(
-                sagaStep.sagaInstanceId,
-                sagaStep.stepName,
-                sagaStep.sagaStepId,
-                sagaStep.prevSteps,
-                mapOf(sagaStep.sagaStepId to sagaStep.prevSteps)
-            )
-        })
-
         sagaStepEsService.create { it.launchSagaStep(sagaStep) }
 
-        return processedContext
+        return processContext(sagaContext, sagaName, sagaStep)
     }
-
-    fun withContextGiven(sagaContext: SagaContext) = SagaInvoker(sagaContext)
-    fun launchSaga(sagaName: String, stepName: String) =
-        SagaInvoker(SagaContext()).launchSaga(sagaName, stepName)
 
     private fun performSagaStep(
         sagaName: String,
@@ -57,6 +48,12 @@ class SagaManager(
             prevSteps = sagaInfo.stepIdPrevStepsIdsAssociation.keys
         )
 
+        sagaStepEsService.update(sagaStep.sagaInstanceId) { it.initiateSagaStep(sagaStep) }
+
+        return processContext(sagaContext, sagaName, sagaStep)
+    }
+
+    private fun processContext(sagaContext: SagaContext, sagaName: String, sagaStep: SagaStep): SagaContext {
         val processedContext = SagaContext(sagaContext.ctx.toMutableMap().also {
             it[sagaName] = SagaInfo(
                 sagaStep.sagaInstanceId,
@@ -69,8 +66,6 @@ class SagaManager(
         processedContext.correlationId = sagaContext.correlationId
         processedContext.causationId = sagaContext.causationId
         processedContext.currentEventId = sagaContext.currentEventId
-
-        sagaStepEsService.update(sagaStep.sagaInstanceId) { it.initiateSagaStep(sagaStep) }
 
         return processedContext
     }

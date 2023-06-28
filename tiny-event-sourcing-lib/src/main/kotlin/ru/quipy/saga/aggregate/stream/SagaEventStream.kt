@@ -32,7 +32,7 @@ class SagaEventStream(
 
     fun init() {
         val aggregates = aggregateRegistry.getAllAggregates()
-        //todo sukhoa
+        // todo sukhoa
         aggregates.filter { it != SagaStepAggregate::class }
             .forEach {
                 val streamName = "saga::" + it.simpleName
@@ -56,7 +56,7 @@ class SagaEventStream(
                 }
             }
         }.also {
-            //todo sukhoa handle
+            // todo sukhoa handle
             it.invokeOnCompletion {}
         }
     }
@@ -69,26 +69,24 @@ class SagaEventStream(
             val sagaInstanceId = sagaStep.sagaInstanceId
             val sagaStepId = sagaStep.sagaStepId
 
-            if (!sagaStepEsService.getState(sagaInstanceId)!!.containsProcessedSagaStep(sagaStepId)) {
-                sagaStepEsService.update(sagaInstanceId) { it.processSagaStep(sagaStep, eventName) }
+            val sagaAggregateState = sagaStepEsService.getState(sagaInstanceId)
+            if (sagaAggregateState != null && !sagaAggregateState.containsProcessedSagaStep(sagaStepId)) {
+                sagaStepEsService.update(sagaInstanceId) {
+                    it.processSagaStep(sagaStep, eventName)
+                }
             }
         }
     }
 
     private fun processMinSaga(sagaContext: SagaContext, eventName: String) {
-        if (sagaContext.causationId == null) {
-            sagaStepEsService.create {
-                it.processMinSaga(sagaContext.correlationId!!, sagaContext.currentEventId!!, eventName)
-            }
-        } else if (sagaStepEsService.getState(sagaContext.correlationId!!) != null) {
-            sagaStepEsService.update(sagaContext.correlationId!!) {
-                it.processMinSaga(
-                    sagaContext.correlationId!!,
-                    sagaContext.currentEventId!!,
-                    eventName,
-                    sagaContext.causationId
-                )
-            }
+        val correlationId = sagaContext.correlationId!!
+        val currentEventId = sagaContext.currentEventId!!
+        val causationId = sagaContext.causationId
+
+        if (causationId == null) {
+            processFirstMinSagaStep(correlationId, currentEventId, eventName)
+        } else {
+            processNextMinSagaStep(correlationId, currentEventId, causationId, eventName)
         }
     }
 
@@ -100,5 +98,46 @@ class SagaEventStream(
             stepName = ctx.value.stepName,
             prevSteps = ctx.value.prevStepsIds
         )
+    }
+
+    private fun processFirstMinSagaStep(correlationId: UUID, currentEventId: UUID, eventName: String) {
+        if (sagaStepEsService.getState(correlationId) == null) {
+            try {
+                sagaStepEsService.create {
+                    it.processMinSaga(correlationId, currentEventId, eventName)
+                }
+            } catch (e: Exception) {
+                sagaStepEsService.update(correlationId) {
+                    it.processMinSaga(correlationId, currentEventId, eventName)
+                }
+            }
+        } else if (sagaStepEsService.getState(correlationId) != null) {
+            sagaStepEsService.update(correlationId) {
+                it.processMinSaga(correlationId, currentEventId, eventName)
+            }
+        }
+    }
+
+    private fun processNextMinSagaStep(
+        correlationId: UUID,
+        currentEventId: UUID,
+        causationId: UUID,
+        eventName: String
+    ) {
+        if (sagaStepEsService.getState(correlationId) == null) {
+            try {
+                sagaStepEsService.create {
+                    it.processMinSaga(correlationId, currentEventId, eventName, causationId)
+                }
+            } catch (e: Exception) {
+                sagaStepEsService.update(correlationId) {
+                    it.processMinSaga(correlationId, currentEventId, eventName, causationId)
+                }
+            }
+        } else if (sagaStepEsService.getState(correlationId) != null) {
+            sagaStepEsService.update(correlationId) {
+                it.processMinSaga(correlationId, currentEventId, eventName, causationId)
+            }
+        }
     }
 }

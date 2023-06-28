@@ -10,6 +10,7 @@ import ru.quipy.core.annotations.StateTransitionFunc
 import ru.quipy.domain.Aggregate
 import ru.quipy.domain.AggregateState
 import ru.quipy.domain.Event
+import ru.quipy.saga.aggregate.api.SagaStepAggregate
 import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
 import kotlin.reflect.full.isSuperclassOf
@@ -92,6 +93,9 @@ class SeekingForSuitableClassesAggregateRegistry(
 
         // bring it all together
         aggregates.forEach { aggregateClass ->
+            if (aggregateClass == SagaStepAggregate::class) {
+                return@forEach
+            }
             val stateClass = aggregatesStates[aggregateClass]
             if (stateClass != null) {
                 wrappedRegistry.register(aggregateClass, stateClass) {
