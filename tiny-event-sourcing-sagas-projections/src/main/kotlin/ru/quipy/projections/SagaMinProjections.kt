@@ -22,29 +22,44 @@ class SagaMinProjections(
                 val projectionOptional = sagaMinProjectionsRepository.findById(event.correlationId.toString())
 
                 val currentEventId = event.currentEventId.toString()
-                val causationId = event.causationId.toString()
+                val causationId = event.causationId?.toString()
 
-                val sagaStep = SagaMinStep(
+                val newStep = SagaMinStep(
                     currentEventId,
                     causationId,
                     event.createdAt.toString(),
                     event.eventName
                 )
 
+                val saga: SagaMin
                 if (projectionOptional.isEmpty) {
-                    val saga = SagaMin(event.correlationId.toString())
-                    saga.sagaSteps.add(sagaStep)
-                    sagaMinProjectionsRepository.save(saga)
-
+                    saga = SagaMin(event.correlationId.toString())
+                    insertNextStep(saga.sagaSteps, newStep)
                 } else {
-                    val saga = projectionOptional.get()
-                    if (!saga.sagaSteps.contains(sagaStep)) {
-                        saga.sagaSteps.add(sagaStep)
+                    saga = projectionOptional.get()
+                    if (!saga.sagaSteps.contains(newStep)) {
+                        insertNextStep(saga.sagaSteps, newStep)
                     }
-
-                    sagaMinProjectionsRepository.save(saga)
                 }
+
+                sagaMinProjectionsRepository.save(saga)
             }
+        }
+    }
+
+    private fun insertNextStep(sagaSteps: MutableList<SagaMinStep>, sagaStep: SagaMinStep) {
+        var indexToInsert = 0
+        if (sagaStep.causationId != null) {
+            indexToInsert = sagaSteps.indices.findLast {
+                sagaStep.causationId == sagaSteps[it].currentEventId
+            }?.inc()
+                ?: sagaSteps.size
+        }
+
+        if (indexToInsert < sagaSteps.size) {
+            sagaSteps.add(indexToInsert, sagaStep)
+        } else {
+            sagaSteps.add(sagaStep)
         }
     }
 }

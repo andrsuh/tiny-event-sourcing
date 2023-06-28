@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import ru.quipy.saga.aggregate.api.*
 import ru.quipy.streams.AggregateSubscriptionsManager
+import java.util.*
 import javax.annotation.PostConstruct
 
 @Component
@@ -27,9 +28,15 @@ class SagaProjections(
 
                 val saga = Saga(event.sagaInstanceId.toString(), sagaName)
 
-                saga.sagaSteps.add(SagaStep(stepName, stepId, event.prevSteps.toString(), event.createdAt.toString()))
-                sagaProjectionsRepository.save(saga)
+                val newStep = SagaStep(
+                    stepName,
+                    stepId,
+                    event.prevSteps.map { it.toString() }.toSet(),
+                    event.createdAt.toString()
+                )
+                insertNextStep(saga.sagaSteps, newStep)
 
+                sagaProjectionsRepository.save(saga)
                 logger.info("Started initiated Saga Event: $sagaName. Step: $stepName, id:$stepId")
             }
 
@@ -39,14 +46,15 @@ class SagaProjections(
                 val stepName = event.stepName
 
                 val saga = sagaProjectionsRepository.findById(event.sagaInstanceId.toString()).get()
-                saga.sagaSteps.add(
-                    SagaStep(
-                        event.stepName,
-                        event.sagaStepId.toString(),
-                        event.prevSteps.toString(),
-                        event.createdAt.toString()
-                    )
+
+                val newStep = SagaStep(
+                    stepName,
+                    stepId,
+                    event.prevSteps.map { it.toString() }.toSet(),
+                    event.createdAt.toString()
                 )
+                insertNextStep(saga.sagaSteps, newStep)
+
                 sagaProjectionsRepository.save(saga)
                 logger.info("Initiated Saga Event: $sagaName. Step: $stepName, id:$stepId")
             }
@@ -63,9 +71,25 @@ class SagaProjections(
                 sagaStep?.eventName = event.eventName
 
                 sagaProjectionsRepository.save(saga)
-
                 logger.info("Processed Saga Event: $sagaName. Step: $stepName, id:$stepId")
             }
+        }
+    }
+
+    private fun insertNextStep(sagaSteps: MutableList<SagaStep>, sagaStep: SagaStep) {
+        var indexToInsert = 0
+
+        if (sagaStep.prevStepsId.isNotEmpty()) {
+            indexToInsert = sagaSteps.indices.findLast {
+                sagaStep.prevStepsId.contains(sagaSteps[it].sagaStepId)
+            }?.inc()
+                ?: sagaSteps.size
+        }
+
+        if (indexToInsert < sagaSteps.size) {
+            sagaSteps.add(indexToInsert, sagaStep)
+        } else {
+            sagaSteps.add(sagaStep)
         }
     }
 }
@@ -81,7 +105,7 @@ data class Saga(
 data class SagaStep(
     val stepName: String,
     val sagaStepId: String,
-    val prevStepsId: String?,
+    val prevStepsId: Set<String> = setOf(),
     val initiatedAt: String,
     var processedAt: String? = null,
     var eventName: String? = null
