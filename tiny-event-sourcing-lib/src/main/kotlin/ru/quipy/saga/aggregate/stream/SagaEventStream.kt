@@ -14,6 +14,12 @@ import ru.quipy.streams.*
 import java.util.*
 import java.util.concurrent.Executors
 
+/**
+ * Creates an event stream for each aggregate using [AggregateEventStreamManager].
+ * These event streams read event records from DB, and if they contain Saga meta-information,
+ * send commands to the sagaStepEsService to notify about the successful processing of the Saga step.
+ */
+
 class SagaEventStream(
     private val aggregateRegistry: AggregateRegistry,
     private val eventsStreamManager: AggregateEventStreamManager,
