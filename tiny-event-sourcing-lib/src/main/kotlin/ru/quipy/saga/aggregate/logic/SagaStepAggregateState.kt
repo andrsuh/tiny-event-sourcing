@@ -56,17 +56,17 @@ class SagaStepAggregateState : AggregateState<UUID, SagaStepAggregate> {
         return processedSagaSteps.contains(sagaStepId)
     }
 
-    fun processMinSaga(
+    fun processDefaultSaga(
         correlationId: UUID,
         currentEventId: UUID,
         eventName: String,
         causationId: UUID? = null
-    ): MinSagaProcessedEvent {
+    ): DefaultSagaProcessedEvent {
         if (processedSagaSteps.contains(currentEventId)) {
             throw IllegalStateException("Duplicate step: $correlationId")
         }
 
-        return MinSagaProcessedEvent(
+        return DefaultSagaProcessedEvent(
             correlationId,
             currentEventId,
             causationId,
@@ -92,7 +92,7 @@ class SagaStepAggregateState : AggregateState<UUID, SagaStepAggregate> {
     }
 
     @StateTransitionFunc
-    fun processMinSaga(sagaEvent: MinSagaProcessedEvent) {
+    fun processDefaultSaga(sagaEvent: DefaultSagaProcessedEvent) {
         if (!this::sagaInstanceId.isInitialized) {
             sagaInstanceId = sagaEvent.correlationId
         }

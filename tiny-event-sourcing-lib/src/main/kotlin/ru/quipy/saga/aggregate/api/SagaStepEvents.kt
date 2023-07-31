@@ -7,7 +7,7 @@ import java.util.UUID
 const val SAGA_STEP_LAUNCHED = "SAGA_STEP_LAUNCHED_EVENT"
 const val SAGA_STEP_INITIATED = "SAGA_STEP_INITIATED_EVENT"
 const val SAGA_STEP_PROCESSED = "SAGA_STEP_PROCESSED_EVENT"
-const val MIN_SAGA_PROCESSED = "MIN_SAGA_PROCESSED_EVENT"
+const val DEFAULT_SAGA_PROCESSED = "DEFAULT_SAGA_PROCESSED_EVENT"
 
 @DomainEvent(SAGA_STEP_LAUNCHED)
 data class SagaStepLaunchedEvent(
@@ -43,12 +43,12 @@ data class SagaStepProcessedEvent(
     name = SAGA_STEP_PROCESSED,
 )
 
-@DomainEvent(MIN_SAGA_PROCESSED)
-data class MinSagaProcessedEvent(
+@DomainEvent(DEFAULT_SAGA_PROCESSED)
+data class DefaultSagaProcessedEvent(
     val correlationId: UUID,
     val currentEventId: UUID,
     val causationId: UUID?,
     val eventName: String
 ) : Event<SagaStepAggregate>(
-    name = MIN_SAGA_PROCESSED,
+    name = DEFAULT_SAGA_PROCESSED,
 )

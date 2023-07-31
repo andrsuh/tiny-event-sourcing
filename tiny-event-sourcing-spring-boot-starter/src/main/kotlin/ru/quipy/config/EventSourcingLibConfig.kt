@@ -49,7 +49,7 @@ class EventSourcingLibConfig {
             registerStateTransition(SagaStepLaunchedEvent::class, SagaStepAggregateState::launchSagaStep)
             registerStateTransition(SagaStepInitiatedEvent::class, SagaStepAggregateState::initiateSagaStep)
             registerStateTransition(SagaStepProcessedEvent::class, SagaStepAggregateState::processSagaStep)
-            registerStateTransition(MinSagaProcessedEvent::class, SagaStepAggregateState::processMinSaga)
+            registerStateTransition(DefaultSagaProcessedEvent::class, SagaStepAggregateState::processDefaultSaga)
         }
         return aggregateRegistry
     }

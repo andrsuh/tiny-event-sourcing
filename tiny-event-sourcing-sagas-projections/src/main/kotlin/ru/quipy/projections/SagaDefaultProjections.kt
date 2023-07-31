@@ -5,35 +5,35 @@ import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
-import ru.quipy.saga.aggregate.api.MinSagaProcessedEvent
+import ru.quipy.saga.aggregate.api.DefaultSagaProcessedEvent
 import ru.quipy.saga.aggregate.api.SagaStepAggregate
 import ru.quipy.streams.AggregateSubscriptionsManager
 import javax.annotation.PostConstruct
 
 @Component
-class SagaMinProjections(
-    private val sagaMinProjectionsRepository: SagaMinProjectionsRepository,
+class SagaDefaultProjections(
+    private val sagaDefaultProjectionsRepository: SagaDefaultProjectionsRepository,
     private val subscriptionsManager: AggregateSubscriptionsManager
 ) {
     @PostConstruct
     fun init() {
-        subscriptionsManager.createSubscriber(SagaStepAggregate::class, "local-sagas::sagas-min-projections") {
-            `when`(MinSagaProcessedEvent::class) { event ->
-                val projectionOptional = sagaMinProjectionsRepository.findById(event.correlationId.toString())
+        subscriptionsManager.createSubscriber(SagaStepAggregate::class, "local-sagas::sagas-default-projections") {
+            `when`(DefaultSagaProcessedEvent::class) { event ->
+                val projectionOptional = sagaDefaultProjectionsRepository.findById(event.correlationId.toString())
 
                 val currentEventId = event.currentEventId.toString()
                 val causationId = event.causationId?.toString()
 
-                val newStep = SagaMinStep(
+                val newStep = SagaDefaultStep(
                     currentEventId,
                     causationId,
                     event.createdAt.toString(),
                     event.eventName
                 )
 
-                val saga: SagaMin
+                val saga: SagaDefault
                 if (projectionOptional.isEmpty) {
-                    saga = SagaMin(event.correlationId.toString())
+                    saga = SagaDefault(event.correlationId.toString())
                     insertNextStep(saga.sagaSteps, newStep)
                 } else {
                     saga = projectionOptional.get()
@@ -42,12 +42,12 @@ class SagaMinProjections(
                     }
                 }
 
-                sagaMinProjectionsRepository.save(saga)
+                sagaDefaultProjectionsRepository.save(saga)
             }
         }
     }
 
-    private fun insertNextStep(sagaSteps: MutableList<SagaMinStep>, sagaStep: SagaMinStep) {
+    private fun insertNextStep(sagaSteps: MutableList<SagaDefaultStep>, sagaStep: SagaDefaultStep) {
         var indexToInsert = 0
         if (sagaStep.causationId != null) {
             indexToInsert = sagaSteps.indices.findLast {
@@ -64,14 +64,14 @@ class SagaMinProjections(
     }
 }
 
-@Document("sagas-min-projections")
-data class SagaMin(
+@Document("sagas-default-projections")
+data class SagaDefault(
     @Id
     val correlationId: String,
-    val sagaSteps: MutableList<SagaMinStep> = mutableListOf()
+    val sagaSteps: MutableList<SagaDefaultStep> = mutableListOf()
 )
 
-data class SagaMinStep(
+data class SagaDefaultStep(
     val currentEventId: String,
     val causationId: String? = null,
     val processedAt: String,
@@ -79,4 +79,4 @@ data class SagaMinStep(
 )
 
 @Repository
-interface SagaMinProjectionsRepository : MongoRepository<SagaMin, String>
+interface SagaDefaultProjectionsRepository : MongoRepository<SagaDefault, String>

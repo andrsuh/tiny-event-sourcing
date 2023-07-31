@@ -27,7 +27,7 @@ class SagaEventStream(
 ) {
     @Volatile
     private var active = true
-    private val dispatcher = Executors.newFixedThreadPool(16).asCoroutineDispatcher()
+    private val dispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
     private val logger = LoggerFactory.getLogger(SagaEventStream::class.java)
 
     fun init() {
@@ -62,7 +62,7 @@ class SagaEventStream(
     }
 
     private fun processSagaSteps(sagaContext: SagaContext, eventName: String) {
-        processMinSaga(sagaContext, eventName)
+        processDefaultSaga(sagaContext, eventName)
 
         sagaContext.ctx.forEach { context ->
             val sagaStep = contextToSagaStep(context)
@@ -78,15 +78,19 @@ class SagaEventStream(
         }
     }
 
-    private fun processMinSaga(sagaContext: SagaContext, eventName: String) {
+    private fun processDefaultSaga(sagaContext: SagaContext, eventName: String) {
         val correlationId = sagaContext.correlationId!!
         val currentEventId = sagaContext.currentEventId!!
         val causationId = sagaContext.causationId
 
-        if (causationId == null) {
-            processFirstMinSagaStep(correlationId, currentEventId, eventName)
+        if (sagaStepEsService.getState(correlationId) == null) {
+            sagaStepEsService.create {
+                it.processDefaultSaga(correlationId, currentEventId, eventName, causationId)
+            }
         } else {
-            processNextMinSagaStep(correlationId, currentEventId, causationId, eventName)
+            sagaStepEsService.update(correlationId) {
+                it.processDefaultSaga(correlationId, currentEventId, eventName, causationId)
+            }
         }
     }
 
@@ -98,46 +102,5 @@ class SagaEventStream(
             stepName = ctx.value.stepName,
             prevSteps = ctx.value.prevStepsIds
         )
-    }
-
-    private fun processFirstMinSagaStep(correlationId: UUID, currentEventId: UUID, eventName: String) {
-        if (sagaStepEsService.getState(correlationId) == null) {
-            try {
-                sagaStepEsService.create {
-                    it.processMinSaga(correlationId, currentEventId, eventName)
-                }
-            } catch (e: Exception) {
-                sagaStepEsService.update(correlationId) {
-                    it.processMinSaga(correlationId, currentEventId, eventName)
-                }
-            }
-        } else if (sagaStepEsService.getState(correlationId) != null) {
-            sagaStepEsService.update(correlationId) {
-                it.processMinSaga(correlationId, currentEventId, eventName)
-            }
-        }
-    }
-
-    private fun processNextMinSagaStep(
-        correlationId: UUID,
-        currentEventId: UUID,
-        causationId: UUID,
-        eventName: String
-    ) {
-        if (sagaStepEsService.getState(correlationId) == null) {
-            try {
-                sagaStepEsService.create {
-                    it.processMinSaga(correlationId, currentEventId, eventName, causationId)
-                }
-            } catch (e: Exception) {
-                sagaStepEsService.update(correlationId) {
-                    it.processMinSaga(correlationId, currentEventId, eventName, causationId)
-                }
-            }
-        } else if (sagaStepEsService.getState(correlationId) != null) {
-            sagaStepEsService.update(correlationId) {
-                it.processMinSaga(correlationId, currentEventId, eventName, causationId)
-            }
-        }
     }
 }
