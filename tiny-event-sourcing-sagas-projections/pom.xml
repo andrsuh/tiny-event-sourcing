@@ -24,12 +24,6 @@
             </name>
         </developer>
     </developers>
-<!--    <url>https://github.com/andrsuh/tiny-event-sourcing/tree/master-2.0/tiny-event-sourcing-spring-app</url>-->
-<!--    <scm>-->
-<!--        <connection>scm:git:git://github.com/andrsuh/tiny-event-sourcing.git</connection>-->
-<!--        <developerConnection>scm:git:ssh://github.com:andrsuh/tiny-event-sourcing.git</developerConnection>-->
-<!--        <url>https://github.com/andrsuh/tiny-event-sourcing/tree/master-2.0/tiny-event-sourcing-spring-app</url>-->
-<!--    </scm>-->
     <licenses>
         <license>
             <name>Apache License 2.0</name>
@@ -44,8 +38,6 @@
         <java.version>11</java.version>
         <spring.boot.version>2.6.6</spring.boot.version>
         <kotlin.version>1.6.21</kotlin.version>
-        <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
-        <awaitility.version>4.2.0</awaitility.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
         <tiny-event-sourcing-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-event-sourcing-spring-boot-starter.version>
         <tiny-mongo-event-store-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-mongo-event-store-spring-boot-starter.version>
@@ -82,27 +74,14 @@
         </dependency>
 
         <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
-            <version>${awaitility.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility-kotlin</artifactId>
-            <version>${awaitility.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib</artifactId>
+            <artifactId>kotlin-stdlib-jdk8</artifactId>
+            <version>${kotlin.version}</version>
         </dependency>
 
         <dependency>
@@ -125,34 +104,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-configuration-processor</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-ui</artifactId>
-            <version>1.6.6</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mockito.kotlin</groupId>
-            <artifactId>mockito-kotlin</artifactId>
-            <version>4.0.0</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>de.flapdoodle.embed</groupId>
-            <artifactId>de.flapdoodle.embed.mongo</artifactId>
-            <version>3.5.4</version>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-test</artifactId>
+            <version>${kotlin.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -173,7 +127,6 @@
 
     <build>
         <sourceDirectory>src/main/kotlin</sourceDirectory>
-        <testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -190,6 +143,19 @@
                         <goals>
                             <goal>compile</goal>
                         </goals>
+                        <configuration>
+                            <sourceDirs>
+                                <source>src/main/kotlin</source>
+                                <source>target/generated-sources/annotations</source>
+                            </sourceDirs>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>test-compile</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>test-compile</goal>
+                        </goals>
                     </execution>
                 </executions>
                 <configuration>
@@ -199,6 +165,7 @@
                     <compilerPlugins>
                         <plugin>spring</plugin>
                     </compilerPlugins>
+                    <jvmTarget>1.8</jvmTarget>
                 </configuration>
                 <dependencies>
                     <dependency>
@@ -211,6 +178,30 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <phase>none</phase>
+                    </execution>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <phase>none</phase>
+                    </execution>
+                    <execution>
+                        <id>compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>testCompile</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
                     <source>16</source>
                     <target>16</target>
