@@ -1,4 +1,4 @@
-package ru.quipy.registry
+package ru.quipy.kafka.registry
 
 import org.reflections.Reflections
 import org.reflections.scanners.Scanners
