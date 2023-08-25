@@ -17,3 +17,8 @@ interface Consumer {
 
     fun close()
 }
+
+interface StoppableAndDestructible {
+
+    fun stopAndDestroy()
+}
