@@ -23,6 +23,7 @@ class KafkaConsumerEventStream<T : Topic>(
         private val logger = LoggerFactory.getLogger(KafkaConsumerEventStream::class.java)
     }
 
+
     private var active = AtomicBoolean(true)
     private var suspended = AtomicBoolean(false)
 

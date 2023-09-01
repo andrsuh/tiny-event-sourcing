@@ -58,14 +58,24 @@ class TopicSubscriptionsManager(
 
         val topicName = topicRegistry.basicTopicInfo(topicEntityClass)?.topicName.toString()
 
+        val kafkaTopicCreator = KafkaTopicCreator()
+
+        val topicConfig = TopicConfig(
+            kafkaProperties.bootstrapServers!!,
+            topicName,
+            kafkaProperties.partitions,
+            kafkaProperties.replicationFactor
+        )
+
+        kafkaTopicCreator.createTopicIfNotExists(topicConfig)
+
+        val kafkaProducer = KafkaEventProducer<T>(topicName, kafkaProperties)
+
         val ongoingGroupManager = OngoingGroupManager(groupRegistry, ongoingGroupStorage, externalEventMapperRegistry, eventMapper, externalEventMapper)
 
         val subscriber = KafkaProducerSubscriber(
             stream,
-            topicName,
-            kafkaProperties,
-            KafkaEventProducer(topicEntityClass, kafkaProperties),
-            kafkaTopicCreator,
+            kafkaProducer,
             ongoingGroupManager,
             eventMapper,
             internalEventInfo::getEventTypeByName
@@ -86,8 +96,6 @@ class TopicSubscriptionsManager(
     ): KafkaConsumerSubscriber<T> {
         val externalEventInfo = topicRegistry.getExternalEventInfo(topicEntityClass)
             ?: throw IllegalArgumentException("Couldn't find topic class ${topicEntityClass.simpleName} in registry")
-
-
 
         val subscriptionBuilder =
             topicEventsStreamManager.createKafkaConsumerStream(

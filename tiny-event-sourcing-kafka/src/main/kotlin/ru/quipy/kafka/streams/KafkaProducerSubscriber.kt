@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory
 import ru.quipy.domain.Aggregate
 import ru.quipy.domain.Event
 import ru.quipy.domain.Topic
-import ru.quipy.kafka.core.KafkaProperties
 import ru.quipy.kafka.core.OngoingGroupManager
 import ru.quipy.mapper.EventMapper
 import ru.quipy.streams.AggregateEventStream
@@ -16,10 +15,7 @@ import kotlin.reflect.KClass
 
 class KafkaProducerSubscriber<A : Aggregate, T : Topic>(
     private val aggregateEventStream: AggregateEventStream<A>,
-    private val topicName: String,
-    private val kafkaProperties: KafkaProperties,
     private val kafkaProducer: KafkaEventProducer<T>,
-    private val kafkaTopicCreator: KafkaTopicCreator,
     private val ongoingGroupManager: OngoingGroupManager,
     private val eventMapper: EventMapper,
     private val nameToEventClassFunc: (String) -> KClass<Event<A>>
@@ -34,15 +30,6 @@ class KafkaProducerSubscriber<A : Aggregate, T : Topic>(
         CoroutineName("handlingCoroutine") + Executors.newSingleThreadExecutor()
             .asCoroutineDispatcher() // todo sukhoa customize
     ).launch {
-        kafkaTopicCreator.createTopicIfNotExists(
-            TopicConfig(
-                kafkaProperties.bootstrapServers!!,
-                topicName,
-                kafkaProperties.partitions,
-                kafkaProperties.replicationFactor
-            )
-        )
-
         while (active) {
             aggregateEventStream.handleNextRecord { eventRecord ->
                 try {

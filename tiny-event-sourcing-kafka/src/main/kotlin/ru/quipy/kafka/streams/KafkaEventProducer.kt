@@ -6,20 +6,17 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
-import ru.quipy.core.annotations.TopicType
 import ru.quipy.domain.ExternalEventRecord
 import ru.quipy.domain.Topic
 import ru.quipy.kafka.core.KafkaProperties
 import ru.quipy.streams.Producer
 import java.time.Duration
 import java.util.*
-import kotlin.reflect.KClass
-import kotlin.reflect.full.findAnnotation
 
-class KafkaEventProducer<T : Topic>(
-    topicEntityClass: KClass<T>,
+class KafkaEventProducer <T : Topic>(
+    private val topicName: String,
     private val kafkaProperties: KafkaProperties
-) : Producer {
+) : Producer <T> {
 
     companion object {
         private val logger = LoggerFactory.getLogger(KafkaEventProducer::class.java)
@@ -28,7 +25,7 @@ class KafkaEventProducer<T : Topic>(
 
     private val producer: KafkaProducer<String, String> = createProducer()
 
-    private val topicName = topicEntityClass.findAnnotation<TopicType>()?.name
+//    private val topicName = topicEntityClass.findAnnotation<TopicType>()?.name
 
     override suspend fun sendEvents(partitionKey: String, externalEvents: List<ExternalEventRecord>) {
         for (externalEvent in externalEvents) {

@@ -5,20 +5,17 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.slf4j.LoggerFactory
-import ru.quipy.core.annotations.TopicType
 import ru.quipy.domain.ExternalEventRecord
 import ru.quipy.domain.Topic
 import ru.quipy.kafka.core.KafkaProperties
 import ru.quipy.streams.Consumer
 import java.time.Duration
 import java.util.*
-import kotlin.reflect.KClass
-import kotlin.reflect.full.findAnnotation
 
 class KafkaEventConsumer<T : Topic>(
-    topicEntityClass: KClass<T>,
+    private val topicName: String,
     private val kafkaProperties: KafkaProperties
-) : Consumer {
+) : Consumer<T> {
 
     companion object {
         private val logger = LoggerFactory.getLogger(KafkaEventConsumer::class.java)
@@ -26,8 +23,6 @@ class KafkaEventConsumer<T : Topic>(
     }
 
     private val consumer: KafkaConsumer<String, String> = createConsumer()
-
-    private val topicName = topicEntityClass.findAnnotation<TopicType>()?.name
 
     override fun startConsuming() {
         consumer.subscribe(listOf(topicName))

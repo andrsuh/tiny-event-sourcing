@@ -33,9 +33,11 @@ class TopicEventStreamManager(
         val internalEventInfo = topicRegistry.getExternalEventInfo(topicClass)
             ?: throw IllegalArgumentException("Couldn't find topic class ${topicClass.simpleName} in registry")
 
+        val topicName = topicRegistry.basicTopicInfo(topicClass)?.topicName.toString()
+
         val eventsChannel = ExternalEventsChannel()
 
-        val kafkaConsumer = KafkaEventConsumer(topicClass, kafkaProperties)
+        val kafkaConsumer = KafkaEventConsumer<T>(topicName, kafkaProperties)
 
         val existing = eventStreams.putIfAbsent(
             streamName, KafkaConsumerEventStream(
