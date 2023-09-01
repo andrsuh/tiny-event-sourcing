@@ -6,13 +6,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import ru.quipy.core.*
+import ru.quipy.core.AggregateRegistry
+import ru.quipy.core.EventSourcingProperties
 import ru.quipy.database.OngoingGroupStorage
 import ru.quipy.kafka.core.KafkaProperties
 import ru.quipy.kafka.registry.*
+import ru.quipy.kafka.streams.KafkaTopicCreator
 import ru.quipy.kafka.streams.TopicEventStreamManager
 import ru.quipy.kafka.streams.TopicSubscriptionsManager
-import ru.quipy.kafka.streams.KafkaTopicCreator
 import ru.quipy.mapper.JsonEventMapper
 import ru.quipy.mapper.JsonExternalEventMapper
 import ru.quipy.streams.AggregateEventStreamManager
@@ -82,7 +83,6 @@ class KafkaAutoConfiguration {
         kafkaProperties,
         ongoingGroupStorage,
         groupRegistry,
-        externalEventMapperRegistry,
-        kafkaTopicCreator
+        externalEventMapperRegistry
     )
 }
