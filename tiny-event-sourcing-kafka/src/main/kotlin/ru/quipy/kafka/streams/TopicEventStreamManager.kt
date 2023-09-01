@@ -13,7 +13,13 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import kotlin.reflect.KClass
 
-
+/**
+ * Manages [KafkaConsumerEventStream]s for different topics and provides methods for their creation and management.
+ *
+ * [TopicEventStreamManager] is responsible for managing Kafka consumer event streams associated with various topics.
+ * It allows you to create and manage these streams, as well as perform maintenance tasks and retrieve information about active streams.
+ *
+ */
 class TopicEventStreamManager(
     private val topicRegistry: TopicRegistry,
     private val eventSourcingProperties: EventSourcingProperties,

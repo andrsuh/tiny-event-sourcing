@@ -12,6 +12,11 @@ import ru.quipy.streams.Consumer
 import java.time.Duration
 import java.util.*
 
+/**
+ * [KafkaEventConsumer] is a Kafka implementation of [Consumer] interface.
+ *
+ * It is designed to consume [ExternalEventRecord]s from a Kafka topic. It uses a [KafkaConsumer] internally.
+ */
 class KafkaEventConsumer<T : Topic>(
     private val topicName: String,
     private val kafkaProperties: KafkaProperties

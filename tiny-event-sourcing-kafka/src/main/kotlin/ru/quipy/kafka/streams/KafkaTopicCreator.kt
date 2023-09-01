@@ -6,7 +6,7 @@ import org.apache.kafka.clients.admin.NewTopic
 import org.slf4j.LoggerFactory
 
 /**
- * [KafkaTopicCreator] provides functionality to create a Kafka topic if it doesn't already exist.
+ * [KafkaTopicCreator] is a utility class for creating Kafka topics.
  */
 class KafkaTopicCreator {
 

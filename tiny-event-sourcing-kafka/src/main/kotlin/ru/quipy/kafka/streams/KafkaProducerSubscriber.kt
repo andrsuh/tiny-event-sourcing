@@ -13,6 +13,11 @@ import ru.quipy.streams.StoppableAndDestructible
 import java.util.concurrent.Executors
 import kotlin.reflect.KClass
 
+/**
+ * [KafkaProducerSubscriber] is a wrapper around [AggregateEventStream] which allows to subscribe to the stream and handle the events from it.
+ *
+ * The main purpose of this class is to handle the events from the stream and send them to the Kafka topic.
+ */
 class KafkaProducerSubscriber<A : Aggregate, T : Topic>(
     private val aggregateEventStream: AggregateEventStream<A>,
     private val kafkaProducer: KafkaEventProducer<T>,

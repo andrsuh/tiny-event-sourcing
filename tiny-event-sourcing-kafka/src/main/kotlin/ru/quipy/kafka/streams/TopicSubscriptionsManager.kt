@@ -19,6 +19,10 @@ import ru.quipy.streams.annotation.RetryConf
 import ru.quipy.streams.annotation.RetryFailedStrategy
 import kotlin.reflect.KClass
 
+/**
+ * Creates [KafkaProducerSubscriber] and [KafkaConsumerSubscriber], holds them and allows to destroy them all.
+ * Using this class is a preferable way to create and initialize subscribers.
+ */
 class TopicSubscriptionsManager(
     private val aggregateEventsStreamManager: AggregateEventStreamManager,
     private val topicEventsStreamManager: TopicEventStreamManager,
@@ -30,7 +34,6 @@ class TopicSubscriptionsManager(
     private val ongoingGroupStorage: OngoingGroupStorage,
     private val groupRegistry: DomainGroupRegistry,
     private val externalEventMapperRegistry: ExternalEventMapperRegistry,
-    private val kafkaTopicCreator: KafkaTopicCreator
 ) {
     private val logger = LoggerFactory.getLogger(TopicSubscriptionsManager::class.java)
 

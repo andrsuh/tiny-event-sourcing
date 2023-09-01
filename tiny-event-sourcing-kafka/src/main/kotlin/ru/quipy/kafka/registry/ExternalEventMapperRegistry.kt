@@ -14,6 +14,15 @@ import ru.quipy.kafka.core.KafkaProperties
 import java.lang.reflect.ParameterizedType
 import kotlin.reflect.KClass
 
+/**
+ * [ExternalEventMapperRegistry] is responsible for managing the associations between domain event
+ * classes, domain event group classes, and their corresponding external event mapper classes. It provides
+ * functionality to initialize the registry by automatically scanning for mappers annotated with
+ * [ExternalEventsMapper] and mapping them to the appropriate domain events or domain event groups.
+ *
+ * This registry allows to query and retrieve the external event mapper classes for a given domain event or
+ * domain event group class.
+ */
 class ExternalEventMapperRegistry(private val kafkaProperties: KafkaProperties) {
 
     private val oneToManyMappers = mutableMapOf<KClass<out Event<out Aggregate>>, KClass<out DomainEventToExternalEventsMapper<*>>>()

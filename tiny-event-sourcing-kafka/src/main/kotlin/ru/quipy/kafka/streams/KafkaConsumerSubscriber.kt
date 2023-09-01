@@ -11,6 +11,9 @@ import ru.quipy.streams.StoppableAndDestructible
 import java.util.concurrent.Executors
 import kotlin.reflect.KClass
 
+/**
+ * [KafkaConsumerSubscriber] is a wrapper around [KafkaConsumerEventStream] which allows to subscribe to the stream and handle the events from it.
+ */
 class KafkaConsumerSubscriber<T : Topic>(
     private val externalEventStream: KafkaConsumerEventStream<T>,
     private val eventMapper: ExternalEventMapper,

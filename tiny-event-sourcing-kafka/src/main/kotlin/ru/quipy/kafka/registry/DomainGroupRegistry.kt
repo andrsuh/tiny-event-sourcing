@@ -11,6 +11,15 @@ import ru.quipy.kafka.core.KafkaProperties
 import kotlin.reflect.KClass
 import kotlin.reflect.full.isSubclassOf
 
+/**
+ * [DomainGroupRegistry] is responsible for managing the associations between domain event classes and
+ * their corresponding [DomainEventsGroup] classes. It provides functionality to initialize the registry by
+ * automatically scanning for domain event group classes and their associated domain event classes based on
+ * annotations and package scanning.
+ *
+ * This registry allows to query and retrieve [DomainGroupRegistry] classes for a given domain event class
+ * and retrieve a list of domain event classes associated with a specific [DomainEventsGroup] class.</p>
+ */
 class DomainGroupRegistry(
     private val kafkaProperties: KafkaProperties
 ) {

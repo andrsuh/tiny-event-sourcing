@@ -2,10 +2,15 @@ package ru.quipy.kafka.registry
 
 import org.springframework.core.annotation.AnnotationUtils
 import ru.quipy.core.annotations.IntegrationEvent
-import ru.quipy.domain.*
+import ru.quipy.domain.ExternalEvent
+import ru.quipy.domain.Topic
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
+/**
+ * [TopicRegistry] is responsible for managing [Topic] registrations and [ExternalEvent]s
+ * associated with those topics.
+ */
 interface TopicRegistry {
 
     fun <T : Topic> register(

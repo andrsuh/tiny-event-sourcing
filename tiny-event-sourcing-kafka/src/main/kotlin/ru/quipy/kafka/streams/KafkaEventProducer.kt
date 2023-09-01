@@ -13,10 +13,16 @@ import ru.quipy.streams.Producer
 import java.time.Duration
 import java.util.*
 
-class KafkaEventProducer <T : Topic>(
+/**
+ * [KafkaEventProducer] is a Kafka implementation of [Producer] interface.
+ *
+ * It is designed to produce [ExternalEventRecord]s to a Kafka topic. It uses a [KafkaProducer] internally.
+ */
+
+class KafkaEventProducer<T : Topic>(
     private val topicName: String,
     private val kafkaProperties: KafkaProperties
-) : Producer <T> {
+) : Producer<T> {
 
     companion object {
         private val logger = LoggerFactory.getLogger(KafkaEventProducer::class.java)
@@ -24,8 +30,6 @@ class KafkaEventProducer <T : Topic>(
     }
 
     private val producer: KafkaProducer<String, String> = createProducer()
-
-//    private val topicName = topicEntityClass.findAnnotation<TopicType>()?.name
 
     override suspend fun sendEvents(partitionKey: String, externalEvents: List<ExternalEventRecord>) {
         for (externalEvent in externalEvents) {

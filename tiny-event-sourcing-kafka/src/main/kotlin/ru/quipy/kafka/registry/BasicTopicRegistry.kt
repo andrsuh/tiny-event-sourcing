@@ -2,10 +2,17 @@ package ru.quipy.kafka.registry
 
 import org.springframework.core.annotation.AnnotationUtils
 import ru.quipy.core.annotations.TopicType
+import ru.quipy.domain.ExternalEvent
 import ru.quipy.domain.Topic
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
+/**
+ * [BasicTopicRegistry] is an implementation of the [TopicRegistry] that
+ * allows for the registration of [Topic]s and their associated [ExternalEvent]'s.
+ *
+ * It maintains a registry of topics and their related information, such as the name and external events.
+ */
 @Suppress("UNCHECKED_CAST")
 class BasicTopicRegistry : TopicRegistry {
     private val topicInfo = ConcurrentHashMap<KClass<*>, TopicInfo>()

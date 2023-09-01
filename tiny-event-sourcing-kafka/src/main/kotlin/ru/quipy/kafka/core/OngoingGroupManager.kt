@@ -1,14 +1,21 @@
 package ru.quipy.kafka.core
 
 import ru.quipy.database.OngoingGroupStorage
-import ru.quipy.domain.*
+import ru.quipy.domain.Aggregate
+import ru.quipy.domain.Event
+import ru.quipy.domain.ExternalEvent
+import ru.quipy.domain.ExternalEventRecord
 import ru.quipy.kafka.registry.DomainGroupRegistry
 import ru.quipy.kafka.registry.ExternalEventMapperRegistry
 import ru.quipy.mapper.EventMapper
 import ru.quipy.mapper.ExternalEventMapper
-import java.util.UUID
+import java.util.*
 import kotlin.reflect.KClass
 
+/**
+ * [OngoingGroupManager] is responsible for managing ongoing groups of domain events.
+ * It provides methods to convert domain events to external events.
+ */
 class OngoingGroupManager(
     private val domainGroupRegistry: DomainGroupRegistry,
     private val ongoingGroupStorage: OngoingGroupStorage,

@@ -2,8 +2,12 @@ package ru.quipy.kafka.streams
 
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
+import ru.quipy.domain.ExternalEvent
 import ru.quipy.domain.ExternalEventRecord
 
+/**
+ * [ExternalEventsChannel] is a channel that is used to send and receive [ExternalEvent]'s.
+ */
 class ExternalEventsChannel {
     private val eventsChannel: Channel<ExternalEventRecord> = Channel(
         capacity = Channel.RENDEZVOUS,

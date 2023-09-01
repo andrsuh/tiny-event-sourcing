@@ -10,6 +10,13 @@ import ru.quipy.streams.annotation.RetryConf
 import ru.quipy.streams.annotation.RetryFailedStrategy
 import java.util.concurrent.atomic.AtomicBoolean
 
+/**
+ * Represents a Kafka-based event stream for a specific topic, allowing the sequential handling of external event records
+ * received from a Kafka consumer.
+ *
+ * This class implements the [ExternalEventStream] interface and is designed to consume external event records from a Kafka topic.
+ * It provides methods for handling Kafka events in a controlled and sequential manner.
+ */
 class KafkaConsumerEventStream<T : Topic>(
     override val streamName: String,
     private val emptyEventBatchDelay: Long,

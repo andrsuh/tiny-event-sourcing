@@ -11,7 +11,15 @@ import ru.quipy.domain.Topic
 import ru.quipy.kafka.core.KafkaProperties
 import kotlin.reflect.KClass
 
-
+/**
+ * [SeekingForSuitableClassesTopicRegistry] is a specialized implementation of the [TopicRegistry]
+ * that facilitates automatic scanning and registration of [Topic]s and their associated [ExternalEvent]'s
+ * based on annotations and package scanning.
+ *
+ * [SeekingForSuitableClassesTopicRegistry] wraps an existing [TopicRegistry] instance and extends its functionality. It enables the automatic
+ * discovery and registration of topics and external events by scanning specified packages in the classpath and
+ * inspecting relevant annotations.
+ */
 class SeekingForSuitableClassesTopicRegistry(
     private val wrappedRegistry: TopicRegistry,
     private val kafkaProperties: KafkaProperties
