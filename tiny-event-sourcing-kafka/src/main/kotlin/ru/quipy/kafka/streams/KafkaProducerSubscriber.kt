@@ -65,5 +65,6 @@ class KafkaProducerSubscriber<A : Aggregate, T : Topic>(
         active = false
         subscriptionCoroutine.cancel()
         aggregateEventStream.stopAndDestroy()
+        kafkaProducer.close()
     }
 }

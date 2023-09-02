@@ -107,6 +107,8 @@ class KafkaConsumerEventStream<T : Topic>(
         if (eventStreamJob.isActive) {
             eventStreamJob.cancel()
         }
+
+        kafkaEventConsumer.close()
     }
 
     override fun suspend() {
