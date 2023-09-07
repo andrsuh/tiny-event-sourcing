@@ -48,6 +48,7 @@
         <awaitility.version>4.2.0</awaitility.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
         <tiny-event-sourcing-lib.version>2.3.0-SNAPSHOT</tiny-event-sourcing-lib.version>
+        <kafka-clients.version>3.4.0</kafka-clients.version>
     </properties>
 
     <dependencies>
@@ -60,7 +61,7 @@
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-            <version>3.4.0</version>
+            <version>${kafka-clients.version}</version>
         </dependency>
     </dependencies>
 
