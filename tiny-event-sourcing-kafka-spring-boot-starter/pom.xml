@@ -42,7 +42,7 @@
         <tiny-event-sourcing-lib.version>2.3.0-SNAPSHOT</tiny-event-sourcing-lib.version>
         <tiny-event-sourcing-kafka.version>2.3.0-SNAPSHOT</tiny-event-sourcing-kafka.version>
         <tiny-event-sourcing-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-event-sourcing-spring-boot-starter.version>
-        <tiny-mongo-storage-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-mongo-storage-spring-boot-starter.version>
+        <tiny-mongo-ongoing-group-storage-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-mongo-ongoing-group-storage-spring-boot-starter.version>
     </properties>
 
     <dependencyManagement>
@@ -70,8 +70,8 @@
         </dependency>
         <dependency>
             <groupId>ru.quipy</groupId>
-            <artifactId>tiny-mongo-storage-spring-boot-starter</artifactId>
-            <version>${tiny-mongo-storage-spring-boot-starter.version}</version>
+            <artifactId>tiny-mongo-ongoing-group-storage-spring-boot-starter</artifactId>
+            <version>${tiny-mongo-ongoing-group-storage-spring-boot-starter.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -98,12 +98,6 @@
             <groupId>de.flapdoodle.embed</groupId>
             <artifactId>de.flapdoodle.embed.mongo</artifactId>
             <version>3.5.4</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>ru.quipy</groupId>
-            <artifactId>tiny-event-sourcing-spring-boot-starter</artifactId>
-            <version>${tiny-event-sourcing-spring-boot-starter.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
