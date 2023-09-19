@@ -6,6 +6,8 @@ import ru.quipy.core.exceptions.EventRecordOptimisticLockException
 import ru.quipy.database.EventStore
 import ru.quipy.domain.*
 import ru.quipy.mapper.EventMapper
+import ru.quipy.saga.SagaContext
+import java.util.*
 import kotlin.experimental.ExperimentalTypeInference
 import kotlin.reflect.KClass
 
@@ -27,16 +29,16 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
         aggregateRegistry.getStateTransitionInfo<ID, A, S>(aggregateClass)
             ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered")
 
-    fun <E : Event<A>> create(command: (a: S) -> E): E {
+    fun <E : Event<A>> create(sagaContext: SagaContext = SagaContext(), command: (a: S) -> E): E {
         val emptyAggregateState = aggregateInfo.emptyStateCreator.invoke()
-        return tryUpdate(emptyAggregateState, 0, command)
+        return tryUpdate(emptyAggregateState, 0, command, sagaContext)
     }
 
     @OptIn(ExperimentalTypeInference::class)
     @OverloadResolutionByLambdaReturnType
-    fun <E : Event<A>> create(command: (a: S) -> List<E>): List<E> {
+    fun <E : Event<A>> create(sagaContext: SagaContext = SagaContext(), command: (a: S) -> List<E>): List<E> {
         val emptyAggregateState = aggregateInfo.emptyStateCreator.invoke()
-        return tryUpdate(emptyAggregateState, 0, command)
+        return tryUpdate(emptyAggregateState, 0, command, sagaContext)
     }
 
     /**
@@ -61,17 +63,21 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
      * The number of attempts is limited and can be configured by "spinLockMaxAttempts" property of [EventSourcingProperties].
      *
      */
-    fun <E : Event<A>> update(aggregateId: ID, command: (S) -> E): E {
+    fun <E : Event<A>> update(aggregateId: ID, sagaContext: SagaContext = SagaContext(), command: (S) -> E): E {
         return updateWithSpinLock(aggregateId) { aggregateState, version ->
-            tryUpdate(aggregateState, version, command)
+            tryUpdate(aggregateState, version, command, sagaContext)
         }
     }
 
     @OptIn(ExperimentalTypeInference::class)
     @OverloadResolutionByLambdaReturnType
-    fun <E : Event<A>> update(aggregateId: ID, command: (S) -> List<E>): List<E> {
+    fun <E : Event<A>> update(
+        aggregateId: ID,
+        sagaContext: SagaContext = SagaContext(),
+        command: (S) -> List<E>
+    ): List<E> {
         return updateWithSpinLock(aggregateId) { aggregateState, version ->
-            tryUpdate(aggregateState, version, command)
+            tryUpdate(aggregateState, version, command, sagaContext)
         }
     }
 
@@ -163,17 +169,19 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
     private fun <E : Event<A>> tryUpdate(
         aggregateState: S,
         currentStateVersion: Long, // todo sukhoa state should include version
-        command: (S) -> E
+        command: (S) -> E,
+        sagaContext: SagaContext
     ): E {
         val multiEventCommand = { state: S -> listOf(command(state)) }
 
-        return tryUpdate(aggregateState, currentStateVersion, multiEventCommand).first()
+        return tryUpdate(aggregateState, currentStateVersion, multiEventCommand, sagaContext).first()
     }
 
     private fun <E : Event<A>> tryUpdate(
         aggregateState: S,
         currentStateVersion: Long,
-        command: (S) -> List<E>
+        command: (S) -> List<E>,
+        sagaContext: SagaContext
     ): List<E> {
         var updatedVersion = currentStateVersion
 
@@ -184,11 +192,19 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
             throw e
         }
 
+        if (eventSourcingProperties.sagasEnabled) {
+            sagaContext.causationId = sagaContext.currentEventId
+            sagaContext.currentEventId = UUID.randomUUID()
+            sagaContext.correlationId = sagaContext.correlationId ?: UUID.randomUUID()
+        }
+
         newEvents.forEach { newEvent ->
             aggregateInfo
                 .getStateTransitionFunction(newEvent.name)
                 .performTransition(aggregateState, newEvent)
             newEvent.version = ++updatedVersion
+            if (eventSourcingProperties.sagasEnabled)
+                newEvent.sagaContext = sagaContext
         }
 
         val aggregateId = aggregateState.getId()
@@ -200,7 +216,8 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
                 aggregateId,
                 it.version,
                 it.name,
-                eventMapper.eventToString(it)
+                eventMapper.eventToString(it),
+                it.sagaContext
             )
         }
 

@@ -48,6 +48,12 @@
       "type": "java.lang.Integer",
       "sourceType": "ru.quipy.core.EventSourcingProperties",
       "defaultValue": 25
+    },
+    {
+      "name": "event.sourcing.sagas-enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": true
     }
   ],
   "hints": [
@@ -61,6 +67,19 @@
         {
           "value": false,
           "description": "Disable auto-scan"
+        }
+      ]
+    },
+    {
+      "name": "event.sourcing.sagas-enabled",
+      "values": [
+        {
+          "value": true,
+          "description": "Enable sagas beans"
+        },
+        {
+          "value": false,
+          "description": "Disable sagas beans"
         }
       ]
     }

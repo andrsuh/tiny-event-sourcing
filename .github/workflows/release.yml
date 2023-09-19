@@ -16,7 +16,7 @@ jobs:
         'tiny-event-sourcing-lib', 
         'tiny-mongo-event-store', 
         'tiny-event-sourcing-spring-boot-starter', 
-        'tiny-mongo-event-store-spring-boot-starter', 
+        'tiny-mongo-event-store-spring-boot-starter',
         'tiny-event-sourcing-spring-app' ] }
     steps:
     - uses: actions/checkout@v3

@@ -6,6 +6,7 @@ import ru.quipy.domain.Aggregate
 import ru.quipy.domain.AggregateState
 import ru.quipy.domain.AggregateStateTransitionFunction
 import ru.quipy.domain.Event
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
@@ -44,6 +45,7 @@ interface AggregateRegistry {
 
     fun <ID, A : Aggregate, S : AggregateState<ID, A>> getStateTransitionInfo(clazz: KClass<A>): AggregateStateInfo<ID, A, S>?
 
+    fun getAllAggregates(): List<KClass<Aggregate>>
 
     interface EventRegistrar<A : Aggregate> {
         fun <E : Event<A>> registerEvent(eventClass: KClass<E>)

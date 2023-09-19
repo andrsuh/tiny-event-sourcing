@@ -16,4 +16,5 @@ class EventSourcingProperties (
     var maxActiveReaderInactivityPeriod: Duration = 5.minutes,
     var recordReadIndexCommitPeriod: Int = 10,
     val eventReaderHealthCheckPeriod: Duration = 5.seconds,
+    var sagasEnabled: Boolean = true
 )
