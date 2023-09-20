@@ -55,6 +55,8 @@ class KafkaEventProducer<T : Topic>(
         } catch (e: KafkaException) {
             producer.abortTransaction()
             logger.error("Transaction for $topicName topic with partition key $partitionKey aborted", e)
+        } catch (e: Exception) {
+            logger.error("An unexpected exception occurred: ${e.message}", e)
         }
     }
 
