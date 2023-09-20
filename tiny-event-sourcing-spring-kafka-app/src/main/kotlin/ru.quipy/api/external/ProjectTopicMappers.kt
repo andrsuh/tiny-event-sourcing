@@ -23,7 +23,7 @@ class ProjectCreatedToExternalEventMapper : DomainEventToExternalEventsMapper<Pr
     }
 }
 
-@ExternalEventsMapper
+//@ExternalEventsMapper
 class TaskAndTagCreatedToExternalEventMapper : DomainGroupToExternalEventsMapper<taskAndTagEventsGroup> {
 
     override fun toExternalEvents(domainEvents: List<taskAndTagEventsGroup>): List<ExternalEvent<out Topic>> {
