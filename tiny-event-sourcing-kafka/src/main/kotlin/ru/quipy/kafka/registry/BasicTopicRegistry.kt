@@ -49,8 +49,7 @@ class BasicTopicRegistry : TopicRegistry {
             }
     }
 
-    class TopicInfo {
+    data class TopicInfo(
         var eventInfo: TopicRegistry.ExternalEventInfo<*>? = null
-        //group, mapper ???
-    }
+    )
 }
