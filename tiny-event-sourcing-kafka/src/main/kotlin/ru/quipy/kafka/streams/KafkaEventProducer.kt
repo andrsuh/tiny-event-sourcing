@@ -21,12 +21,12 @@ import java.util.*
 
 class KafkaEventProducer<T : Topic>(
     private val topicName: String,
-    private val kafkaProperties: KafkaProperties
+    private val kafkaProperties: KafkaProperties,
+    private val objectMapper: ObjectMapper
 ) : Producer<T> {
 
     companion object {
         private val logger = LoggerFactory.getLogger(KafkaEventProducer::class.java)
-        private val objectMapper = ObjectMapper()
     }
 
     private val producer: KafkaProducer<String, String> = createProducer()
@@ -49,6 +49,7 @@ class KafkaEventProducer<T : Topic>(
                 )
                 producer.send(record)
             }
+            logger.info("Events for $topicName topic with partition key $partitionKey sent")
 
             producer.commitTransaction()
             logger.info("Transaction for $topicName topic with partition key $partitionKey committed")
@@ -65,7 +66,7 @@ class KafkaEventProducer<T : Topic>(
 
         props[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaProperties.bootstrapServers
         props[ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG] = true
-        props[ProducerConfig.TRANSACTIONAL_ID_CONFIG] = "transactional-id-config" + System.currentTimeMillis()
+        props[ProducerConfig.TRANSACTIONAL_ID_CONFIG] = "transactional-id-config-" + System.currentTimeMillis()
         props[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = "org.apache.kafka.common.serialization.StringSerializer"
         props[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = "org.apache.kafka.common.serialization.StringSerializer"
 
