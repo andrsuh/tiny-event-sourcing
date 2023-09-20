@@ -91,6 +91,7 @@ class KafkaConsumerEventStream<T : Topic>(
         try {
             eventProcessingFunction(receivedRecord).also {
                 if (!it) logger.info("Processing function return false for event record: $receivedRecord")
+                else kafkaEventConsumer.commitOffset()
 
                 logger.trace("Sending confirmation on receiving event $receivedRecord")
                 eventsChannel.sendConfirmation(isConfirmed = it)
