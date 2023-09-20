@@ -29,8 +29,11 @@ class EventSourcingLibConfiguration(
     @Bean
     fun projectEsService() = eventSourcingServiceFactory.create<UUID, ProjectAggregate, ProjectAggregateState>()
 
-    @Autowired
-    private lateinit var eventAggregateAStreamManager: AggregateEventStreamManager
+    @PostConstruct
+    fun initMappers() {
+//        externalEventMapperRegistry.injectEventMappers(listOf(ProjectCreatedToExternalEventMapper()))
+        externalEventMapperRegistry.injectGroupMappers(listOf(TaskAndTagCreatedToExternalEventMapper()))
+    }
 
     @PostConstruct
     fun initAggregateStreams() {
