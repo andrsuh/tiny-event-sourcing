@@ -8,7 +8,6 @@ import ru.quipy.streams.EventStreamNotifier
 import ru.quipy.streams.ExternalEventStream
 import ru.quipy.streams.annotation.RetryConf
 import ru.quipy.streams.annotation.RetryFailedStrategy
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Represents a Kafka-based event stream for a specific topic, allowing the sequential handling of external event records
@@ -30,16 +29,19 @@ class KafkaConsumerEventStream<T : Topic>(
         private val logger = LoggerFactory.getLogger(KafkaConsumerEventStream::class.java)
     }
 
+    @Volatile
+    private var active = true
 
-    private var active = AtomicBoolean(true)
-    private var suspended = AtomicBoolean(false)
+    @Volatile
+    private var suspended = false
 
     private val eventStreamCompletionHandler: CompletionHandler = { th: Throwable? ->
-        if (active.get()) {
+        if (active) {
             logger.error(
                 "Unexpected error in external event stream ${streamName}. Relaunching...",
                 th
             )
+
             eventStreamJob = launchJob()
         } else {
             logger.warn("Stopped external event stream $streamName coroutine")
@@ -55,13 +57,15 @@ class KafkaConsumerEventStream<T : Topic>(
             eventStreamNotifier.onStreamLaunched(streamName)
             kafkaEventConsumer.startConsuming()
 
-            while (active.get()) {
-                while (suspended.get()) {
+            while (active) {
+                while (suspended) {
                     logger.debug("Suspending external event stream $streamName...")
                     delay(500)
                 }
 
                 val eventsBatch = kafkaEventConsumer.poll()
+
+                eventStreamNotifier.onBatchRead(streamName, eventsBatch.size)
 
                 if (eventsBatch.isEmpty()) {
                     delay(emptyEventBatchDelay)
@@ -102,7 +106,8 @@ class KafkaConsumerEventStream<T : Topic>(
     }
 
     override fun stopAndDestroy() {
-        if (!active.compareAndSet(true, false)) return
+        if (!active) return
+        active = false
 
         if (eventStreamJob.isActive) {
             eventStreamJob.cancel()
@@ -112,15 +117,15 @@ class KafkaConsumerEventStream<T : Topic>(
     }
 
     override fun suspend() {
-        suspended.set(true)
+        suspended = true
     }
 
     override fun resume() {
         logger.info("Resuming stream $streamName...")
-        suspended.set(false)
+        suspended = false
     }
 
-    override fun isSuspended() = suspended.get()
+    override fun isSuspended() = suspended
 
     private suspend fun feedToHandling(event: ExternalEventRecord, beforeNextPerform: () -> Unit) {
         for (attemptNum in 1..retryConfig.maxAttempts) {
@@ -130,23 +135,24 @@ class KafkaConsumerEventStream<T : Topic>(
                 beforeNextPerform()
                 return
             }
+            eventStreamNotifier.onRecordHandlingRetry(streamName, event.eventTitle, attemptNum)
+        }
 
-            if (attemptNum == retryConfig.maxAttempts) {
-                when (retryConfig.lastAttemptFailedStrategy) {
-                    RetryFailedStrategy.SKIP_EVENT -> {
-                        logger.error("Event stream: $streamName. Retry attempts failed $attemptNum times. SKIPPING...")
-                        beforeNextPerform()
-                        return
-                    }
+        when (retryConfig.lastAttemptFailedStrategy) {
+            RetryFailedStrategy.SKIP_EVENT -> {
+                logger.error("Event stream: $streamName. Retry attempts failed ${retryConfig.maxAttempts} times. SKIPPING...")
+                beforeNextPerform()
+            }
 
-                    RetryFailedStrategy.SUSPEND -> {
-                        logger.error("Event stream: $streamName. Retry attempts failed $attemptNum times. SUSPENDING THE HOLE STREAM...")
-                        eventStreamNotifier.onRecordSkipped(streamName, event.eventTitle, attemptNum)
-                        delay(Long.MAX_VALUE) // todo sukhoa find the way better
-                    }
+            RetryFailedStrategy.SUSPEND -> {
+                if (suspended) {
+                    logger.debug("Stream $streamName is already suspended.")
+                } else {
+                    logger.error("Event stream: $streamName. Retry attempts failed ${retryConfig.maxAttempts} times. SUSPENDING THE WHOLE STREAM...")
+                    eventStreamNotifier.onRecordSkipped(streamName, event.eventTitle, retryConfig.maxAttempts)
+                    delay(Long.MAX_VALUE)
                 }
             }
-            eventStreamNotifier.onRecordHandlingRetry(streamName, event.eventTitle, attemptNum)
         }
     }
 }
