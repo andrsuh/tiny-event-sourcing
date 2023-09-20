@@ -30,6 +30,12 @@ class DomainGroupRegistry(
                 KClass<DomainEventsGroup>
                 >()
 
+    private val internalEvents =
+        mutableMapOf<
+                KClass<out DomainEventsGroup>,
+                MutableList<KClass<out Event<*>>>
+                >()
+
     fun init() {
         val cfg = ConfigurationBuilder().addUrls(ClasspathHelper.forPackage(kafkaProperties.scanPublicAPIPackage))
             .addScanners(Scanners.TypesAnnotated, Scanners.SubTypes, Scanners.MethodsAnnotated)
@@ -45,21 +51,24 @@ class DomainGroupRegistry(
                 .map { it.kotlin } as List<KClass<out Event<*>>>
             domainEventClasses.forEach { domainEventClass ->
                 if (internalGroups.containsKey(domainEventClass)) {
-                    throw RuntimeException("Duplicate event class found: ${domainEventClass.simpleName}")
+                    throw IllegalStateException("Duplicate event class found: ${domainEventClass.simpleName}")
                 }
+
                 internalGroups[domainEventClass] = domainEventGroupTypedClass
+                val eventList = internalEvents.getOrPut(domainEventGroupTypedClass) { mutableListOf() }
+                eventList.add(domainEventClass)
+                logger.info("Added domain event class: ${domainEventClass.simpleName} to group: ${domainEventGroupTypedClass.simpleName}")
             }
         }
 
 
     }
 
-    fun <E : Event<out Aggregate>> getGroupFromDomainEvent(eventClass: KClass<E>): KClass<DomainEventsGroup>? {
+    fun getGroupFromDomainEvent(eventClass: KClass<out Event<out Aggregate>>): KClass<out DomainEventsGroup>? {
         return internalGroups[eventClass]
     }
 
-    fun <G : DomainEventsGroup> getDomainEventsFromDomainGroup(domainGroupClass: KClass<G>): List<KClass<out Event<out Aggregate>>> {
-        return internalGroups.filterValues { it == domainGroupClass }
-            .keys.toList()
+    fun getDomainEventsFromDomainGroup(domainGroupClass: KClass<out DomainEventsGroup>): List<KClass<out Event<out Aggregate>>> {
+        return internalEvents[domainGroupClass] ?: emptyList()
     }
 }
