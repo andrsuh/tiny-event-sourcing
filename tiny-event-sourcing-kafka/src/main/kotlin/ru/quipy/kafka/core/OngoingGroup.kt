@@ -1,5 +1,7 @@
 package ru.quipy.kafka.core
 
+import org.slf4j.LoggerFactory
+import ru.quipy.core.exceptions.DuplicateEventIdException
 import ru.quipy.database.OngoingGroupStorage
 import ru.quipy.domain.*
 import ru.quipy.kafka.registry.DomainGroupRegistry
@@ -17,32 +19,44 @@ import kotlin.reflect.KClass
  * - Maps the events in the ongoing group to external events using a provided event processing function.
  */
 class OngoingGroup<G : DomainEventsGroup>(
-    private val domainGroup: KClass<G>,
+    private val domainGroup: KClass<out G>,
     private val domainGroupRegistry: DomainGroupRegistry,
     private val ongoingGroupStorage: OngoingGroupStorage,
     private val eventMapper: EventMapper,
-    aggregateId: String
+    private val aggregationTable: String
 ) {
 
-    private val aggregationTable: String = ("aggregation-${domainGroup.simpleName}-$aggregateId").lowercase()
+    companion object {
+        private val logger = LoggerFactory.getLogger(OngoingGroup::class.java)
+
+    }
 
     fun addToAggregation(event: Event<*>) {
-        if (isEligibleForAggregation(event)) {
-            ongoingGroupStorage.insertEventAggregation(
-                aggregationTable,
-                EventAggregation(event::class.qualifiedName.toString(), eventMapper.eventToString(event))
-            )
+        if (!isEligibleForAggregation(event)) {
+            return
+        }
+
+        try {
+            if (!isEventAlreadyAggregated(event)) {
+                ongoingGroupStorage.insertEventAggregation(
+                    aggregationTable,
+                    EventAggregation(event::class.qualifiedName.toString(), eventMapper.eventToString(event))
+                )
+            }
+        } catch (e: DuplicateEventIdException) {
+            logger.warn("Duplicate event detected: ${event::class.qualifiedName}", e)
+        } catch (e: Exception) {
+            logger.error("Unexpected exception while adding event to aggregation table", e)
         }
     }
 
-    private fun isEligibleForAggregation(event: Event<*>): Boolean {
-        val domainGroup = domainGroupRegistry.getDomainEventsFromDomainGroup(domainGroup)
-        if (!domainGroup.contains(event::class)) {
-            return false;
+    private fun isEventAlreadyAggregated(event: Event<*>): Boolean {
+        val pollEvents = ongoingGroupStorage.findBatchOfEventAggregations(aggregationTable)
+        val events = pollEvents.map {
+            eventMapper.toEvent(it.payload, Class.forName(it.eventTitle).kotlin as KClass<out Event<Aggregate>>)
         }
 
-        val pollEvents = ongoingGroupStorage.findBatchOfEventAggregations(aggregationTable)
-        return pollEvents.size != domainGroup.size
+        return events.contains(event)
     }
 
     fun isReadyForAggregation(): Boolean {
@@ -58,8 +72,20 @@ class OngoingGroup<G : DomainEventsGroup>(
             eventMapper.toEvent(it.payload, Class.forName(it.eventTitle).kotlin as KClass<out Event<Aggregate>>)
         }
 
-        ongoingGroupStorage.dropTable(aggregationTable)
-
         return eventProcessingFunction(events)
+    }
+
+    fun removeTable() {
+        ongoingGroupStorage.dropTable(aggregationTable)
+    }
+
+    private fun isEligibleForAggregation(event: Event<*>): Boolean {
+        val domainGroup = domainGroupRegistry.getDomainEventsFromDomainGroup(domainGroup)
+        if (!domainGroup.contains(event::class)) {
+            return false;
+        }
+
+        val pollEvents = ongoingGroupStorage.findBatchOfEventAggregations(aggregationTable)
+        return pollEvents.size != domainGroup.size
     }
 }

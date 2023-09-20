@@ -33,7 +33,7 @@ class KafkaTopicCreator {
             }
         } catch (e: Exception) {
             logger.error("Error while creating a topic: {}", topicConfig.name, e)
-            throw RuntimeException("Error while creating a topic: ${topicConfig.name}", e)
+            throw IllegalStateException("Error while creating a topic: ${topicConfig.name}", e)
         }
     }
 }
