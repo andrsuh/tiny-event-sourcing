@@ -4,7 +4,7 @@ import com.mongodb.*
 
 class MongoClientExceptionTranslator {
 
-    private fun translateException(ex: Exception): MongoClientException? {
+    private fun translateException(ex: Exception): Exception {
         when (ex) {
             is DuplicateKeyException -> {
                 return MongoDuplicateKeyException(ex.message, ex)
@@ -27,14 +27,14 @@ class MongoClientExceptionTranslator {
                 }
             }
         }
-        return null
+        return ex
     }
 
     fun <T> withTranslation(action: () -> T): T {
         try {
             return action()
         } catch (ex: Exception) {
-            throw this.translateException(ex) ?: ex
+            throw this.translateException(ex)
         }
     }
 }
