@@ -1,15 +1,14 @@
 package ru.quipy.kafka.streams
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import ru.quipy.core.AggregateRegistry
-import ru.quipy.database.OngoingGroupStorage
 import ru.quipy.domain.Aggregate
 import ru.quipy.domain.ExternalEvent
 import ru.quipy.domain.Topic
 import ru.quipy.kafka.core.KafkaProperties
 import ru.quipy.kafka.core.OngoingGroupManager
 import ru.quipy.kafka.registry.DomainGroupRegistry
-import ru.quipy.kafka.registry.ExternalEventMapperRegistry
 import ru.quipy.kafka.registry.TopicRegistry
 import ru.quipy.mapper.EventMapper
 import ru.quipy.mapper.ExternalEventMapper
@@ -31,13 +30,15 @@ class TopicSubscriptionsManager(
     private val eventMapper: EventMapper,
     private val externalEventMapper: ExternalEventMapper,
     private val kafkaProperties: KafkaProperties,
-    private val ongoingGroupStorage: OngoingGroupStorage,
     private val groupRegistry: DomainGroupRegistry,
-    private val externalEventMapperRegistry: ExternalEventMapperRegistry,
+    private val kafkaTopicCreator: KafkaTopicCreator,
+    private val ongoingGroupManager: OngoingGroupManager
 ) {
     private val logger = LoggerFactory.getLogger(TopicSubscriptionsManager::class.java)
 
-    private val subscribers: MutableList<StoppableAndDestructible> = mutableListOf()
+    private val subscribers: MutableSet<StoppableAndDestructible> = mutableSetOf()
+
+    private val objectMapper = ObjectMapper()
 
     fun <A : Aggregate, T : Topic> createKafkaProducerSubscriber(
         aggregateClass: KClass<A>,
@@ -61,8 +62,6 @@ class TopicSubscriptionsManager(
 
         val topicName = topicRegistry.basicTopicInfo(topicEntityClass)?.topicName.toString()
 
-        val kafkaTopicCreator = KafkaTopicCreator()
-
         val topicConfig = TopicConfig(
             kafkaProperties.bootstrapServers!!,
             topicName,
@@ -72,13 +71,12 @@ class TopicSubscriptionsManager(
 
         kafkaTopicCreator.createTopicIfNotExists(topicConfig)
 
-        val kafkaProducer = KafkaEventProducer<T>(topicName, kafkaProperties)
-
-        val ongoingGroupManager = OngoingGroupManager(groupRegistry, ongoingGroupStorage, externalEventMapperRegistry, eventMapper, externalEventMapper)
+        val kafkaProducer = KafkaEventProducer<T>(topicName, kafkaProperties, objectMapper)
 
         val subscriber = KafkaProducerSubscriber(
             stream,
             kafkaProducer,
+            groupRegistry,
             ongoingGroupManager,
             eventMapper,
             internalEventInfo::getEventTypeByName
@@ -108,7 +106,7 @@ class TopicSubscriptionsManager(
             )
                 .toSubscriptionBuilder(externalEventMapper, externalEventInfo::getExternalEventTypeByName)
 
-        handlersBlock.invoke(ExternalEventHandlersRegistrar(subscriptionBuilder)) // todo sukhoa maybe extension? .createRegistrar?
+        handlersBlock.invoke(ExternalEventHandlersRegistrar(subscriptionBuilder))
 
         return subscriptionBuilder.subscribe().also {
             subscribers.add(it)

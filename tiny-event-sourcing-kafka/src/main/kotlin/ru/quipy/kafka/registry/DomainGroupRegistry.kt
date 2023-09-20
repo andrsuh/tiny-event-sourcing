@@ -4,6 +4,7 @@ import org.reflections.Reflections
 import org.reflections.scanners.Scanners
 import org.reflections.util.ClasspathHelper
 import org.reflections.util.ConfigurationBuilder
+import org.slf4j.LoggerFactory
 import ru.quipy.domain.Aggregate
 import ru.quipy.domain.Event
 import ru.quipy.kafka.core.DomainEventsGroup
@@ -23,6 +24,8 @@ import kotlin.reflect.full.isSubclassOf
 class DomainGroupRegistry(
     private val kafkaProperties: KafkaProperties
 ) {
+
+    private val logger = LoggerFactory.getLogger(DomainGroupRegistry::class.java)
 
     private val internalGroups =
         mutableMapOf<

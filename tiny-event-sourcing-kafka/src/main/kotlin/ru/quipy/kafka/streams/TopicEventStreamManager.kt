@@ -1,5 +1,6 @@
 package ru.quipy.kafka.streams
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.asCoroutineDispatcher
 import ru.quipy.core.EventSourcingProperties
 import ru.quipy.domain.Topic
@@ -25,11 +26,13 @@ class TopicEventStreamManager(
     private val eventSourcingProperties: EventSourcingProperties,
     private val kafkaProperties: KafkaProperties
 ) {
-    private val eventStreamListener: EventStreamListenerImpl = EventStreamListenerImpl()// todo sukhoa make injectable
+    private val eventStreamListener: EventStreamListenerImpl = EventStreamListenerImpl()
 
-    private val eventStreamsDispatcher = Executors.newFixedThreadPool(16).asCoroutineDispatcher() // todo sukhoa fix
+    private val eventStreamsDispatcher = Executors.newFixedThreadPool(16).asCoroutineDispatcher()
 
     private val eventStreams = ConcurrentHashMap<String, KafkaConsumerEventStream<*>>()
+
+    private val objectMapper = ObjectMapper()
 
     fun <T : Topic> createKafkaConsumerStream(
         streamName: String,
@@ -43,7 +46,7 @@ class TopicEventStreamManager(
 
         val eventsChannel = ExternalEventsChannel()
 
-        val kafkaConsumer = KafkaEventConsumer<T>(topicName, kafkaProperties)
+        val kafkaConsumer = KafkaEventConsumer<T>(topicName, streamName, kafkaProperties, objectMapper)
 
         val existing = eventStreams.putIfAbsent(
             streamName, KafkaConsumerEventStream(
@@ -68,7 +71,7 @@ class TopicEventStreamManager(
         }
     }
 
-    fun maintenance(block: EventStreamListener.() -> Unit) { // todo sukhoa naming
+    fun maintenance(block: EventStreamListener.() -> Unit) {
         block(eventStreamListener)
     }
 
