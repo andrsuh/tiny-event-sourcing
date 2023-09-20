@@ -21,10 +21,13 @@ class KafkaConsumerSubscriber<T : Topic>(
     private val handlers: Map<KClass<out ExternalEvent<T>>, suspend (ExternalEvent<T>) -> Unit>,
 ) : StoppableAndDestructible {
 
+    companion object {
+        private val logger: Logger = LoggerFactory.getLogger(EventStreamSubscriber::class.java)
+    }
+
     @Volatile
     private var active = true
 
-    private val logger: Logger = LoggerFactory.getLogger(EventStreamSubscriber::class.java)
 
     private val subscriptionCoroutine: Job = CoroutineScope(
         CoroutineName("handlingCoroutine") + Executors.newSingleThreadExecutor()
@@ -32,17 +35,17 @@ class KafkaConsumerSubscriber<T : Topic>(
     ).launch {
         while (active) {
             externalEventStream.handleNextRecord { externalEventRecord ->
-                try {
+                val result = runCatching {
                     val externalEvent = payloadToEvent(externalEventRecord.payload, externalEventRecord.eventTitle)
                     handlers[externalEvent::class]?.invoke(externalEvent)
                     true
-                } catch (e: Exception) {
+                }.onFailure { e ->
                     logger.error(
                         "Unexpected exception while handling event in subscriber. Stream: ${externalEventStream.streamName}, event record: $externalEventRecord",
                         e
                     )
-                    false
                 }
+                result.getOrDefault(false)
             }
         }
     }
