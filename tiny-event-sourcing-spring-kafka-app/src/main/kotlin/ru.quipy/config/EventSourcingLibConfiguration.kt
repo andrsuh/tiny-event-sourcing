@@ -31,8 +31,8 @@ class EventSourcingLibConfiguration(
 
     @PostConstruct
     fun initMappers() {
-//        externalEventMapperRegistry.injectEventMappers(listOf(ProjectCreatedToExternalEventMapper()))
-        externalEventMapperRegistry.injectGroupMappers(listOf(TaskAndTagCreatedToExternalEventMapper()))
+//        externalEventMapperRegistry.injectEventMappers(listOf(ProjectCreatedToExternalEventMapper::class))
+        externalEventMapperRegistry.injectGroupMappers(listOf(TaskAndTagCreatedToExternalEventMapper::class))
     }
 
     @PostConstruct

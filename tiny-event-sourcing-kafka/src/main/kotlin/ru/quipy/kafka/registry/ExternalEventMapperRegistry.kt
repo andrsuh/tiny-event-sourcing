@@ -36,65 +36,52 @@ class ExternalEventMapperRegistry(
         mutableMapOf<KClass<out DomainEventsGroup>, DomainGroupToExternalEventsMapper<out DomainEventsGroup>>()
 
     private fun init() {
-        val cfg = ConfigurationBuilder()
-            .addUrls(ClasspathHelper.forPackage(kafkaProperties.scanPublicAPIPackage))
+        val cfg = ConfigurationBuilder().addUrls(ClasspathHelper.forPackage(kafkaProperties.scanPublicAPIPackage))
             .addScanners(Scanners.TypesAnnotated, Scanners.SubTypes, Scanners.MethodsAnnotated)
         val refs = Reflections(cfg)
 
         val externalEventsMappers = refs.getTypesAnnotatedWith(ExternalEventsMapper::class.java)
 
-        externalEventsMappers.forEach { mapper ->
-            val genericType = extractGenericType(mapper)
-            val mapperClass = mapper.kotlin
-            when {
-                mapper.isAssignableFrom(DomainEventToExternalEventsMapper::class.java) -> {
-                    val eventType = genericType as Class<Event<out Aggregate>>
-                    if (oneToManyMappers.containsKey(eventType.kotlin)) {
-                        throw IllegalStateException("Duplicate event ${eventType.simpleName} in mappers")
-                    }
-                    val oneToManyMapper =
-                        mapperClass as KClass<DomainEventToExternalEventsMapper<Event<out Aggregate>>>
-                    oneToManyMappers[eventType.kotlin] =
-                        createMapper<DomainEventToExternalEventsMapper<Event<out Aggregate>>>(oneToManyMapper)
-                    logger.info("Added domain event mapper: ${oneToManyMapper.simpleName} for event: ${eventType.simpleName}")
-                }
-
-                mapper.isAssignableFrom(DomainGroupToExternalEventsMapper::class.java) -> {
-                    val domainGroupType = genericType as Class<DomainEventsGroup>
-                    if (manyToManyMappers.containsKey(domainGroupType.kotlin)) {
-                        throw IllegalStateException("Duplicate domain group: ${domainGroupType.simpleName} in mappers")
-                    }
-                    val manyToManyMapper = mapperClass as KClass<DomainGroupToExternalEventsMapper<DomainEventsGroup>>
-                    manyToManyMappers[domainGroupType.kotlin] =
-                        createMapper<DomainGroupToExternalEventsMapper<DomainEventsGroup>>(manyToManyMapper)
-                    logger.info("Added domain event mapper: ${manyToManyMapper.simpleName} for group: ${domainGroupType.simpleName}")
-                }
+        externalEventsMappers.forEach { mapperClass ->
+            if (DomainEventToExternalEventsMapper::class.java.isAssignableFrom(mapperClass)) {
+                extractEventMapper(mapperClass)
+            } else if (DomainGroupToExternalEventsMapper::class.java.isAssignableFrom(mapperClass)) {
+                extractGroupMapper(mapperClass)
             }
-
         }
     }
 
-    fun injectEventMappers(eventMappers: List<DomainEventToExternalEventsMapper<out Event<out Aggregate>>>) {
+    private fun extractEventMapper(mapperClass: Class<*>) {
+        val eventType = extractGenericType(mapperClass).kotlin as KClass<out Event<out Aggregate>>
+        if (oneToManyMappers.containsKey(eventType)) {
+            throw IllegalStateException("Duplicate event ${eventType.simpleName} in mappers")
+        }
+        val oneToManyMapper = mapperClass.kotlin as KClass<DomainEventToExternalEventsMapper<Event<out Aggregate>>>
+        oneToManyMappers[eventType] =
+            createMapper<DomainEventToExternalEventsMapper<Event<out Aggregate>>>(oneToManyMapper)
+        logger.info("Domain event mapper: ${oneToManyMapper.simpleName} for event: ${eventType.simpleName} registered")
+    }
+
+    private fun extractGroupMapper(mapperClass: Class<*>) {
+        val domainGroupType = extractGenericType(mapperClass).kotlin as KClass<out DomainEventsGroup>
+        if (manyToManyMappers.containsKey(domainGroupType)) {
+            throw IllegalStateException("Duplicate domain group: ${domainGroupType.simpleName} in mappers")
+        }
+        val manyToManyMapper = mapperClass.kotlin as KClass<DomainGroupToExternalEventsMapper<DomainEventsGroup>>
+        manyToManyMappers[domainGroupType] =
+            createMapper<DomainGroupToExternalEventsMapper<DomainEventsGroup>>(manyToManyMapper)
+        logger.info("Domain group mapper: ${manyToManyMapper.simpleName} for group: ${domainGroupType.simpleName} registered")
+    }
+
+    fun injectEventMappers(eventMappers: List<KClass<out DomainEventToExternalEventsMapper<out Event<out Aggregate>>>>) {
         for (mapper in eventMappers) {
-            val eventType = extractEventType(mapper)
-
-            if (oneToManyMappers.containsKey(eventType.kotlin)) {
-                throw IllegalStateException("Duplicate event ${eventType.simpleName} in mappers")
-            }
-
-            oneToManyMappers[eventType.kotlin] = mapper
+            extractEventMapper(mapper.java)
         }
     }
 
-    fun injectGroupMappers(eventMappers: List<DomainGroupToExternalEventsMapper<out DomainEventsGroup>>) {
+    fun injectGroupMappers(eventMappers: List<KClass<out DomainGroupToExternalEventsMapper<out DomainEventsGroup>>>) {
         for (mapper in eventMappers) {
-            val groupType = extractGroupType(mapper)
-
-            if (manyToManyMappers.containsKey(groupType.kotlin)) {
-                throw IllegalStateException("Duplicate group ${groupType.simpleName} in mappers")
-            }
-
-            manyToManyMappers[groupType.kotlin] = mapper
+            extractGroupMapper(mapper.java)
         }
     }
 
@@ -107,34 +94,12 @@ class ExternalEventMapperRegistry(
     }
 
     private inline fun <reified T : Any> extractGenericType(mapper: Class<out T>): Class<*> {
-        val interfaces = mapper::class.java.genericInterfaces
+        val interfaces = mapper.genericInterfaces
         if (interfaces.isNotEmpty() && interfaces[0] is ParameterizedType) {
             val genericInterface = interfaces[0] as ParameterizedType
             val genericType = genericInterface.actualTypeArguments[0]
 
             return genericType as Class<*>
-        }
-        throw IllegalArgumentException("Could not extract event type from mapper: ${mapper::class.qualifiedName}")
-    }
-
-    private fun extractEventType(mapper: DomainEventToExternalEventsMapper<out Event<out Aggregate>>): Class<out Event<out Aggregate>> {
-        val interfaces = mapper::class.java.genericInterfaces
-        if (interfaces.isNotEmpty() && interfaces[0] is ParameterizedType) {
-            val genericInterface = interfaces[0] as ParameterizedType
-            val genericType = genericInterface.actualTypeArguments[0]
-
-            return genericType as Class<out Event<out Aggregate>>
-        }
-        throw IllegalArgumentException("Could not extract event type from mapper: ${mapper::class.qualifiedName}")
-    }
-
-    private fun extractGroupType(mapper: DomainGroupToExternalEventsMapper<out DomainEventsGroup>): Class<out DomainEventsGroup> {
-        val interfaces = mapper::class.java.genericInterfaces
-        if (interfaces.isNotEmpty() && interfaces[0] is ParameterizedType) {
-            val genericInterface = interfaces[0] as ParameterizedType
-            val genericType = genericInterface.actualTypeArguments[0]
-
-            return genericType as Class<out DomainEventsGroup>
         }
         throw IllegalArgumentException("Could not extract event type from mapper: ${mapper::class.qualifiedName}")
     }
