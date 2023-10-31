@@ -1,24 +1,16 @@
 package jp.veka.query.insert
 
+import jp.veka.query.BasicQuery
+import jp.veka.query.exception.InvalidQueryStateException
 import java.sql.Connection
 
-class OnDuplicateKeyUpdateInsertQuery
-    (schema: String, relation: String)
-    : InsertQuery(schema, relation
-) {
+class OnDuplicateKeyUpdateInsertQuery(schema: String, relation: String)
+    : BasicQuery<OnDuplicateKeyUpdateInsertQuery>(schema, relation) {
     private val duplicateKeyUpdateColumns: MutableList<String> = ArrayList()
     fun onDuplicateKeyUpdateValues(vararg columns: String) : OnDuplicateKeyUpdateInsertQuery {
         for (column in columns) {
             duplicateKeyUpdateColumns.add(column)
         }
-        return this
-    }
-    override fun withValues(vararg values: Any): OnDuplicateKeyUpdateInsertQuery {
-        super.withValues(*values)
-        return this
-    }
-    override fun withColumns(vararg columns: String): OnDuplicateKeyUpdateInsertQuery {
-        super.withColumns(*columns)
         return this
     }
     override fun execute(connection: Connection) : Boolean {
@@ -31,5 +23,14 @@ class OnDuplicateKeyUpdateInsertQuery
             columns.joinToString(",") { "?" },
             duplicateKeyUpdateColumns.joinToString(",") { "${it}=values(${it})" }))
             .execute()
+    }
+
+    override fun validate() {
+        super.validate()
+        val unknownColumns = duplicateKeyUpdateColumns.filter { !columns.contains(it) }
+        if (unknownColumns.isNotEmpty()) {
+            throw InvalidQueryStateException(
+                "Unknown columns for updating on duplicated key: [${unknownColumns.joinToString { ", " }}]")
+        }
     }
 }
