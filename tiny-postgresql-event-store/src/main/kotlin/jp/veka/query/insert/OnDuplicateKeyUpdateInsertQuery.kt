@@ -6,7 +6,7 @@ import java.sql.Connection
 
 class OnDuplicateKeyUpdateInsertQuery(schema: String, relation: String)
     : BasicQuery<OnDuplicateKeyUpdateInsertQuery>(schema, relation) {
-    private val duplicateKeyUpdateColumns: MutableList<String> = ArrayList()
+    private val duplicateKeyUpdateColumns: MutableList<String> = mutableListOf()
     fun onDuplicateKeyUpdateValues(vararg columns: String) : OnDuplicateKeyUpdateInsertQuery {
         for (column in columns) {
             duplicateKeyUpdateColumns.add(column)
@@ -14,14 +14,10 @@ class OnDuplicateKeyUpdateInsertQuery(schema: String, relation: String)
         return this
     }
     override fun execute(connection: Connection) : Boolean {
-        return connection.prepareStatement(String.format(
-            "insert into %s.%s (%s) values (%s)" +
+        return connection.prepareStatement(
+            "insert into ${schema}.${relation} (${columns.joinToString(",")}) values (${ values.joinToString(",")})" +
                 "on duplicate key update" +
-                "set %s",
-            schema, relation,
-            columns.joinToString(","),
-            columns.joinToString(",") { "?" },
-            duplicateKeyUpdateColumns.joinToString(",") { "${it}=values(${it})" }))
+                "set ${ duplicateKeyUpdateColumns.joinToString(",") { "${it}=values(${it})" }}")
             .execute()
     }
 
