@@ -1,7 +1,6 @@
 package jp.veka.query.insert
 
 import jp.veka.query.BasicQuery
-import java.lang.Exception
 import java.sql.Connection
 import java.sql.PreparedStatement
 

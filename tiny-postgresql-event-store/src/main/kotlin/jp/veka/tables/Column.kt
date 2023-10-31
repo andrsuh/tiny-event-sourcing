@@ -1,11 +1,13 @@
 package jp.veka.tables
 
-class Column<T> {
+import kotlin.reflect.KClass
+
+class Column<T: Any> {
     val index: Int
     val name: String
-    val type: Class<T>
+    val type: KClass<T>
 
-    constructor(index: Int, name: String, type: Class<T>) {
+    constructor(index: Int, name: String, type: KClass<T>) {
         this.index = index
         this.name = name
         this.type = type

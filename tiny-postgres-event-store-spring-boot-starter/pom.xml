@@ -1,32 +1,77 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>tiny-postgresql-event-store</artifactId>
-    <name>tiny-postgresql-event-store</name>
-    <groupId>jp.veka</groupId>
+    <artifactId>tiny-postgres-event-store-spring-boot-starter</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <name>tiny-postgres-event-store-spring-boot-starter</name>
+    <description>tiny-postgres-event-store-spring-boot-starter</description>
+    <groupId>jp.veka</groupId>
 
     <properties>
         <java.version>11</java.version>
+        <spring.boot.version>3.1.0</spring.boot.version>
         <kotlin.version>1.6.21</kotlin.version>
         <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
-        <jackson-module-kotlin.version>2.14.2</jackson-module-kotlin.version>
         <tiny-event-sourcing-lib.version>2.3.0-SNAPSHOT</tiny-event-sourcing-lib.version>
+        <tiny-event-sourcing-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-event-sourcing-spring-boot-starter.version>
+        <tiny-postgres-event-store.version>0.0.1-SNAPSHOT</tiny-postgres-event-store.version>
     </properties>
-
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring.boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>ru.quipy</groupId>
             <artifactId>tiny-event-sourcing-lib</artifactId>
             <version>${tiny-event-sourcing-lib.version}</version>
         </dependency>
+        <dependency>
+            <groupId>jp.veka</groupId>
+            <artifactId>tiny-postgresql-event-store</artifactId>
+            <version>${tiny-postgres-event-store.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+            <version>${spring.boot.version}</version>
+        </dependency>
 
         <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>42.5.4</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-kotlin</artifactId>
+            <version>2.14.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>de.flapdoodle.embed</groupId>
+            <artifactId>de.flapdoodle.embed.mongo</artifactId>
+            <version>4.6.3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ru.quipy</groupId>
+            <artifactId>tiny-event-sourcing-spring-boot-starter</artifactId>
+            <version>${tiny-event-sourcing-spring-boot-starter.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -49,6 +94,7 @@
 
     <build>
         <sourceDirectory>src/main/kotlin</sourceDirectory>
+        <testSourceDirectory>src/test/kotlin</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
@@ -62,6 +108,13 @@
                             <goal>compile</goal>
                         </goals>
                     </execution>
+                    <execution>
+                        <id>test-compile</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>test-compile</goal>
+                        </goals>
+                    </execution>
                 </executions>
                 <configuration>
                     <args>
@@ -70,6 +123,7 @@
                     <compilerPlugins>
                         <plugin>spring</plugin>
                     </compilerPlugins>
+                    <jvmTarget>1.8</jvmTarget>
                 </configuration>
                 <dependencies>
                     <dependency>
@@ -81,7 +135,6 @@
             </plugin>
         </plugins>
     </build>
-
     <profiles>
         <profile>
             <id>release</id>

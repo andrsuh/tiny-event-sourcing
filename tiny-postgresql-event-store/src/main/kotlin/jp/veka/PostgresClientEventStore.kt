@@ -5,8 +5,8 @@ import jp.veka.converter.ResultSetToEntityMapper
 import jp.veka.exception.UnknownEntityException
 import jp.veka.executor.ExceptionLoggingSqlQueriesExecutor
 import jp.veka.factory.PostgresConnectionFactory
-import jp.veka.query.QueryBuilder
 import jp.veka.query.Query
+import jp.veka.query.QueryBuilder
 import jp.veka.query.select.SelectQuery
 import jp.veka.tables.ActiveEventStreamReaderDto
 import jp.veka.tables.EventRecordDto
@@ -26,14 +26,14 @@ import ru.quipy.domain.Snapshot
 import java.sql.ResultSet
 import kotlin.reflect.KClass
 
-class PostgresEventStore(
+class PostgresClientEventStore(
     private val databaseConnectionFactory: PostgresConnectionFactory,
     private val eventStoreSchema: String = "event_sourcing_store",
 ) : EventStore {
     private val resultSetToEntityMapper: ResultSetToEntityMapper = ResultSetToEntityMapper(JsonEntityConverter())
     private val executor: ExceptionLoggingSqlQueriesExecutor = ExceptionLoggingSqlQueriesExecutor(logger)
     companion object {
-        val logger: Logger = LoggerFactory.getLogger(PostgresEventStore::class.java)
+        val logger: Logger = LoggerFactory.getLogger(PostgresClientEventStore::class.java)
     }
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
         executeQuery(
@@ -94,22 +94,22 @@ class PostgresEventStore(
     }
 
     override fun tryUpdateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader): Boolean {
-        return executor.executeReturningBoolean {
+        return executeQueryReturningBoolean (
             QueryBuilder.insertOrUpdateQuery(eventStoreSchema, EventStreamActiveReadersTable.name, ActiveEventStreamReaderDto(updatedActiveReader))
-        }
+        )
     }
 
     override fun tryReplaceActiveStreamReader(
         expectedVersion: Long,
         newActiveReader: ActiveEventStreamReader
     ): Boolean {
-       return executor.executeReturningBoolean {
+       return executeQueryReturningBoolean (
            QueryBuilder.insertOrUpdateQuery(eventStoreSchema, EventStreamActiveReadersTable.name, ActiveEventStreamReaderDto(newActiveReader))
-       }
+       )
     }
 
     override fun commitStreamReadIndex(readIndex: EventStreamReadIndex): Boolean {
-        return executor.executeReturningBoolean{
+        return executor.executeReturningBoolean {
             QueryBuilder.insertOrUpdateQuery(eventStoreSchema, EventStreamReadIndexTable.name, EventStreamReadIndexDto(readIndex))
         }
     }
