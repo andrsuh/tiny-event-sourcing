@@ -1,14 +1,10 @@
 package jp.veka.executor
 
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.sql.ResultSet
 import java.sql.SQLException
 
-class ExceptionLoggingSqlQueriesExecutor {
-    companion object {
-        val logger: Logger = LoggerFactory.getLogger(ExceptionLoggingSqlQueriesExecutor::class.java)
-    }
+class ExceptionLoggingSqlQueriesExecutor(private val logger: Logger) {
     fun <T> executeReturningBoolean(action: () -> T): Boolean {
         return try {
             action()

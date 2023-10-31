@@ -1,15 +1,7 @@
 package jp.veka.tables
 
 import ru.quipy.saga.SagaContext
-
-interface Table {
-    fun name(): String
-    fun idColumnName(): String
-    fun versionColumnName(): String
-    fun columnNames(): Array<String>
-    fun onDuplicateKeyUpdateFields(): Array<String>
-}
-class EventRecordTable: Table {
+class EventRecordTable {
     companion object {
         const val name = "event_record"
         val id = Column(1, "id", String::class.java)
@@ -31,29 +23,9 @@ class EventRecordTable: Table {
                 createdAt.name)
         }
     }
-
-    override fun idColumnName(): String {
-        return id.name
-    }
-
-    override fun versionColumnName(): String {
-        return aggregateVersion.name
-    }
-
-    override fun name(): String {
-        return name
-    }
-
-    override fun columnNames(): Array<String> {
-        return columnNames()
-    }
-
-    override fun onDuplicateKeyUpdateFields(): Array<String> {
-        return arrayOf()
-    }
 }
 
-class SnapshotTable: Table {
+class SnapshotTable {
     companion object {
         const val name = "snapshot"
         val id = Column(1, "id", String::class.java)
@@ -74,27 +46,9 @@ class SnapshotTable: Table {
             return arrayOf(snapshot.name, version.name)
         }
     }
-    override fun idColumnName(): String {
-        return id.name
-    }
-
-    override fun versionColumnName(): String {
-        return version.name
-    }
-
-    override fun name(): String {
-        return name
-    }
-    override fun columnNames(): Array<String> {
-        return columnNames()
-    }
-
-    override fun onDuplicateKeyUpdateFields(): Array<String> {
-        return arrayOf(snapshot.name, version.name)
-    }
 }
 
-class EventStreamReadIndexTable: Table {
+class EventStreamReadIndexTable {
     companion object {
         const val name = "event_stream_active_readers"
         val id = Column(1, "id", String::class.java)
@@ -108,29 +62,16 @@ class EventStreamReadIndexTable: Table {
                 version.name
             )
         }
-    }
-    override fun versionColumnName(): String {
-        return version.name
-    }
-    override fun idColumnName(): String {
-        return id.name
-    }
-    override fun name(): String {
-        return EventRecordTable.name
-    }
-    override fun columnNames(): Array<String> {
-        return columnNames()
-    }
-
-    override fun onDuplicateKeyUpdateFields(): Array<String> {
-        return arrayOf(
-            readIndex.name,
-            version.name
-        )
+        fun onDuplicateKeyUpdateFields(): Array<String> {
+            return arrayOf(
+                readIndex.name,
+                version.name
+            )
+        }
     }
 }
 
-class EventStreamActiveReadersTable: Table {
+class EventStreamActiveReadersTable {
     companion object {
         const val name = "event_stream_read_index"
         val id = Column(1, "id", String::class.java)
@@ -148,26 +89,13 @@ class EventStreamActiveReadersTable: Table {
                 lastInteraction.name
             )
         }
-    }
-    override fun idColumnName(): String {
-        return id.name
-    }
-    override fun versionColumnName(): String {
-        return version.name
-    }
-    override fun name(): String {
-        return name
-    }
-    override fun columnNames(): Array<String> {
-        return columnNames()
-    }
-
-    override fun onDuplicateKeyUpdateFields(): Array<String> {
-        return arrayOf(
-            version.name,
-            readerId.name,
-            readPosition.name,
-            lastInteraction.name
-        )
+        fun onDuplicateKeyUpdateFields(): Array<String> {
+            return arrayOf(
+                version.name,
+                readerId.name,
+                readPosition.name,
+                lastInteraction.name
+            )
+        }
     }
 }
