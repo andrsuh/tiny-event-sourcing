@@ -1,10 +1,9 @@
 package jp.veka
 
-import jp.veka.converter.JsonEntityConverter
 import jp.veka.converter.ResultSetToEntityMapper
-import jp.veka.exception.UnknownEntityException
-import jp.veka.executor.ExceptionLoggingSqlQueriesExecutor
-import jp.veka.factory.PostgresConnectionFactory
+import jp.veka.db.factory.ConnectionFactory
+import jp.veka.exception.UnknownEntityClassException
+import jp.veka.executor.Executor
 import jp.veka.query.Query
 import jp.veka.query.QueryBuilder
 import jp.veka.query.select.SelectQuery
@@ -27,23 +26,23 @@ import java.sql.ResultSet
 import kotlin.reflect.KClass
 
 class PostgresClientEventStore(
-    private val databaseConnectionFactory: PostgresConnectionFactory,
-    private val eventStoreSchema: String = "event_sourcing_store",
+    private val databaseConnectionFactory: ConnectionFactory,
+    private val eventStoreSchemaName: String,
+    private val resultSetToEntityMapper: ResultSetToEntityMapper,
+    private val executor: Executor
 ) : EventStore {
-    private val resultSetToEntityMapper: ResultSetToEntityMapper = ResultSetToEntityMapper(JsonEntityConverter())
-    private val executor: ExceptionLoggingSqlQueriesExecutor = ExceptionLoggingSqlQueriesExecutor(logger)
     companion object {
         val logger: Logger = LoggerFactory.getLogger(PostgresClientEventStore::class.java)
     }
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
         executeQuery(
-            QueryBuilder.insert(eventStoreSchema, EventRecordTable.name, EventRecordDto(eventRecord, aggregateTableName))
+            QueryBuilder.insert(eventStoreSchemaName, EventRecordTable.name, EventRecordDto(eventRecord, aggregateTableName))
         )
     }
 
     override fun insertEventRecords(aggregateTableName: String, eventRecords: List<EventRecord>) {
         executeQuery(
-            QueryBuilder.batchInsert(eventStoreSchema, EventRecordTable.name, eventRecords.map { EventRecordDto(it, aggregateTableName) })
+            QueryBuilder.batchInsert(eventStoreSchemaName, EventRecordTable.name, eventRecords.map { EventRecordDto(it, aggregateTableName) })
         )
     }
 
@@ -53,7 +52,7 @@ class PostgresClientEventStore(
 
     override fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot) {
         executeQuery(
-            QueryBuilder.insertOrUpdateQuery(eventStoreSchema, SnapshotTable.name, SnapshotDto(snapshot, tableName))
+            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, SnapshotTable.name, SnapshotDto(snapshot, tableName))
         )
     }
 
@@ -62,9 +61,9 @@ class PostgresClientEventStore(
         aggregateId: Any,
         aggregateVersion: Long
     ): List<EventRecord> {
-        val query = QueryBuilder.select(eventStoreSchema, EventRecordTable.name)
-            .andWhere("${EventRecordTable.aggregateId.name} = $aggregateId")
-            .andWhere("${EventRecordTable.aggregateTableName.name} = $aggregateTableName")
+        val query = QueryBuilder.select(eventStoreSchemaName, EventRecordTable.name)
+            .andWhere("${EventRecordTable.aggregateId.name} = '$aggregateId'")
+            .andWhere("${EventRecordTable.aggregateTableName.name} = '$aggregateTableName'")
             .andWhere("${EventRecordTable.aggregateVersion.name} > $aggregateVersion")
         val result = executeQueryReturningResultSet(query)
         return resultSetToEntityMapper.convertMany(result, EventRecord::class)
@@ -75,9 +74,10 @@ class PostgresClientEventStore(
         eventSequenceNum: Long,
         batchSize: Int
     ): List<EventRecord> {
-        val query = QueryBuilder.select(eventStoreSchema, EventRecordTable.name)
-            .andWhere("${EventRecordTable.aggregateTableName.name} = $aggregateTableName")
-            .andWhere("${EventRecordTable.createdAt.name} > $eventSequenceNum")
+        val query = QueryBuilder.select(eventStoreSchemaName, EventRecordTable.name)
+            .andWhere("${EventRecordTable.aggregateTableName.name} = '$aggregateTableName'")
+            .andWhere("${EventRecordTable.createdAt.name} > $eventSequenceNum") // id > $eventSequenceNum ??
+            .limit(batchSize)
         val result = executeQueryReturningResultSet(query)
         return resultSetToEntityMapper.convertMany(result, EventRecord::class)
     }
@@ -95,7 +95,7 @@ class PostgresClientEventStore(
 
     override fun tryUpdateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader): Boolean {
         return executeQueryReturningBoolean (
-            QueryBuilder.insertOrUpdateQuery(eventStoreSchema, EventStreamActiveReadersTable.name, ActiveEventStreamReaderDto(updatedActiveReader))
+            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, EventStreamActiveReadersTable.name, ActiveEventStreamReaderDto(updatedActiveReader))
         )
     }
 
@@ -104,26 +104,27 @@ class PostgresClientEventStore(
         newActiveReader: ActiveEventStreamReader
     ): Boolean {
        return executeQueryReturningBoolean (
-           QueryBuilder.insertOrUpdateQuery(eventStoreSchema, EventStreamActiveReadersTable.name, ActiveEventStreamReaderDto(newActiveReader))
+           QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, EventStreamActiveReadersTable.name, ActiveEventStreamReaderDto(newActiveReader))
+               .andWhere("${EventStreamActiveReadersTable.name}.${EventStreamActiveReadersTable.version.name} = $expectedVersion")
        )
     }
 
     override fun commitStreamReadIndex(readIndex: EventStreamReadIndex): Boolean {
-        return executor.executeReturningBoolean {
-            QueryBuilder.insertOrUpdateQuery(eventStoreSchema, EventStreamReadIndexTable.name, EventStreamReadIndexDto(readIndex))
-        }
+        return executeQueryReturningBoolean(
+            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, EventStreamReadIndexTable.name, EventStreamReadIndexDto(readIndex))
+        )
     }
 
     private fun <T: Any> findEntityById(id: Any, clazz: KClass<T>) : T? {
-        val (tableName, tableColumns) = when(clazz) {
-            EventRecord::class -> EventRecordTable.name to EventRecordTable.columnNames()
-            Snapshot::class -> SnapshotTable.name to SnapshotTable.columnNames()
-            EventStreamReadIndex::class -> EventStreamReadIndexTable.name to EventStreamReadIndexTable.columnNames()
-            EventStreamActiveReadersTable::class -> EventStreamActiveReadersTable.name to EventStreamActiveReadersTable.columnNames()
-            else -> throw UnknownEntityException(clazz.simpleName)
+        val (tableName, tableIdColumnName) = when(clazz) {
+            EventRecord::class -> EventRecordTable.name to EventRecordTable.id.name
+            Snapshot::class -> SnapshotTable.name to SnapshotTable.id.name
+            EventStreamReadIndex::class -> EventStreamReadIndexTable.name to EventStreamReadIndexTable.id.name
+            ActiveEventStreamReader::class -> EventStreamActiveReadersTable.name to EventStreamActiveReadersTable.id.name
+            else -> throw UnknownEntityClassException(clazz.simpleName)
         }
-        val query = QueryBuilder.select(eventStoreSchema, tableName)
-            .andWhere("$tableColumns = $id")
+        val query = QueryBuilder.select(eventStoreSchemaName, tableName)
+            .andWhere("$tableIdColumnName = '$id'")
             .limit(1)
 
         val result = executeQueryReturningResultSet(query)

@@ -4,8 +4,8 @@ import org.slf4j.Logger
 import java.sql.ResultSet
 import java.sql.SQLException
 
-class ExceptionLoggingSqlQueriesExecutor(private val logger: Logger) {
-    fun <T> executeReturningBoolean(action: () -> T): Boolean {
+class ExceptionLoggingSqlQueriesExecutor(private val logger: Logger) : Executor {
+    override fun <T> executeReturningBoolean(action: () -> T): Boolean {
         return try {
             action()
             true
@@ -15,7 +15,7 @@ class ExceptionLoggingSqlQueriesExecutor(private val logger: Logger) {
         }
     }
 
-    fun <T> execute(action: () -> T) {
+    override fun <T> execute(action: () -> T) {
         try {
             action()
         } catch (ex: SQLException) {
@@ -23,7 +23,7 @@ class ExceptionLoggingSqlQueriesExecutor(private val logger: Logger) {
         }
     }
 
-    fun executeReturningResultSet(action: () -> ResultSet): ResultSet? {
+    override fun executeReturningResultSet(action: () -> ResultSet): ResultSet? {
         return try {
             action()
         } catch (ex: SQLException) {

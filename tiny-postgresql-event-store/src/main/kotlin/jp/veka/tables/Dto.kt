@@ -12,7 +12,6 @@ interface Dto {
     fun values() : Array<Any>
 }
 class EventRecordDto(
-    val id: String,
     val aggregateTableName: String,
     val aggregateId: String,
     val aggregateVersion: Long,
@@ -22,8 +21,7 @@ class EventRecordDto(
     val createdAt: Long = System.currentTimeMillis()
 ) : Dto {
     constructor(eventRecord: EventRecord, aggregateTableName: String)
-    : this(eventRecord.id,
-        aggregateTableName,
+    : this(aggregateTableName,
         eventRecord.aggregateId.toString(),
         eventRecord.aggregateVersion,
         eventRecord.eventTitle,
@@ -33,7 +31,7 @@ class EventRecordDto(
 
     override fun values(): Array<Any> {
         return arrayOf(
-            id, aggregateTableName, aggregateId, aggregateVersion, eventTitle, payload, sagaContext, createdAt
+            aggregateTableName, aggregateId, aggregateVersion, eventTitle, payload, sagaContext, createdAt
         )
     }
 }
