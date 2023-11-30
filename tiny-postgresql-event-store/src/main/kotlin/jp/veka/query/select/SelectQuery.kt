@@ -13,11 +13,25 @@ class SelectQuery(schema: String, relation: String) : BasicQuery<SelectQuery>(sc
         return this
     }
 
+    override fun getTemplateSql(): String {
+        var columnsStr = "*"
+        if (columns.isNotEmpty()) {
+            columnsStr = columns.joinToString()
+        }
+        var sql = String.format("select $columnsStr from ${schema}.${relation}")
+        if (conditions.isNotEmpty()) {
+            sql += " where ${conditions.joinToString( " and " )}"
+        }
+        if (limit > 0) sql = "$sql limit $limit"
+        return sql
+    }
+
     override fun execute(connection: Connection) : ResultSet {
         validate()
-        var sql = String.format("select * from ${schema}.${relation} where %s",
-            conditions.joinToString { " and " })
-        if (limit > 0) sql = "$sql limit $limit"
-        return connection.createStatement().executeQuery(sql)
+        return connection.prepareStatement(getTemplateSql()).executeQuery()
+    }
+
+    override fun withValues(vararg values: Any): SelectQuery {
+        throw UnsupportedOperationException()
     }
 }

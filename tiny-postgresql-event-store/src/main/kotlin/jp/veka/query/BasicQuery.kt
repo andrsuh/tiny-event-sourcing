@@ -1,6 +1,7 @@
 package jp.veka.query
 
 import jp.veka.query.exception.InvalidQueryStateException
+import java.sql.PreparedStatement
 
 abstract class BasicQuery<T: Query>(protected val schema: String, protected val relation: String) : Query {
     protected val columns: MutableList<String> = mutableListOf()
@@ -34,7 +35,22 @@ abstract class BasicQuery<T: Query>(protected val schema: String, protected val 
     protected open fun validate() {
         if (columns.size != values.size)
             throw InvalidQueryStateException("Columns size doesn't match values size" +
-                "\ncolumns[${columns.joinToString { ", " }}]" +
-                "\nvalues[${values.joinToString { ", " }}]")
+                "\ncolumns[${columns.joinToString(", " )}]" +
+                "\nvalues[${values.joinToString(", " )}]")
+    }
+    protected open fun insertValuesInPreparedStatement(ps: PreparedStatement) {
+        validate()
+        for ((i, value) in values.withIndex()) {
+            insertValueInPreparedStatement(i + 1, value, ps)
+        }
+    }
+    internal abstract fun getTemplateSql() : String
+
+    protected fun insertValueInPreparedStatement(index: Int, value: Any, ps: PreparedStatement) {
+        when (value) {
+            is Long -> ps.setLong(index, value)
+            is String -> ps.setString(index, value)
+            else -> throw Exception("Unknown type")
+        }
     }
 }

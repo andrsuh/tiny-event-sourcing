@@ -11,21 +11,25 @@ class UpdateQuery(schema: String, relation: String) : BasicQuery<UpdateQuery>(sc
         columnValueMap[column] = value
         return this
     }
-    override fun execute(connection: Connection): ResultSet {
-        validate()
+
+    override fun getTemplateSql(): String {
         var sql  = String.format(
             "update %s.%s set %s where %s",
             schema,
             relation,
-            columnValueMap.map { "${it.key} = ${it.value}" }.joinToString { "," },
-            conditions.joinToString { " and " }
+            columnValueMap.map { "${it.key} = ?" }.joinToString { ", " },
+            conditions.joinToString(" and ")
         )
 
         if (returnEntity) {
             sql = "$sql returning *"
         }
-
-        return connection.prepareStatement(sql)
-            .executeQuery()
+        return sql
+    }
+    override fun execute(connection: Connection): ResultSet {
+        validate()
+        var ps = connection.prepareStatement(getTemplateSql())
+        insertValuesInPreparedStatement(ps)
+        return ps.executeQuery()
     }
 }
