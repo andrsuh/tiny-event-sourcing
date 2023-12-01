@@ -32,4 +32,19 @@ class UpdateQuery(schema: String, relation: String) : BasicQuery<UpdateQuery>(sc
         insertValuesInPreparedStatement(ps)
         return ps.executeQuery()
     }
+
+    override fun build(): String {
+        var sql  = String.format(
+            "update %s.%s set %s where %s",
+            schema,
+            relation,
+            columnValueMap.map { "${it.key} = ${convertValueToString(it.value)}" }.joinToString(),
+            conditions.joinToString(" and ")
+        )
+
+        if (returnEntity) {
+            sql = "$sql returning *"
+        }
+        return sql
+    }
 }

@@ -53,4 +53,12 @@ abstract class BasicQuery<T: Query>(protected val schema: String, protected val 
             else -> throw Exception("Unknown type")
         }
     }
+
+    protected fun convertValueToString(value: Any) : String {
+        return when (value) {
+            is Long -> value.toString()
+            is String -> "'$value'"
+            else -> throw Exception("Unknown type")
+        }
+    }
 }
