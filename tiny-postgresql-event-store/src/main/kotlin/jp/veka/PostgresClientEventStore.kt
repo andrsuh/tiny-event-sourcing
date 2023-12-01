@@ -1,7 +1,6 @@
 package jp.veka
 
 import jp.veka.converter.ResultSetToEntityMapper
-import jp.veka.exception.UnknownEntityClassException
 import jp.veka.executor.QueryExecutor
 import jp.veka.query.QueryBuilder
 import jp.veka.tables.ActiveEventStreamReaderDto
@@ -9,9 +8,7 @@ import jp.veka.tables.EventRecordDto
 import jp.veka.tables.EventRecordTable
 import jp.veka.tables.EventStreamActiveReadersTable
 import jp.veka.tables.EventStreamReadIndexDto
-import jp.veka.tables.EventStreamReadIndexTable
 import jp.veka.tables.SnapshotDto
-import jp.veka.tables.SnapshotTable
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import ru.quipy.database.EventStore
@@ -31,7 +28,7 @@ class PostgresClientEventStore(
     }
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
         executor.execute(
-            QueryBuilder.insert(eventStoreSchemaName, EventRecordTable.name, EventRecordDto(eventRecord, aggregateTableName))
+            QueryBuilder.insert(eventStoreSchemaName, EventRecordDto(eventRecord, aggregateTableName))
         )
     }
 
@@ -47,7 +44,7 @@ class PostgresClientEventStore(
 
     override fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot) {
         executor.execute(
-            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, SnapshotTable.name, SnapshotDto(snapshot, tableName))
+            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, SnapshotDto(snapshot, tableName))
         )
     }
 
@@ -90,7 +87,7 @@ class PostgresClientEventStore(
 
     override fun tryUpdateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader): Boolean {
         return executor.executeReturningBoolean(
-            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, EventStreamActiveReadersTable.name, ActiveEventStreamReaderDto(updatedActiveReader))
+            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, ActiveEventStreamReaderDto(updatedActiveReader))
         )
     }
 
@@ -99,29 +96,19 @@ class PostgresClientEventStore(
         newActiveReader: ActiveEventStreamReader
     ): Boolean {
        return executor.executeReturningBoolean(
-           QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, EventStreamActiveReadersTable.name, ActiveEventStreamReaderDto(newActiveReader))
+           QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, ActiveEventStreamReaderDto(newActiveReader))
                .andWhere("${EventStreamActiveReadersTable.name}.${EventStreamActiveReadersTable.version.name} = $expectedVersion")
        )
     }
 
     override fun commitStreamReadIndex(readIndex: EventStreamReadIndex): Boolean {
         return executor.executeReturningBoolean(
-            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, EventStreamReadIndexTable.name, EventStreamReadIndexDto(readIndex))
+            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, EventStreamReadIndexDto(readIndex))
         )
     }
 
     private fun <T: Any> findEntityById(id: Any, clazz: KClass<T>) : T? {
-        val (tableName, tableIdColumnName) = when(clazz) {
-            EventRecord::class -> EventRecordTable.name to EventRecordTable.id.name
-            Snapshot::class -> SnapshotTable.name to SnapshotTable.id.name
-            EventStreamReadIndex::class -> EventStreamReadIndexTable.name to EventStreamReadIndexTable.id.name
-            ActiveEventStreamReader::class -> EventStreamActiveReadersTable.name to EventStreamActiveReadersTable.id.name
-            else -> throw UnknownEntityClassException(clazz.simpleName)
-        }
-        val query = QueryBuilder.select(eventStoreSchemaName, tableName)
-            .andWhere("$tableIdColumnName = '$id'")
-            .limit(1)
-
+        var query = QueryBuilder.findEntityByIdQuery(eventStoreSchemaName, id, clazz)
         val result = executor.executeReturningResultSet(query)
         return resultSetToEntityMapper.convert(result, clazz)
     }

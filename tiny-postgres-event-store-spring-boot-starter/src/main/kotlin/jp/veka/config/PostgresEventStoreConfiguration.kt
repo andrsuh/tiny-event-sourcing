@@ -11,6 +11,8 @@ import jp.veka.db.factory.ConnectionFactory
 import jp.veka.db.factory.ConnectionFactoryImpl
 import jp.veka.executor.ExceptionLoggingSqlQueriesExecutor
 import jp.veka.executor.QueryExecutor
+import jp.veka.mappers.MapperFactory
+import jp.veka.mappers.MapperFactoryImpl
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -19,6 +21,8 @@ import org.springframework.jdbc.core.JdbcTemplate
 
 @Configuration
 class PostgresEventStoreConfiguration {
+    @Value("\${schema:event_sourcing_store}")
+    private lateinit var schema: String
     @Bean
     fun connectionFactory(datasourceProvider: DataSourceProvider) : ConnectionFactory {
         return ConnectionFactoryImpl(datasourceProvider)
@@ -44,15 +48,19 @@ class PostgresEventStoreConfiguration {
     }
     @Bean("postgresClientEventStore")
     fun postgresClientEventStore(
-        @Value("\${schema:event_sourcing_store}") schema: String,
         @Qualifier("resultSetToEntityMapper") resultSetToEntityMapper: ResultSetToEntityMapper,
         @Qualifier("exceptionLoggingSqlQueriesExecutor") executor: QueryExecutor
     ) : PostgresClientEventStore {
         return PostgresClientEventStore(schema, resultSetToEntityMapper, executor)
     }
 
+    @Bean
+    fun mapperFactory(resultSetToEntityMapper: ResultSetToEntityMapper) : MapperFactory {
+        return MapperFactoryImpl(resultSetToEntityMapper)
+    }
     @Bean("postgresTemplateEventStore")
     fun postgresTemplateEventStore(
-        jdbcTemplate: JdbcTemplate
-    ): PostgresTemplateEventStore = PostgresTemplateEventStore(jdbcTemplate)
+        jdbcTemplate: JdbcTemplate,
+        mapperFactory: MapperFactory
+    ): PostgresTemplateEventStore = PostgresTemplateEventStore(jdbcTemplate, schema, mapperFactory)
 }
