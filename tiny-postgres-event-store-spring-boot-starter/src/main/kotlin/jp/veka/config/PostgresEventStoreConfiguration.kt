@@ -42,7 +42,7 @@ class PostgresEventStoreConfiguration {
     @Bean("exceptionLoggingSqlQueriesExecutor")
     fun executor(
         databaseFactory: ConnectionFactory,
-        @Value("\${batchInsertSize:1000}") batchInsertSize: Long
+        @Value("\${batchInsertSize:1000}") batchInsertSize: Int
     ) : QueryExecutor {
         return ExceptionLoggingSqlQueriesExecutor(databaseFactory, batchInsertSize, PostgresClientEventStore.logger)
     }
@@ -61,6 +61,7 @@ class PostgresEventStoreConfiguration {
     @Bean("postgresTemplateEventStore")
     fun postgresTemplateEventStore(
         jdbcTemplate: JdbcTemplate,
-        mapperFactory: MapperFactory
-    ): PostgresTemplateEventStore = PostgresTemplateEventStore(jdbcTemplate, schema, mapperFactory)
+        mapperFactory: MapperFactory,
+        entityConverter: EntityConverter
+    ): PostgresTemplateEventStore = PostgresTemplateEventStore(jdbcTemplate, schema, mapperFactory, entityConverter)
 }

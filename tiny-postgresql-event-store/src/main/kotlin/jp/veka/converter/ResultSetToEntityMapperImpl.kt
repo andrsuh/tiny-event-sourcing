@@ -15,9 +15,9 @@ import kotlin.reflect.KClass
 
 @Suppress("UNCHECKED_CAST")
 class ResultSetToEntityMapperImpl(private val entityConverter: EntityConverter) : ResultSetToEntityMapper {
-    override fun <T : Any> convert(resultSet: ResultSet?, clazz: KClass<T>) : T? {
+    override fun <T : Any> convert(resultSet: ResultSet?, clazz: KClass<T>, scroll: Boolean) : T? {
         resultSet ?: return null
-        if (!resultSet.next()) return null
+        if (scroll && !resultSet.next()) return null
         return when(clazz) {
             EventRecord::class -> mapToEventRecord(resultSet)
             Snapshot::class -> mapToSnapshot(resultSet)

@@ -16,6 +16,14 @@ class BatchInsertQuery(schema: String, relation: String, private val batchSize: 
         return this
     }
 
+    fun getTemplate() : String {
+        return String.format(
+            "insert into %s.%s (%s) values (%s)",
+            schema, relation,
+            columns.joinToString(),
+            columns.joinToString {"?"}
+        )
+    }
     override fun validate() {
         for (batch in batches) {
             if (batch.size != columns.size) {

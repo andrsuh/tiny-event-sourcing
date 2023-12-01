@@ -1,5 +1,6 @@
 package jp.veka
 
+import jp.veka.converter.EntityConverter
 import jp.veka.mappers.MapperFactory
 import jp.veka.query.Query
 import jp.veka.query.QueryBuilder
@@ -10,19 +11,23 @@ import jp.veka.tables.EventStreamActiveReadersTable
 import jp.veka.tables.EventStreamReadIndexDto
 import jp.veka.tables.SnapshotDto
 import org.apache.logging.log4j.LogManager
+import org.springframework.jdbc.core.BatchPreparedStatementSetter
 import org.springframework.jdbc.core.JdbcTemplate
 import ru.quipy.database.EventStore
 import ru.quipy.domain.ActiveEventStreamReader
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
 import ru.quipy.domain.Snapshot
-import java.lang.Exception
+import ru.quipy.saga.SagaContext
+import java.sql.PreparedStatement
+import java.sql.SQLException
 import kotlin.reflect.KClass
 
 class PostgresTemplateEventStore(
     private val jdbcTemplate: JdbcTemplate,
     private val eventStoreSchemaName: String,
-    private val mapperFactory: MapperFactory) : EventStore {
+    private val mapperFactory: MapperFactory,
+    private val entityConverter: EntityConverter) : EventStore {
     companion object {
         private val logger = LogManager.getLogger(PostgresTemplateEventStore::class)
     }
@@ -36,12 +41,30 @@ class PostgresTemplateEventStore(
     }
 
     override fun insertEventRecords(aggregateTableName: String, eventRecords: List<EventRecord>) {
-        var queries =  QueryBuilder.batchInsert(eventStoreSchemaName,
+        val template =  QueryBuilder.batchInsert(eventStoreSchemaName,
             EventRecordTable.name,
             eventRecords.map { EventRecordDto(it, aggregateTableName) }
-        ).build()
+        ).getTemplate()
+        jdbcTemplate.batchUpdate(template, object : BatchPreparedStatementSetter {
+            @Throws(SQLException::class)
+            override fun setValues(preparedStatement: PreparedStatement, i: Int) {
+                val item = eventRecords[i]
+                preparedStatement.setString(EventRecordTable.aggregateTableName.index - 1, aggregateTableName)
+                preparedStatement.setString(EventRecordTable.aggregateId.index - 1, item.aggregateId.toString())
+                preparedStatement.setLong(EventRecordTable.aggregateVersion.index - 1, item.aggregateVersion)
+                preparedStatement.setLong(EventRecordTable.eventTitle.index - 1, item.aggregateVersion)
+                preparedStatement.setString(EventRecordTable.payload.index - 1, item.payload)
+                preparedStatement.setString(
+                    EventRecordTable.sagaContext.index - 1,
+                    entityConverter.serialize(item.sagaContext ?: SagaContext())
+                )
+                preparedStatement.setLong(EventRecordTable.createdAt.index - 1, item.createdAt)
+            }
 
-        jdbcTemplate.batchUpdate(queries)
+            override fun getBatchSize(): Int {
+                return eventRecords.size
+            }
+        })
     }
 
     override fun tableExists(aggregateTableName: String): Boolean {
@@ -120,7 +143,7 @@ class PostgresTemplateEventStore(
         return jdbcTemplate.query(QueryBuilder.findEntityByIdQuery(
             eventStoreSchemaName, id, clazz).build(),
             mapperFactory.getMapper(clazz)
-        ).first()
+        ).firstOrNull()
     }
 
     private fun executeQueryReturningBoolean(query: Query) : Boolean{

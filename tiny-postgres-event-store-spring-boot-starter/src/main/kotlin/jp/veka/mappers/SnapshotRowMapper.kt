@@ -7,6 +7,6 @@ import java.sql.ResultSet
 
 class SnapshotRowMapper(private val entityMapper: ResultSetToEntityMapper) : RowMapper<Snapshot> {
     override fun mapRow(rs: ResultSet, rowNum: Int): Snapshot? {
-        return entityMapper.convert(rs, Snapshot::class)
+        return entityMapper.convert(rs, Snapshot::class, false)
     }
 }

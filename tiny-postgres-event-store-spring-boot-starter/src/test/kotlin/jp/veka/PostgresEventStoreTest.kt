@@ -95,21 +95,29 @@ class PostgresEventStoreTest {
     @Test
     fun testInsertSingleEventRecordRecordsAndCheckSelect() {
         insertEventRecordAndCheck(postgresClientEventStore)
+        truncateAll()
+        insertEventRecordAndCheck(postgresTemplateEventStore)
     }
 
     @Test
     fun testBatchInsertEventRecordsAndCheckSelectWithConditionsAndLimit() {
-        insertEventRecordsAndCheckSelect(postgresClientEventStore)
+        // insertEventRecordsAndCheckSelect(postgresClientEventStore)
+        // truncateAll()
+        insertEventRecordsAndCheckSelect(postgresTemplateEventStore)
     }
 
     @Test
     fun testFindEntityById() {
         testFindEntityById(postgresClientEventStore)
+        truncateAll()
+        testFindEntityById(postgresTemplateEventStore)
     }
 
     @Test
     fun testStreamReaders() {
         testStreamReaders(postgresClientEventStore)
+        truncateAll()
+        testStreamReaders(postgresTemplateEventStore)
     }
     private fun insertEventRecordAndCheck(eventStore: EventStore) {
         eventStore.insertEventRecord(aggregateTableName, generateEventRecord(aggregateId1, aggregateVersion1, timestamp1))
