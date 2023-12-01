@@ -1,12 +1,9 @@
 package jp.veka
 
 import jp.veka.converter.ResultSetToEntityMapper
-import jp.veka.db.factory.ConnectionFactory
 import jp.veka.exception.UnknownEntityClassException
 import jp.veka.executor.QueryExecutor
-import jp.veka.query.Query
 import jp.veka.query.QueryBuilder
-import jp.veka.query.select.SelectQuery
 import jp.veka.tables.ActiveEventStreamReaderDto
 import jp.veka.tables.EventRecordDto
 import jp.veka.tables.EventRecordTable
@@ -22,7 +19,6 @@ import ru.quipy.domain.ActiveEventStreamReader
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
 import ru.quipy.domain.Snapshot
-import java.sql.ResultSet
 import kotlin.reflect.KClass
 
 class PostgresClientEventStore(
