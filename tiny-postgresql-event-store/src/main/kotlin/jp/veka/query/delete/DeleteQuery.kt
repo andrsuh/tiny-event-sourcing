@@ -23,4 +23,18 @@ class DeleteQuery(schema:String, relation: String) : BasicQuery<DeleteQuery>(sch
         return connection.prepareStatement(getTemplateSql())
             .executeQuery()
     }
+
+    override fun build(): String {
+        var sql  = String.format(
+            "delete from %s.%s where %s",
+            schema,
+            relation,
+            conditions.joinToString { " and " }
+        )
+
+        if (returnEntity) {
+            sql = "$sql returning *"
+        }
+        return sql
+    }
 }

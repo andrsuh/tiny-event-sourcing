@@ -1,13 +1,16 @@
 package jp.veka.executor
 
+import jp.veka.db.factory.ConnectionFactory
+import jp.veka.query.Query
 import org.slf4j.Logger
 import java.sql.ResultSet
 import java.sql.SQLException
 
-class ExceptionLoggingSqlQueriesExecutor(private val logger: Logger) : Executor {
-    override fun <T> executeReturningBoolean(action: () -> T): Boolean {
+class ExceptionLoggingSqlQueriesExecutor(private val connectionFactory: ConnectionFactory, private val logger: Logger) : QueryExecutor {
+    override fun executeReturningBoolean(query: Query): Boolean {
         return try {
-            action()
+            connectionFactory.getDatabaseConnection().prepareStatement(query.build())
+                .execute()
             true
         } catch (ex: SQLException) {
             logger.error(ex.message)
@@ -15,17 +18,19 @@ class ExceptionLoggingSqlQueriesExecutor(private val logger: Logger) : Executor 
         }
     }
 
-    override fun <T> execute(action: () -> T) {
+    override fun execute(query: Query) {
         try {
-            action()
+            connectionFactory.getDatabaseConnection().prepareStatement(query.build())
+                .execute()
         } catch (ex: SQLException) {
             logger.error(ex.message)
         }
     }
 
-    override fun executeReturningResultSet(action: () -> ResultSet): ResultSet? {
+    override fun executeReturningResultSet(query: Query): ResultSet? {
         return try {
-            action()
+            connectionFactory.getDatabaseConnection().prepareStatement(query.build())
+                .executeQuery()
         } catch (ex: SQLException) {
             logger.error(ex.message)
             null

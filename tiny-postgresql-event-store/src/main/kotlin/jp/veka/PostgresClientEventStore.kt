@@ -3,7 +3,7 @@ package jp.veka
 import jp.veka.converter.ResultSetToEntityMapper
 import jp.veka.db.factory.ConnectionFactory
 import jp.veka.exception.UnknownEntityClassException
-import jp.veka.executor.Executor
+import jp.veka.executor.QueryExecutor
 import jp.veka.query.Query
 import jp.veka.query.QueryBuilder
 import jp.veka.query.select.SelectQuery
@@ -29,19 +29,19 @@ class PostgresClientEventStore(
     private val databaseConnectionFactory: ConnectionFactory,
     private val eventStoreSchemaName: String,
     private val resultSetToEntityMapper: ResultSetToEntityMapper,
-    private val executor: Executor
+    private val executor: QueryExecutor
 ) : EventStore {
     companion object {
         val logger: Logger = LoggerFactory.getLogger(PostgresClientEventStore::class.java)
     }
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
-        executeQuery(
+        executor.execute(
             QueryBuilder.insert(eventStoreSchemaName, EventRecordTable.name, EventRecordDto(eventRecord, aggregateTableName))
         )
     }
 
     override fun insertEventRecords(aggregateTableName: String, eventRecords: List<EventRecord>) {
-        executeQuery(
+        executor.execute(
             QueryBuilder.batchInsert(eventStoreSchemaName, EventRecordTable.name, eventRecords.map { EventRecordDto(it, aggregateTableName) })
         )
     }
@@ -51,7 +51,7 @@ class PostgresClientEventStore(
     }
 
     override fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot) {
-        executeQuery(
+        executor.execute(
             QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, SnapshotTable.name, SnapshotDto(snapshot, tableName))
         )
     }
@@ -65,7 +65,7 @@ class PostgresClientEventStore(
             .andWhere("${EventRecordTable.aggregateId.name} = '$aggregateId'")
             .andWhere("${EventRecordTable.aggregateTableName.name} = '$aggregateTableName'")
             .andWhere("${EventRecordTable.aggregateVersion.name} > $aggregateVersion")
-        val result = executeQueryReturningResultSet(query)
+        val result = executor.executeReturningResultSet(query)
         return resultSetToEntityMapper.convertMany(result, EventRecord::class)
     }
 
@@ -78,7 +78,7 @@ class PostgresClientEventStore(
             .andWhere("${EventRecordTable.aggregateTableName.name} = '$aggregateTableName'")
             .andWhere("${EventRecordTable.createdAt.name} > $eventSequenceNum") // id > $eventSequenceNum ??
             .limit(batchSize)
-        val result = executeQueryReturningResultSet(query)
+        val result = executor.executeReturningResultSet(query)
         return resultSetToEntityMapper.convertMany(result, EventRecord::class)
     }
     override fun findSnapshotByAggregateId(snapshotsTableName: String, aggregateId: Any): Snapshot? {
@@ -94,7 +94,7 @@ class PostgresClientEventStore(
     }
 
     override fun tryUpdateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader): Boolean {
-        return executeQueryReturningBoolean (
+        return executor.executeReturningBoolean(
             QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, EventStreamActiveReadersTable.name, ActiveEventStreamReaderDto(updatedActiveReader))
         )
     }
@@ -103,14 +103,14 @@ class PostgresClientEventStore(
         expectedVersion: Long,
         newActiveReader: ActiveEventStreamReader
     ): Boolean {
-       return executeQueryReturningBoolean (
+       return executor.executeReturningBoolean(
            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, EventStreamActiveReadersTable.name, ActiveEventStreamReaderDto(newActiveReader))
                .andWhere("${EventStreamActiveReadersTable.name}.${EventStreamActiveReadersTable.version.name} = $expectedVersion")
        )
     }
 
     override fun commitStreamReadIndex(readIndex: EventStreamReadIndex): Boolean {
-        return executeQueryReturningBoolean(
+        return executor.executeReturningBoolean(
             QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, EventStreamReadIndexTable.name, EventStreamReadIndexDto(readIndex))
         )
     }
@@ -127,28 +127,7 @@ class PostgresClientEventStore(
             .andWhere("$tableIdColumnName = '$id'")
             .limit(1)
 
-        val result = executeQueryReturningResultSet(query)
+        val result = executor.executeReturningResultSet(query)
         return resultSetToEntityMapper.convert(result, clazz)
-    }
-
-    private fun executeQuery(query: Query) {
-        val connection =  databaseConnectionFactory.getDatabaseConnection()
-        executor.execute {
-            query.execute(connection)
-        }
-    }
-
-    private fun executeQueryReturningBoolean(query: Query) : Boolean {
-        val connection =  databaseConnectionFactory.getDatabaseConnection()
-        return executor.executeReturningBoolean {
-            query.execute(connection)
-        }
-    }
-
-    private fun executeQueryReturningResultSet(query: SelectQuery) : ResultSet? {
-        val connection =  databaseConnectionFactory.getDatabaseConnection()
-        return executor.executeReturningResultSet {
-            query.execute(connection)
-        }
     }
 }

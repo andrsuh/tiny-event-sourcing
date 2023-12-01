@@ -20,8 +20,8 @@ class BatchInsertQuery(schema: String, relation: String, private val batchSize: 
         return String.format(
             "insert into %s.%s (%s) values (%s)",
             schema, relation,
-            columns.joinToString(","),
-            columns.joinToString(",") { "?" }
+            columns.joinToString(),
+            columns.joinToString { "?" }
         )
     }
 
@@ -29,8 +29,8 @@ class BatchInsertQuery(schema: String, relation: String, private val batchSize: 
         for (batch in batches) {
             if (batch.size != columns.size) {
                 throw InvalidQueryStateException("Columns size doesn't match batch values size" +
-                    "\ncolumns[${columns.joinToString( ", " )}]" +
-                    "\nvalues[${values.joinToString(", " )}]")
+                    "\ncolumns[${columns.joinToString( )}]" +
+                    "\nvalues[${values.joinToString()}]")
             }
         }
     }
@@ -50,5 +50,21 @@ class BatchInsertQuery(schema: String, relation: String, private val batchSize: 
         }
         prepared.executeBatch()
         return true
+    }
+
+    override fun build(): String {
+        validate()
+        val resultQueries = mutableListOf<String>()
+        for (batch in batches) {
+            super.withValues(values = batch.toTypedArray())
+            resultQueries.add(String.format(
+                "insert into %s.%s (%s) values (%s)",
+                schema, relation,
+                columns.joinToString(),
+                values.joinToString {convertValueToString(it)}
+            ))
+        }
+
+        return resultQueries.joinToString(";\n")
     }
 }

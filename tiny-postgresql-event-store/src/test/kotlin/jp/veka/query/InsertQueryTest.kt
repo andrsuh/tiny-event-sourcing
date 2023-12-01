@@ -27,13 +27,14 @@ class InsertQueryTest {
     fun testOnDuplicateKeyUpdateQuery() {
         val query = OnDuplicateKeyUpdateInsertQuery(schema, relation)
             .withColumns(columns = columns)
+            .withPossiblyConflictingColumns("c")
             .onDuplicateKeyUpdateColumns(columns = onDuplicateKeyUpdateColumns)
 
         Assertions.assertEquals(query.getTemplateSql(),
             String.format("insert into %s.%s (%s) values (%s) on conflict (%s) do update set %s", schema, relation,
                 columns.joinToString(),
                 columns.joinToString { "?" },
-                onDuplicateKeyUpdateColumns.joinToString(),
+                "c",
                 onDuplicateKeyUpdateColumns.joinToString { "$it=?" })
         )
     }

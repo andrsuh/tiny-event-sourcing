@@ -31,6 +31,11 @@ class SelectQuery(schema: String, relation: String) : BasicQuery<SelectQuery>(sc
         return connection.prepareStatement(getTemplateSql()).executeQuery()
     }
 
+    override fun build(): String {
+        validate()
+        return getTemplateSql()
+    }
+
     override fun withValues(vararg values: Any): SelectQuery {
         throw UnsupportedOperationException()
     }

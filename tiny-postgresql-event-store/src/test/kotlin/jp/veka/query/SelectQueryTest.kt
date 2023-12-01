@@ -16,7 +16,7 @@ class SelectQueryTest {
             .limit(limit)
 
         Assertions.assertEquals(query.getTemplateSql(),
-            String.format("select %s from %s.%s limit %d", columns.joinToString(", "), schema, relation, limit)
+            String.format("select %s from %s.%s limit %d", columns.joinToString(), schema, relation, limit)
         )
     }
 
