@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.jdbc.core.JdbcTemplate
 
 @Configuration
 class PostgresEventStoreConfiguration {
@@ -36,20 +37,22 @@ class PostgresEventStoreConfiguration {
 
     @Bean("exceptionLoggingSqlQueriesExecutor")
     fun executor(
-        databaseFactory: ConnectionFactory
+        databaseFactory: ConnectionFactory,
+        @Value("\${batchInsertSize:1000}") batchInsertSize: Long
     ) : QueryExecutor {
-        return ExceptionLoggingSqlQueriesExecutor(databaseFactory, PostgresClientEventStore.logger)
+        return ExceptionLoggingSqlQueriesExecutor(databaseFactory, batchInsertSize, PostgresClientEventStore.logger)
     }
     @Bean("postgresClientEventStore")
     fun postgresClientEventStore(
-        databaseFactory: ConnectionFactory,
         @Value("\${schema:event_sourcing_store}") schema: String,
         @Qualifier("resultSetToEntityMapper") resultSetToEntityMapper: ResultSetToEntityMapper,
         @Qualifier("exceptionLoggingSqlQueriesExecutor") executor: QueryExecutor
     ) : PostgresClientEventStore {
-        return PostgresClientEventStore(databaseFactory, schema, resultSetToEntityMapper, executor)
+        return PostgresClientEventStore(schema, resultSetToEntityMapper, executor)
     }
 
-    @Bean("postgresTemplateEventStore")
-    fun postgresTemplateEventStore(): PostgresTemplateEventStore = PostgresTemplateEventStore()
+    // @Bean("postgresTemplateEventStore")
+    // fun postgresTemplateEventStore(
+    //     jdbcTemplate: JdbcTemplate
+    // ): PostgresTemplateEventStore = PostgresTemplateEventStore(jdbcTemplate)
 }

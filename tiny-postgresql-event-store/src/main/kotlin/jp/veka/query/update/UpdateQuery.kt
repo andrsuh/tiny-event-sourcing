@@ -12,28 +12,8 @@ class UpdateQuery(schema: String, relation: String) : BasicQuery<UpdateQuery>(sc
         return this
     }
 
-    override fun getTemplateSql(): String {
-        var sql  = String.format(
-            "update %s.%s set %s where %s",
-            schema,
-            relation,
-            columnValueMap.map { "${it.key} = ?" }.joinToString(),
-            conditions.joinToString(" and ")
-        )
-
-        if (returnEntity) {
-            sql = "$sql returning *"
-        }
-        return sql
-    }
-    override fun execute(connection: Connection): ResultSet {
-        validate()
-        var ps = connection.prepareStatement(getTemplateSql())
-        insertValuesInPreparedStatement(ps)
-        return ps.executeQuery()
-    }
-
     override fun build(): String {
+        validate()
         var sql  = String.format(
             "update %s.%s set %s where %s",
             schema,

@@ -15,7 +15,7 @@ class SelectQueryTest {
             .withColumns(columns = columns)
             .limit(limit)
 
-        Assertions.assertEquals(query.getTemplateSql(),
+        Assertions.assertEquals(query.build(),
             String.format("select %s from %s.%s limit %d", columns.joinToString(), schema, relation, limit)
         )
     }
@@ -26,7 +26,7 @@ class SelectQueryTest {
             .andWhere("a = b")
             .andWhere("b > c")
 
-        Assertions.assertEquals(query.getTemplateSql(),
+        Assertions.assertEquals(query.build(),
             String.format("select * from %s.%s where a = b and b > c", schema, relation)
         )
     }

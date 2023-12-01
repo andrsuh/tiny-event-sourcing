@@ -26,7 +26,6 @@ import java.sql.ResultSet
 import kotlin.reflect.KClass
 
 class PostgresClientEventStore(
-    private val databaseConnectionFactory: ConnectionFactory,
     private val eventStoreSchemaName: String,
     private val resultSetToEntityMapper: ResultSetToEntityMapper,
     private val executor: QueryExecutor

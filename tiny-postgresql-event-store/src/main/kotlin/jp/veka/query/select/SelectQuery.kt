@@ -13,7 +13,8 @@ class SelectQuery(schema: String, relation: String) : BasicQuery<SelectQuery>(sc
         return this
     }
 
-    override fun getTemplateSql(): String {
+    override fun build(): String {
+        // no need to validate query state
         var columnsStr = "*"
         if (columns.isNotEmpty()) {
             columnsStr = columns.joinToString()
@@ -24,16 +25,6 @@ class SelectQuery(schema: String, relation: String) : BasicQuery<SelectQuery>(sc
         }
         if (limit > 0) sql = "$sql limit $limit"
         return sql
-    }
-
-    override fun execute(connection: Connection) : ResultSet {
-        validate()
-        return connection.prepareStatement(getTemplateSql()).executeQuery()
-    }
-
-    override fun build(): String {
-        validate()
-        return getTemplateSql()
     }
 
     override fun withValues(vararg values: Any): SelectQuery {

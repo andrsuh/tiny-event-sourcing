@@ -16,15 +16,6 @@ class BatchInsertQuery(schema: String, relation: String, private val batchSize: 
         return this
     }
 
-    override fun getTemplateSql(): String {
-        return String.format(
-            "insert into %s.%s (%s) values (%s)",
-            schema, relation,
-            columns.joinToString(),
-            columns.joinToString { "?" }
-        )
-    }
-
     override fun validate() {
         for (batch in batches) {
             if (batch.size != columns.size) {
@@ -34,24 +25,6 @@ class BatchInsertQuery(schema: String, relation: String, private val batchSize: 
             }
         }
     }
-
-    override fun execute(connection: Connection): Boolean {
-        validate()
-        val prepared = connection.prepareStatement(getTemplateSql())
-
-        for ((count, batch) in batches.withIndex()) {
-            prepared.clearParameters()
-            super.withValues(values = batch.toTypedArray())
-            insertValuesInPreparedStatement(prepared)
-            prepared.addBatch()
-            if ((count + 1) % batchSize == 0L) {
-                prepared.executeBatch()
-            }
-        }
-        prepared.executeBatch()
-        return true
-    }
-
     override fun build(): String {
         validate()
         val resultQueries = mutableListOf<String>()

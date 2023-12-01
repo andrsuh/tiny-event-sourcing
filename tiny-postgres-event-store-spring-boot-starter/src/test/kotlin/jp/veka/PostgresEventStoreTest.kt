@@ -3,6 +3,7 @@ package jp.veka
 import jp.veka.config.PostgresEventStoreConfiguration
 import jp.veka.config.PostgresEventStoreTestConfiguration
 import jp.veka.exception.UnknownEntityClassException
+import jp.veka.executor.QueryExecutor
 import jp.veka.query.QueryBuilder
 import jp.veka.tables.ActiveEventStreamReaderDto
 import jp.veka.tables.EventRecordDto
@@ -72,9 +73,12 @@ class PostgresEventStoreTest {
     @Qualifier("postgresClientEventStore")
     private lateinit var postgresClientEventStore : EventStore
 
+    // @Autowired
+    // @Qualifier("postgresTemplateEventStore")
+    // private lateinit var postgresTemplateEventStore: EventStore
+
     @Autowired
-    @Qualifier("postgresTemplateEventStore")
-    private lateinit var postgresTemplateEventStore: EventStore
+    private lateinit var executor: QueryExecutor
 
     @Value("\${defaultSchema:event_sourcing_store}")
     private lateinit var schema: String
@@ -176,9 +180,7 @@ class PostgresEventStoreTest {
             else -> throw UnknownEntityClassException(entity::class.java.name)
         }
 
-        QueryBuilder.insert(schema, tableName, dto)
-            .execute(databaseConnectionFactory.getDatabaseConnection())
-
+        executor.execute(QueryBuilder.insert(schema, tableName, dto))
     }
 
     private fun testStreamReaders(eventStore: EventStore) {

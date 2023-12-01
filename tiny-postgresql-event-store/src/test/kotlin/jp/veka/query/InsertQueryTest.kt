@@ -17,9 +17,8 @@ class InsertQueryTest {
             .withColumns(columns = columns)
             .withValues(values = values)
 
-        Assertions.assertEquals(query.getTemplateSql(),
-            String.format("insert into %s.%s (%s) values (%s)",
-                schema, relation, columns.joinToString(), values.joinToString { "?" })
+        Assertions.assertEquals(query.build(),
+            "insert into schema.relation (a, b, c) values ('a1', 'b1', 'c1')"
         )
     }
 
@@ -27,15 +26,13 @@ class InsertQueryTest {
     fun testOnDuplicateKeyUpdateQuery() {
         val query = OnDuplicateKeyUpdateInsertQuery(schema, relation)
             .withColumns(columns = columns)
+            .withValues(values = columns)
             .withPossiblyConflictingColumns("c")
             .onDuplicateKeyUpdateColumns(columns = onDuplicateKeyUpdateColumns)
 
-        Assertions.assertEquals(query.getTemplateSql(),
-            String.format("insert into %s.%s (%s) values (%s) on conflict (%s) do update set %s", schema, relation,
-                columns.joinToString(),
-                columns.joinToString { "?" },
-                "c",
-                onDuplicateKeyUpdateColumns.joinToString { "$it=?" })
+        Assertions.assertEquals(query.build(),
+            "insert into schema.relation (a, b, c) values ('a', 'b', 'c')" +
+                " on conflict (c) do update set a='a', b='b'"
         )
     }
 
