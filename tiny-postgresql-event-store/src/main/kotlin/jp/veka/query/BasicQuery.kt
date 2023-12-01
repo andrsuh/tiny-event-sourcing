@@ -38,21 +38,6 @@ abstract class BasicQuery<T: Query>(protected val schema: String, protected val 
                 "\ncolumns[${columns.joinToString(", " )}]" +
                 "\nvalues[${values.joinToString(", " )}]")
     }
-    protected open fun insertValuesInPreparedStatement(ps: PreparedStatement) {
-        validate()
-        for ((i, value) in values.withIndex()) {
-            insertValueInPreparedStatement(i + 1, value, ps)
-        }
-    }
-    internal abstract fun getTemplateSql() : String
-
-    protected fun insertValueInPreparedStatement(index: Int, value: Any, ps: PreparedStatement) {
-        when (value) {
-            is Long -> ps.setLong(index, value)
-            is String -> ps.setString(index, value)
-            else -> throw Exception("Unknown type")
-        }
-    }
 
     protected fun convertValueToString(value: Any) : String {
         return when (value) {
