@@ -5,6 +5,8 @@ import jp.veka.db.TestDataSourceProvider
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.jdbc.core.JdbcTemplate
+import javax.sql.DataSource
 
 @Configuration
 class PostgresEventStoreTestConfiguration {
@@ -16,5 +18,10 @@ class PostgresEventStoreTestConfiguration {
         @Value("\${schema:event_sourcing_store}") schema: String)
         : DataSourceProvider {
         return TestDataSourceProvider(dbName, username, password, schema)
+    }
+
+    @Bean
+    fun jdbcTemplate(dataSourceProvider: DataSourceProvider) : JdbcTemplate {
+        return JdbcTemplate(dataSourceProvider.dataSource())
     }
 }

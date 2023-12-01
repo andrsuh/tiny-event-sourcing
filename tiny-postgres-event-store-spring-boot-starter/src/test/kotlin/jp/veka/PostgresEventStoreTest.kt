@@ -73,9 +73,9 @@ class PostgresEventStoreTest {
     @Qualifier("postgresClientEventStore")
     private lateinit var postgresClientEventStore : EventStore
 
-    // @Autowired
-    // @Qualifier("postgresTemplateEventStore")
-    // private lateinit var postgresTemplateEventStore: EventStore
+    @Autowired
+    @Qualifier("postgresTemplateEventStore")
+    private lateinit var postgresTemplateEventStore: EventStore
 
     @Autowired
     private lateinit var executor: QueryExecutor
