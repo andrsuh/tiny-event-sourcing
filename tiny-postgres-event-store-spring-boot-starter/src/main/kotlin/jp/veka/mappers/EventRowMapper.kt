@@ -7,6 +7,6 @@ import java.sql.ResultSet
 
 class EventRowMapper(private val entityMapper: ResultSetToEntityMapper) : RowMapper<EventRecord> {
     override fun mapRow(rs: ResultSet, rowNum: Int): EventRecord? {
-        return entityMapper.convert(rs, EventRecord::class)
+        return entityMapper.convert(rs, EventRecord::class, false)
     }
 }

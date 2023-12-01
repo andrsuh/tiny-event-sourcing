@@ -12,5 +12,5 @@ services:
     ports:
       - ${POSTGRES_DB_PORT}:${POSTGRES_DB_PORT}
     volumes:
-      - ./initdb/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../database/V1__init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
