@@ -8,15 +8,20 @@ import ru.quipy.domain.EventStreamReadIndex
 import ru.quipy.domain.Snapshot
 
 class PostgresTemplateEventStore(private val jdbcTemplate: JdbcTemplate) : EventStore {
-    override fun commitStreamReadIndex(readIndex: EventStreamReadIndex): Boolean {
+    override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
         TODO("Not yet implemented")
     }
 
-    override fun findBatchOfEventRecordAfter(
-        aggregateTableName: String,
-        eventSequenceNum: Long,
-        batchSize: Int
-    ): List<EventRecord> {
+    override fun insertEventRecords(aggregateTableName: String, eventRecords: List<EventRecord>) {
+        TODO("Not yet implemented")
+    }
+
+    override fun tableExists(aggregateTableName: String): Boolean {
+        TODO("Not yet implemented")
+    }
+
+
+    override fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot) {
         TODO("Not yet implemented")
     }
 
@@ -24,6 +29,14 @@ class PostgresTemplateEventStore(private val jdbcTemplate: JdbcTemplate) : Event
         aggregateTableName: String,
         aggregateId: Any,
         aggregateVersion: Long
+    ): List<EventRecord> {
+        TODO("Not yet implemented")
+    }
+
+    override fun findBatchOfEventRecordAfter(
+        aggregateTableName: String,
+        eventSequenceNum: Long,
+        batchSize: Int
     ): List<EventRecord> {
         TODO("Not yet implemented")
     }
@@ -40,15 +53,7 @@ class PostgresTemplateEventStore(private val jdbcTemplate: JdbcTemplate) : Event
         TODO("Not yet implemented")
     }
 
-    override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
-        TODO("Not yet implemented")
-    }
-
-    override fun insertEventRecords(aggregateTableName: String, eventRecords: List<EventRecord>) {
-        TODO("Not yet implemented")
-    }
-
-    override fun tableExists(aggregateTableName: String): Boolean {
+    override fun tryUpdateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader): Boolean {
         TODO("Not yet implemented")
     }
 
@@ -59,11 +64,7 @@ class PostgresTemplateEventStore(private val jdbcTemplate: JdbcTemplate) : Event
         TODO("Not yet implemented")
     }
 
-    override fun tryUpdateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot) {
+    override fun commitStreamReadIndex(readIndex: EventStreamReadIndex): Boolean {
         TODO("Not yet implemented")
     }
 }
