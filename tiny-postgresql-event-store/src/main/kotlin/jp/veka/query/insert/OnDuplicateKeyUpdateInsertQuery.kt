@@ -32,4 +32,20 @@ class OnDuplicateKeyUpdateInsertQuery
             duplicateKeyUpdateColumns.joinToString(",") { "${it}=values(${it})" }))
             .execute()
     }
+
+    override fun build(): String {
+        validate()
+        val duplicateColumnToValue = mutableMapOf<String, String>()
+        for (column in duplicateKeyUpdateColumns) {
+            val value = values[columns.indexOf(column)]
+            duplicateColumnToValue[column] = convertValueToString(value)
+        }
+        var sql =  "insert into ${schema}.${relation} (${columns.joinToString()}) values (${values.joinToString {convertValueToString(it)}}) " +
+            "on conflict (${conflictingColumns.joinToString()}) do update " +
+            "set ${duplicateColumnToValue.entries.joinToString {"${it.key}=${it.value}"}}"
+        if (conditions.isNotEmpty()) {
+            sql += " where ${conditions.joinToString(" and ")}"
+        }
+        return sql
+    }
 }

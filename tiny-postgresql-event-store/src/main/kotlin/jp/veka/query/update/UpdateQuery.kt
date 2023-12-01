@@ -47,4 +47,19 @@ class UpdateQuery : Query {
         return connection.prepareStatement(sql)
             .executeQuery()
     }
+
+    override fun build(): String {
+        var sql  = String.format(
+            "update %s.%s set %s where %s",
+            schema,
+            relation,
+            columnValueMap.map { "${it.key} = ${convertValueToString(it.value)}" }.joinToString(),
+            conditions.joinToString(" and ")
+        )
+
+        if (returnEntity) {
+            sql = "$sql returning *"
+        }
+        return sql
+    }
 }

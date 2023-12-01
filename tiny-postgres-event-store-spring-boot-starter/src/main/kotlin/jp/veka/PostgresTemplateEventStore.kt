@@ -5,8 +5,9 @@ import ru.quipy.domain.ActiveEventStreamReader
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
 import ru.quipy.domain.Snapshot
+import org.springframework.jdbc.core.JdbcTemplate
 
-class PostgresTemplateEventStore : EventStore {
+class PostgresTemplateEventStore(private val jdbcTemplate: JdbcTemplate) : EventStore {
     override fun commitStreamReadIndex(readIndex: EventStreamReadIndex): Boolean {
         TODO("Not yet implemented")
     }
