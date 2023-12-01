@@ -17,7 +17,7 @@ class UpdateQuery(schema: String, relation: String) : BasicQuery<UpdateQuery>(sc
             "update %s.%s set %s where %s",
             schema,
             relation,
-            columnValueMap.map { "${it.key} = ?" }.joinToString { ", " },
+            columnValueMap.map { "${it.key} = ?" }.joinToString(),
             conditions.joinToString(" and ")
         )
 
