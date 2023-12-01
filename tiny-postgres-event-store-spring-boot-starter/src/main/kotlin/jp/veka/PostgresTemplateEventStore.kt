@@ -1,11 +1,11 @@
 package jp.veka
 
+import org.springframework.jdbc.core.JdbcTemplate
 import ru.quipy.database.EventStore
 import ru.quipy.domain.ActiveEventStreamReader
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
 import ru.quipy.domain.Snapshot
-import org.springframework.jdbc.core.JdbcTemplate
 
 class PostgresTemplateEventStore(private val jdbcTemplate: JdbcTemplate) : EventStore {
     override fun commitStreamReadIndex(readIndex: EventStreamReadIndex): Boolean {

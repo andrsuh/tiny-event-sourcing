@@ -51,8 +51,8 @@ class PostgresEventStoreConfiguration {
         return PostgresClientEventStore(schema, resultSetToEntityMapper, executor)
     }
 
-    // @Bean("postgresTemplateEventStore")
-    // fun postgresTemplateEventStore(
-    //     jdbcTemplate: JdbcTemplate
-    // ): PostgresTemplateEventStore = PostgresTemplateEventStore(jdbcTemplate)
+    @Bean("postgresTemplateEventStore")
+    fun postgresTemplateEventStore(
+        jdbcTemplate: JdbcTemplate
+    ): PostgresTemplateEventStore = PostgresTemplateEventStore(jdbcTemplate)
 }
