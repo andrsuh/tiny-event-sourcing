@@ -172,15 +172,15 @@ class PostgresEventStoreTest {
     }
 
     private fun <E: Any> insertEntity(entity: E) {
-        val (tableName, dto) = when(entity::class) {
-            EventRecord::class -> EventRecordTable.name to EventRecordDto(entity as EventRecord, aggregateTableName)
-            Snapshot::class -> SnapshotTable.name to SnapshotDto(entity as Snapshot, snapshotsTableName)
-            EventStreamReadIndex::class -> EventStreamReadIndexTable.name to EventStreamReadIndexDto(entity as EventStreamReadIndex)
-            ActiveEventStreamReader::class -> EventStreamActiveReadersTable.name to ActiveEventStreamReaderDto(entity as ActiveEventStreamReader)
+        val dto = when(entity::class) {
+            EventRecord::class -> EventRecordDto(entity as EventRecord, aggregateTableName)
+            Snapshot::class -> SnapshotDto(entity as Snapshot, snapshotsTableName)
+            EventStreamReadIndex::class -> EventStreamReadIndexDto(entity as EventStreamReadIndex)
+            ActiveEventStreamReader::class -> ActiveEventStreamReaderDto(entity as ActiveEventStreamReader)
             else -> throw UnknownEntityClassException(entity::class.java.name)
         }
 
-        executor.execute(QueryBuilder.insert(schema, tableName, dto))
+        executor.execute(QueryBuilder.insert(schema, dto))
     }
 
     private fun testStreamReaders(eventStore: EventStore) {
