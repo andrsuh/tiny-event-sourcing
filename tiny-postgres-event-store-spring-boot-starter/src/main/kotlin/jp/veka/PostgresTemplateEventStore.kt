@@ -27,6 +27,7 @@ class PostgresTemplateEventStore(
     private val jdbcTemplate: JdbcTemplate,
     private val eventStoreSchemaName: String,
     private val mapperFactory: MapperFactory,
+    private val batchInsertSize: Int,
     private val entityConverter: EntityConverter) : EventStore {
     companion object {
         private val logger = LogManager.getLogger(PostgresTemplateEventStore::class)
@@ -45,26 +46,29 @@ class PostgresTemplateEventStore(
             EventRecordTable.name,
             eventRecords.map { EventRecordDto(it, aggregateTableName) }
         ).getTemplate()
-        jdbcTemplate.batchUpdate(template, object : BatchPreparedStatementSetter {
-            @Throws(SQLException::class)
-            override fun setValues(preparedStatement: PreparedStatement, i: Int) {
-                val item = eventRecords[i]
-                preparedStatement.setString(EventRecordTable.aggregateTableName.index - 1, aggregateTableName)
-                preparedStatement.setString(EventRecordTable.aggregateId.index - 1, item.aggregateId.toString())
-                preparedStatement.setLong(EventRecordTable.aggregateVersion.index - 1, item.aggregateVersion)
-                preparedStatement.setLong(EventRecordTable.eventTitle.index - 1, item.aggregateVersion)
-                preparedStatement.setString(EventRecordTable.payload.index - 1, item.payload)
-                preparedStatement.setString(
-                    EventRecordTable.sagaContext.index - 1,
-                    entityConverter.serialize(item.sagaContext ?: SagaContext())
-                )
-                preparedStatement.setLong(EventRecordTable.createdAt.index - 1, item.createdAt)
-            }
+        val batches = eventRecords.chunked(batchInsertSize)
+        for (batch in batches) {
+            jdbcTemplate.batchUpdate(template, object : BatchPreparedStatementSetter {
+                @Throws(SQLException::class)
+                override fun setValues(preparedStatement: PreparedStatement, i: Int) {
+                    val item = batch[i]
+                    preparedStatement.setString(EventRecordTable.aggregateTableName.index - 1, aggregateTableName)
+                    preparedStatement.setString(EventRecordTable.aggregateId.index - 1, item.aggregateId.toString())
+                    preparedStatement.setLong(EventRecordTable.aggregateVersion.index - 1, item.aggregateVersion)
+                    preparedStatement.setLong(EventRecordTable.eventTitle.index - 1, item.aggregateVersion)
+                    preparedStatement.setString(EventRecordTable.payload.index - 1, item.payload)
+                    preparedStatement.setString(
+                        EventRecordTable.sagaContext.index - 1,
+                        entityConverter.serialize(item.sagaContext ?: SagaContext())
+                    )
+                    preparedStatement.setLong(EventRecordTable.createdAt.index - 1, item.createdAt)
+                }
 
-            override fun getBatchSize(): Int {
-                return eventRecords.size
-            }
-        })
+                override fun getBatchSize(): Int {
+                    return batch.size
+                }
+            })
+        }
     }
 
     override fun tableExists(aggregateTableName: String): Boolean {
