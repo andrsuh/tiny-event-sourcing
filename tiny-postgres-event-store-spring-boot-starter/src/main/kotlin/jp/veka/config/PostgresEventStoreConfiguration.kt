@@ -62,6 +62,7 @@ class PostgresEventStoreConfiguration {
     fun postgresTemplateEventStore(
         jdbcTemplate: JdbcTemplate,
         mapperFactory: MapperFactory,
+        @Value("\${batchInsertSize:1000}") batchInsertSize: Int,
         entityConverter: EntityConverter
-    ): PostgresTemplateEventStore = PostgresTemplateEventStore(jdbcTemplate, schema, mapperFactory, entityConverter)
+    ): PostgresTemplateEventStore = PostgresTemplateEventStore(jdbcTemplate, schema, mapperFactory, batchInsertSize, entityConverter)
 }
