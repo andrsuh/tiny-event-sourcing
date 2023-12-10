@@ -1,20 +1,20 @@
-package jp.veka.config
+package ru.quipy.config
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import jp.veka.PostgresClientEventStore
-import jp.veka.PostgresTemplateEventStore
-import jp.veka.converter.EntityConverter
-import jp.veka.converter.JsonEntityConverter
-import jp.veka.converter.ResultSetToEntityMapper
-import jp.veka.converter.ResultSetToEntityMapperImpl
-import jp.veka.db.DataSourceProvider
-import jp.veka.db.factory.ConnectionFactory
-import jp.veka.db.factory.ConnectionFactoryImpl
-import jp.veka.executor.ExceptionLoggingSqlQueriesExecutor
-import jp.veka.executor.QueryExecutor
-import jp.veka.mappers.MapperFactory
-import jp.veka.mappers.MapperFactoryImpl
+import ru.quipy.PostgresClientEventStore
+import ru.quipy.PostgresTemplateEventStore
+import ru.quipy.converter.EntityConverter
+import ru.quipy.converter.JsonEntityConverter
+import ru.quipy.converter.ResultSetToEntityMapper
+import ru.quipy.converter.ResultSetToEntityMapperImpl
+import ru.quipy.db.DataSourceProvider
+import ru.quipy.db.factory.ConnectionFactory
+import ru.quipy.db.factory.ConnectionFactoryImpl
+import ru.quipy.executor.ExceptionLoggingSqlQueriesExecutor
+import ru.quipy.executor.QueryExecutor
+import ru.quipy.mappers.MapperFactory
+import ru.quipy.mappers.MapperFactoryImpl
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -73,5 +73,6 @@ class PostgresEventStoreConfiguration {
         mapperFactory: MapperFactory,
         @Value("\${batchInsertSize:1000}") batchInsertSize: Int,
         entityConverter: EntityConverter
-    ): PostgresTemplateEventStore = PostgresTemplateEventStore(jdbcTemplate, schema, mapperFactory, batchInsertSize, entityConverter)
+    ): ru.quipy.PostgresTemplateEventStore =
+        ru.quipy.PostgresTemplateEventStore(jdbcTemplate, schema, mapperFactory, batchInsertSize, entityConverter)
 }

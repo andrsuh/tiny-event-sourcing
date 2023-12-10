@@ -1,7 +1,7 @@
-package jp.veka.config
+package ru.quipy.config
 
-import jp.veka.db.DataSourceProvider
-import jp.veka.db.TestDataSourceProvider
+import ru.quipy.db.DataSourceProvider
+import ru.quipy.db.TestDataSourceProvider
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

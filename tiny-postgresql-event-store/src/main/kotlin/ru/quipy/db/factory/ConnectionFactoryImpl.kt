@@ -1,6 +1,6 @@
-package jp.veka.db.factory
+package ru.quipy.db.factory
 
-import jp.veka.db.DataSourceProvider
+import ru.quipy.db.DataSourceProvider
 import java.sql.Connection
 
 class ConnectionFactoryImpl(private val dataSourceProvider: DataSourceProvider) : ConnectionFactory {

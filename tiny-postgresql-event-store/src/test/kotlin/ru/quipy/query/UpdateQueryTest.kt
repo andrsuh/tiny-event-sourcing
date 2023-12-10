@@ -1,4 +1,4 @@
-package jp.veka.query
+package ru.quipy.query
 
 class UpdateQueryTest {
 }
