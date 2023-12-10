@@ -1,5 +1,6 @@
 package jp.veka
 
+import jp.veka.converter.EntityConverter
 import jp.veka.converter.ResultSetToEntityMapper
 import jp.veka.executor.QueryExecutor
 import jp.veka.query.QueryBuilder
@@ -21,6 +22,7 @@ import kotlin.reflect.KClass
 class PostgresClientEventStore(
     private val eventStoreSchemaName: String,
     private val resultSetToEntityMapper: ResultSetToEntityMapper,
+    private val entityConverter: EntityConverter,
     private val executor: QueryExecutor
 ) : EventStore {
     companion object {
@@ -28,13 +30,13 @@ class PostgresClientEventStore(
     }
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
         executor.execute(
-            QueryBuilder.insert(eventStoreSchemaName, EventRecordDto(eventRecord, aggregateTableName))
+            QueryBuilder.insert(eventStoreSchemaName, EventRecordDto(eventRecord, aggregateTableName, entityConverter))
         )
     }
 
     override fun insertEventRecords(aggregateTableName: String, eventRecords: List<EventRecord>) {
         executor.execute(
-            QueryBuilder.batchInsert(eventStoreSchemaName, EventRecordTable.name, eventRecords.map { EventRecordDto(it, aggregateTableName) })
+            QueryBuilder.batchInsert(eventStoreSchemaName, EventRecordTable.name, eventRecords.map { EventRecordDto(it, aggregateTableName, entityConverter) })
         )
     }
 
@@ -44,7 +46,7 @@ class PostgresClientEventStore(
 
     override fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot) {
         executor.execute(
-            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, SnapshotDto(snapshot, tableName))
+            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, SnapshotDto(snapshot, tableName, entityConverter))
         )
     }
 

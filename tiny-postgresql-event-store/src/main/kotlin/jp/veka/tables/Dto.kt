@@ -1,13 +1,12 @@
 package jp.veka.tables
 
-import jp.veka.converter.JsonEntityConverter
+import jp.veka.converter.EntityConverter
 import ru.quipy.domain.ActiveEventStreamReader
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
 import ru.quipy.domain.Snapshot
 import ru.quipy.saga.SagaContext
 
-var entityConverter = JsonEntityConverter()
 interface Dto {
     fun values() : Array<Any>
 }
@@ -20,7 +19,7 @@ class EventRecordDto(
     var sagaContext: String,
     val createdAt: Long = System.currentTimeMillis()
 ) : Dto {
-    constructor(eventRecord: EventRecord, aggregateTableName: String)
+    constructor(eventRecord: EventRecord, aggregateTableName: String, entityConverter: EntityConverter)
     : this(aggregateTableName,
         eventRecord.aggregateId.toString(),
         eventRecord.aggregateVersion,
@@ -42,7 +41,7 @@ class SnapshotDto(
     val snapshot : String,
     var version: Long
 ) : Dto {
-    constructor(snapshot: Snapshot, snapshotTableName: String)
+    constructor(snapshot: Snapshot, snapshotTableName: String, entityConverter: EntityConverter)
         : this(snapshot.id.toString(),
             snapshotTableName,
             entityConverter.serialize(snapshot.snapshot),

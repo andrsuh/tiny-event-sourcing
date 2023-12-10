@@ -15,7 +15,7 @@ class MapperFactoryImpl(private val entityMapper: ResultSetToEntityMapper) : Map
             Snapshot::class -> SnapshotRowMapper(entityMapper)
             EventStreamReadIndex::class -> EventStreamReadIndexRowMapper(entityMapper)
             ActiveEventStreamReader::class -> ActiveEventStreamReaderRowMapper(entityMapper)
-            else -> throw RuntimeException()
+            else -> throw IllegalStateException("No mapper defined for entity ${clazz.simpleName}")
         }  as RowMapper<T>
     }
 }

@@ -2,6 +2,7 @@ package jp.veka
 
 import jp.veka.config.PostgresEventStoreConfiguration
 import jp.veka.config.PostgresEventStoreTestConfiguration
+import jp.veka.converter.EntityConverter
 import jp.veka.exception.UnknownEntityClassException
 import jp.veka.executor.QueryExecutor
 import jp.veka.query.QueryBuilder
@@ -79,6 +80,9 @@ class PostgresEventStoreTest {
 
     @Autowired
     private lateinit var executor: QueryExecutor
+
+    @Autowired
+    private lateinit var entityConverter: EntityConverter;
 
     @Value("\${defaultSchema:event_sourcing_store}")
     private lateinit var schema: String
@@ -181,8 +185,8 @@ class PostgresEventStoreTest {
 
     private fun <E: Any> insertEntity(entity: E) {
         val dto = when(entity::class) {
-            EventRecord::class -> EventRecordDto(entity as EventRecord, aggregateTableName)
-            Snapshot::class -> SnapshotDto(entity as Snapshot, snapshotsTableName)
+            EventRecord::class -> EventRecordDto(entity as EventRecord, aggregateTableName, entityConverter)
+            Snapshot::class -> SnapshotDto(entity as Snapshot, snapshotsTableName, entityConverter)
             EventStreamReadIndex::class -> EventStreamReadIndexDto(entity as EventStreamReadIndex)
             ActiveEventStreamReader::class -> ActiveEventStreamReaderDto(entity as ActiveEventStreamReader)
             else -> throw UnknownEntityClassException(entity::class.java.name)

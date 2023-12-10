@@ -36,7 +36,7 @@ class PostgresTemplateEventStore(
         jdbcTemplate.execute(
             QueryBuilder.insert(
                 eventStoreSchemaName,
-                EventRecordDto(eventRecord, aggregateTableName)
+                EventRecordDto(eventRecord, aggregateTableName, entityConverter)
             ).build()
         )
     }
@@ -44,7 +44,7 @@ class PostgresTemplateEventStore(
     override fun insertEventRecords(aggregateTableName: String, eventRecords: List<EventRecord>) {
         val template =  QueryBuilder.batchInsert(eventStoreSchemaName,
             EventRecordTable.name,
-            eventRecords.map { EventRecordDto(it, aggregateTableName) }
+            eventRecords.map { EventRecordDto(it, aggregateTableName, entityConverter) }
         ).getTemplate()
         val batches = eventRecords.chunked(batchInsertSize)
         for (batch in batches) {
@@ -80,7 +80,7 @@ class PostgresTemplateEventStore(
         jdbcTemplate.execute(
             QueryBuilder.insertOrUpdateQuery(
                 eventStoreSchemaName,
-                SnapshotDto(snapshot, tableName)
+                SnapshotDto(snapshot, tableName, entityConverter)
             ).build()
         )
     }
