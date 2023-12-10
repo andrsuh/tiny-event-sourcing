@@ -11,7 +11,6 @@ create table if not exists event_sourcing_store.event_record (
        createdAt bigint
 );
 
-create sequence event_sourcing_store.snapshot_id_sequence;
 create table if not exists event_sourcing_store.snapshot (
     id text primary key,
     snapshot_table_name text,
@@ -19,14 +18,12 @@ create table if not exists event_sourcing_store.snapshot (
     version bigint
 );
 
-create sequence event_sourcing_store.event_stream_read_index_id_sequence;
 create table if not exists event_sourcing_store.event_stream_read_index (
     id text primary key,
     read_index bigint,
     version bigint
 );
 
-create sequence event_sourcing_store.event_stream_active_readers_id_sequence;
 create table if not exists event_sourcing_store.event_stream_active_readers (
     id text unique primary key,
     version bigint,

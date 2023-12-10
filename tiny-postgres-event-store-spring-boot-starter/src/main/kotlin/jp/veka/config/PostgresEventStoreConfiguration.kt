@@ -1,5 +1,7 @@
 package jp.veka.config
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import jp.veka.PostgresClientEventStore
 import jp.veka.PostgresTemplateEventStore
 import jp.veka.converter.EntityConverter
@@ -28,9 +30,15 @@ class PostgresEventStoreConfiguration {
         return ConnectionFactoryImpl(datasourceProvider)
     }
 
+    @Bean("jacksonObjectMapper")
+    fun objectMapper() : ObjectMapper {
+        return jacksonObjectMapper()
+    }
     @Bean("jsonEntityConverter")
-    fun entityConverter() : EntityConverter {
-        return JsonEntityConverter()
+    fun entityConverter(
+        @Qualifier("jacksonObjectMapper") objectMapper: ObjectMapper
+    ) : EntityConverter {
+        return JsonEntityConverter(objectMapper)
     }
     @Bean("resultSetToEntityMapper")
     fun resultSetToEntityMapper(
@@ -49,9 +57,10 @@ class PostgresEventStoreConfiguration {
     @Bean("postgresClientEventStore")
     fun postgresClientEventStore(
         @Qualifier("resultSetToEntityMapper") resultSetToEntityMapper: ResultSetToEntityMapper,
-        @Qualifier("exceptionLoggingSqlQueriesExecutor") executor: QueryExecutor
+        @Qualifier("exceptionLoggingSqlQueriesExecutor") executor: QueryExecutor,
+        entityConverter: EntityConverter
     ) : PostgresClientEventStore {
-        return PostgresClientEventStore(schema, resultSetToEntityMapper, executor)
+        return PostgresClientEventStore(schema, resultSetToEntityMapper,entityConverter, executor)
     }
 
     @Bean
