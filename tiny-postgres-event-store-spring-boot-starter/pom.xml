@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>jp.veka</groupId>
+    <groupId>ru.quipy</groupId>
     <artifactId>tiny-postgres-event-store-spring-boot-starter</artifactId>
 
     <version>0.0.1-SNAPSHOT</version>
@@ -37,7 +37,7 @@
             <version>${tiny-event-sourcing-lib.version}</version>
         </dependency>
         <dependency>
-            <groupId>jp.veka</groupId>
+            <groupId>ru.quipy</groupId>
             <artifactId>tiny-postgresql-event-store</artifactId>
             <version>${tiny-postgres-event-store.version}</version>
         </dependency>
