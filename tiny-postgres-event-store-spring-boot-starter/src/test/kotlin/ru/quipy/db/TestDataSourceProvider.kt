@@ -1,4 +1,4 @@
-package jp.veka.db
+package ru.quipy.db
 
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
