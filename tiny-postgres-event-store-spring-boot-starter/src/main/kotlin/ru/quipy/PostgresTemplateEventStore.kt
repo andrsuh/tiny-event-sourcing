@@ -52,16 +52,17 @@ class PostgresTemplateEventStore(
                 @Throws(SQLException::class)
                 override fun setValues(preparedStatement: PreparedStatement, i: Int) {
                     val item = batch[i]
-                    preparedStatement.setString(EventRecordTable.aggregateTableName.index - 1, aggregateTableName)
-                    preparedStatement.setString(EventRecordTable.aggregateId.index - 1, item.aggregateId.toString())
-                    preparedStatement.setLong(EventRecordTable.aggregateVersion.index - 1, item.aggregateVersion)
-                    preparedStatement.setLong(EventRecordTable.eventTitle.index - 1, item.aggregateVersion)
-                    preparedStatement.setString(EventRecordTable.payload.index - 1, item.payload)
+                    preparedStatement.setString(EventRecordTable.id.index, item.id)
+                    preparedStatement.setString(EventRecordTable.aggregateTableName.index, aggregateTableName)
+                    preparedStatement.setString(EventRecordTable.aggregateId.index, item.aggregateId.toString())
+                    preparedStatement.setLong(EventRecordTable.aggregateVersion.index, item.aggregateVersion)
+                    preparedStatement.setLong(EventRecordTable.eventTitle.index, item.aggregateVersion)
+                    preparedStatement.setString(EventRecordTable.payload.index, item.payload)
                     preparedStatement.setString(
-                        EventRecordTable.sagaContext.index - 1,
+                        EventRecordTable.sagaContext.index,
                         entityConverter.serialize(item.sagaContext ?: SagaContext())
                     )
-                    preparedStatement.setLong(EventRecordTable.createdAt.index - 1, item.createdAt)
+                    preparedStatement.setLong(EventRecordTable.createdAt.index, item.createdAt)
                 }
 
                 override fun getBatchSize(): Int {
@@ -78,7 +79,7 @@ class PostgresTemplateEventStore(
 
     override fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot) {
         jdbcTemplate.execute(
-            QueryBuilder.insertOrUpdateQuery(
+            QueryBuilder.insertOrUpdateWithLatestVersionQuery(
                 eventStoreSchemaName,
                 SnapshotDto(snapshot, tableName, entityConverter)
             ).build()
@@ -123,7 +124,7 @@ class PostgresTemplateEventStore(
 
     override fun tryUpdateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader): Boolean {
         return executeQueryReturningBoolean(
-            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, ActiveEventStreamReaderDto(updatedActiveReader))
+            QueryBuilder.insertOrUpdateWithLatestVersionQuery(eventStoreSchemaName, ActiveEventStreamReaderDto(updatedActiveReader))
         )
     }
 
@@ -132,14 +133,14 @@ class PostgresTemplateEventStore(
         newActiveReader: ActiveEventStreamReader
     ): Boolean {
         return executeQueryReturningBoolean(
-            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, ActiveEventStreamReaderDto(newActiveReader))
+            QueryBuilder.insertOrUpdateWithLatestVersionQuery(eventStoreSchemaName, ActiveEventStreamReaderDto(newActiveReader))
                 .andWhere("${EventStreamActiveReadersTable.name}.${EventStreamActiveReadersTable.version.name} = $expectedVersion")
         )
     }
 
     override fun commitStreamReadIndex(readIndex: EventStreamReadIndex): Boolean {
         return executeQueryReturningBoolean(
-            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, EventStreamReadIndexDto(readIndex))
+            QueryBuilder.insertOrUpdateWithLatestVersionQuery(eventStoreSchemaName, EventStreamReadIndexDto(readIndex))
         )
     }
 

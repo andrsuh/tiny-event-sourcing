@@ -1,7 +1,7 @@
 create schema if not exists event_sourcing_store;
-create sequence event_sourcing_store.event_record_id_sequence;
+-- create sequence event_sourcing_store.event_record_created_at_sequence;
 create table if not exists event_sourcing_store.event_record (
-       id text default nextval('event_sourcing_store.event_record_id_sequence')::text,
+       id text,
        aggregate_table_name text,
        aggregate_id text,
        aggregate_version bigint,

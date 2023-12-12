@@ -46,7 +46,7 @@ class PostgresClientEventStore(
 
     override fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot) {
         executor.execute(
-            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, SnapshotDto(snapshot, tableName, entityConverter))
+            QueryBuilder.insertOrUpdateWithLatestVersionQuery(eventStoreSchemaName, SnapshotDto(snapshot, tableName, entityConverter))
         )
     }
 
@@ -89,7 +89,7 @@ class PostgresClientEventStore(
 
     override fun tryUpdateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader): Boolean {
         return executor.executeReturningBoolean(
-            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, ActiveEventStreamReaderDto(updatedActiveReader))
+            QueryBuilder.insertOrUpdateByIdAndVersionQuery(eventStoreSchemaName, updatedActiveReader.id, updatedActiveReader.version - 1, ActiveEventStreamReaderDto(updatedActiveReader))
         )
     }
 
@@ -98,14 +98,14 @@ class PostgresClientEventStore(
         newActiveReader: ActiveEventStreamReader
     ): Boolean {
        return executor.executeReturningBoolean(
-           QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, ActiveEventStreamReaderDto(newActiveReader))
-               .andWhere("${EventStreamActiveReadersTable.name}.${EventStreamActiveReadersTable.version.name} = $expectedVersion")
+           QueryBuilder.insertOrUpdateByIdAndVersionQuery(eventStoreSchemaName, newActiveReader.id,
+               expectedVersion, ActiveEventStreamReaderDto(newActiveReader))
        )
     }
 
     override fun commitStreamReadIndex(readIndex: EventStreamReadIndex): Boolean {
         return executor.executeReturningBoolean(
-            QueryBuilder.insertOrUpdateQuery(eventStoreSchemaName, EventStreamReadIndexDto(readIndex))
+            QueryBuilder.insertOrUpdateWithLatestVersionQuery(eventStoreSchemaName, EventStreamReadIndexDto(readIndex))
         )
     }
 

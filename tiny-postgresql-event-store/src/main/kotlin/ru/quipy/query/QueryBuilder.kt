@@ -59,14 +59,24 @@ class QueryBuilder {
             return query
         }
 
-         fun <E: Dto> insertOrUpdateQuery(schema: String, entity: E) : OnDuplicateKeyUpdateInsertQuery {
+         fun <E: Dto> insertOrUpdateWithLatestVersionQuery(schema: String, entity: E) : OnDuplicateKeyUpdateInsertQuery {
              return when(entity) {
-                 is SnapshotDto -> insertOrUpdateSnapshotQuery(schema, entity)
-                 is ActiveEventStreamReaderDto -> insertOrUpdateActiveStreamReader(schema, entity)
-                 is EventStreamReadIndexDto -> insertOrUpdateStreamReader(schema, entity)
+                 is SnapshotDto -> insertOrUpdateSnapshotWithLatestVersionQuery(schema, entity)
+                 is ActiveEventStreamReaderDto -> insertOrUpdateActiveStreamReaderWithLatestVersionQuery(schema, entity)
+                 is EventStreamReadIndexDto -> insertOrUpdateStreamReaderWithLatestVersionQuery(schema, entity)
                  else -> throw UnmappedDtoType(entity::class.simpleName)
              }
          }
+
+        fun <E: Dto> insertOrUpdateByIdAndVersionQuery(schema: String, id: Any, expectedVersion: Long, entity: E) : OnDuplicateKeyUpdateInsertQuery {
+            return when(entity) {
+                is SnapshotDto -> insertOrUpdateSnapshotByIdAndVersionQuery(schema, id, expectedVersion, entity)
+                is ActiveEventStreamReaderDto -> insertOrUpdateActiveStreamReaderByIdAndVersionQuery(schema,id, expectedVersion, entity)
+                is EventStreamReadIndexDto -> insertOrUpdateStreamReaderByIdAndVersionQuery(schema, id, expectedVersion, entity)
+                else -> throw UnmappedDtoType(entity::class.simpleName)
+            }
+        }
+
         fun <T: Any> findEntityByIdQuery(schema: String, id: Any, clazz: KClass<T>) : SelectQuery {
             val (tableName, tableIdColumnName) = when (clazz) {
                 EventRecord::class -> EventRecordTable.name to EventRecordTable.id.name
@@ -80,7 +90,7 @@ class QueryBuilder {
                 .limit(1)
         }
 
-        private fun insertOrUpdateSnapshotQuery(schema: String, entity: SnapshotDto) : OnDuplicateKeyUpdateInsertQuery {
+        private fun insertOrUpdateSnapshot(schema: String, entity: SnapshotDto) : OnDuplicateKeyUpdateInsertQuery {
             return OnDuplicateKeyUpdateInsertQuery(schema, SnapshotTable.name)
                 .withColumns(columns = SnapshotTable.insertColumnNames())
                 .withValues(values = entity.values())
@@ -102,6 +112,54 @@ class QueryBuilder {
                 .withValues(values = entity.values())
                 .withPossiblyConflictingColumns(EventStreamReadIndexTable.id.name)
                 .onDuplicateKeyUpdateColumns(columns = EventStreamReadIndexTable.onDuplicateKeyUpdateFields())
+        }
+
+        private fun insertOrUpdateSnapshotWithLatestVersionQuery(schema: String, entity: SnapshotDto) : OnDuplicateKeyUpdateInsertQuery {
+            return insertOrUpdateSnapshot(schema, entity)
+                .andWhere("${SnapshotTable.name}.${SnapshotTable.version.name} < ${entity.version}")
+        }
+
+        private fun insertOrUpdateActiveStreamReaderWithLatestVersionQuery(schema: String, entity: ActiveEventStreamReaderDto) : OnDuplicateKeyUpdateInsertQuery {
+            return insertOrUpdateActiveStreamReader(schema, entity)
+                .andWhere("${EventStreamActiveReadersTable.name}.${EventStreamActiveReadersTable.version.name} < ${entity.version}")
+        }
+
+        private fun insertOrUpdateStreamReaderWithLatestVersionQuery(schema: String, entity: EventStreamReadIndexDto): OnDuplicateKeyUpdateInsertQuery {
+            return insertOrUpdateStreamReader(schema, entity)
+                .andWhere("${EventStreamReadIndexTable.name}.${EventStreamReadIndexTable.version.name} < ${entity.version}")
+        }
+
+        private fun insertOrUpdateSnapshotByIdAndVersionQuery(
+            schema: String,
+            id: Any,
+            expectedVersion: Long,
+            entity: SnapshotDto
+        ): OnDuplicateKeyUpdateInsertQuery {
+            return insertOrUpdateSnapshot(schema, entity)
+                .andWhere("${SnapshotTable.name}.${SnapshotTable.id.name} = '$id'")
+                .andWhere("${SnapshotTable.name}.${SnapshotTable.version.name} = $expectedVersion")
+        }
+
+        private fun insertOrUpdateStreamReaderByIdAndVersionQuery(
+            schema: String,
+            id: Any,
+            expectedVersion: Long,
+            entity: EventStreamReadIndexDto
+        ): OnDuplicateKeyUpdateInsertQuery {
+            return insertOrUpdateStreamReader(schema, entity)
+                .andWhere("${EventStreamReadIndexTable.name}.${EventStreamReadIndexTable.id.name} = '$id'")
+                .andWhere("${EventStreamReadIndexTable.name}.${EventStreamReadIndexTable.version.name} = $expectedVersion")
+        }
+
+        private fun insertOrUpdateActiveStreamReaderByIdAndVersionQuery(
+            schema: String,
+            id: Any,
+            expectedVersion: Long,
+            entity: ActiveEventStreamReaderDto
+        ): OnDuplicateKeyUpdateInsertQuery {
+            return insertOrUpdateActiveStreamReader(schema, entity)
+                .andWhere("${EventStreamActiveReadersTable.name}.${EventStreamActiveReadersTable.id.name} = '$id'")
+                .andWhere("${EventStreamActiveReadersTable.name}.${EventStreamActiveReadersTable.version.name} = $expectedVersion")
         }
         fun select(schema: String, relation: String) : SelectQuery {
             return SelectQuery(schema, relation)

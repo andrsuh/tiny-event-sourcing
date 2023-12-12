@@ -27,6 +27,7 @@ import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
 import ru.quipy.domain.Snapshot
 import ru.quipy.saga.SagaContext
+import java.util.UUID
 
 @SpringBootTest(
     classes = [
@@ -124,7 +125,7 @@ class PostgresEventStoreTest {
         testStreamReaders(postgresTemplateEventStore)
     }
     private fun insertEventRecordAndCheck(eventStore: EventStore) {
-        eventStore.insertEventRecord(aggregateTableName, generateEventRecord(aggregateId1, aggregateVersion1, timestamp1))
+        eventStore.insertEventRecord(aggregateTableName, generateEventRecord(1, aggregateId1, aggregateVersion1, timestamp1))
         var eventRecord = eventStore.findEventRecordsWithAggregateVersionGraterThan(aggregateTableName, aggregateId1, 0)
         Assertions.assertEquals(1, eventRecord.size)
     }
@@ -151,14 +152,13 @@ class PostgresEventStoreTest {
     private fun generateEventRecords(number: Int, aggregateId: String, aggregateVersion: Long, timestamp: Long) : List<EventRecord> {
         var ans = mutableListOf<EventRecord>()
         for (i in 1..number) {
-            ans.add(generateEventRecord(aggregateId, aggregateVersion, timestamp))
+            ans.add(generateEventRecord(i.toLong(), aggregateId, aggregateVersion, timestamp))
         }
         return ans
     }
-    private fun generateEventRecord(aggregateId: String, aggregateVersion: Long, timestamp: Long) : EventRecord {
-        // id в базе задается последовательностью
+    private fun generateEventRecord(id: Long, aggregateId: String, aggregateVersion: Long, timestamp: Long) : EventRecord {
         return EventRecord(
-            "", aggregateId, aggregateVersion, "test_event", "{}", SagaContext(), timestamp
+            id.toString(), aggregateId, aggregateVersion, "test_event", "{}", SagaContext(), timestamp
         )
     }
 
@@ -224,7 +224,7 @@ class PostgresEventStoreTest {
 
         var streamReadIndex = EventStreamReadIndex(streamName, readIndex1, streamVersion1)
         Assertions.assertTrue(eventStore.commitStreamReadIndex(streamReadIndex))
-        var otherStreamReadIndex = EventStreamReadIndex(streamName, readIndex2, streamVersion1)
+        var otherStreamReadIndex = EventStreamReadIndex(streamName, readIndex2, streamVersion2)
         Assertions.assertTrue(eventStore.commitStreamReadIndex(otherStreamReadIndex))
 
         var readIndexFromDb = eventStore.findStreamReadIndex(streamName)
