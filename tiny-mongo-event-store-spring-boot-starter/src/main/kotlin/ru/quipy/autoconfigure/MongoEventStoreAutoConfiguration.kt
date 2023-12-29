@@ -14,8 +14,7 @@ import ru.quipy.eventstore.converter.JacksonMongoEntityConverter
 import ru.quipy.eventstore.factory.MongoClientFactory
 
 @Configuration
-class EventStoreAutoConfiguration {
-
+class MongoEventStoreAutoConfiguration {
     @Bean
     @ConditionalOnBean(MongoTemplate::class)
     @ConditionalOnMissingBean
