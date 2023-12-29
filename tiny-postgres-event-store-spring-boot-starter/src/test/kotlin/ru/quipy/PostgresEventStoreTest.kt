@@ -1,7 +1,6 @@
 package ru.quipy
 
-import ru.quipy.config.PostgresEventStoreConfiguration
-import ru.quipy.config.PostgresEventStoreTestConfiguration
+import ru.quipy.config.TestDbConfig
 import ru.quipy.converter.EntityConverter
 import ru.quipy.exception.UnknownEntityClassException
 import ru.quipy.executor.QueryExecutor
@@ -21,18 +20,20 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
+import ru.quipy.autoconfigure.PostgresEventStoreAutoConfiguration
+import ru.quipy.config.FlywayConfig
 import ru.quipy.database.EventStore
 import ru.quipy.domain.ActiveEventStreamReader
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
 import ru.quipy.domain.Snapshot
 import ru.quipy.saga.SagaContext
-import java.util.UUID
 
 @SpringBootTest(
     classes = [
-        PostgresEventStoreTestConfiguration::class,
-        PostgresEventStoreConfiguration::class,
+        TestDbConfig::class,
+        FlywayConfig::class,
+        PostgresEventStoreAutoConfiguration::class
     ]
 )
 class PostgresEventStoreTest {

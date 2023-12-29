@@ -1,14 +1,22 @@
-package ru.quipy.db
+package ru.quipy.config
 
-import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGSimpleDataSource
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import javax.sql.DataSource
 
-class TestDataSourceProvider : DataSourceProvider {
-    private var dataSource: DataSource
-    constructor(dbName: String, username: String, password: String, defaultSchema: String) {
+@Configuration
+class TestDbConfig {
+    @Bean
+    fun dataSource(
+        @Value("\${jdbc.dbName:}") dbName: String,
+        @Value("\${jdbc.username:}") username: String,
+        @Value("\${jdbc.password:}") password: String,
+        @Value("\${schema:event_sourcing_store}") schema: String)
+        : DataSource {
         val container = PostgreSQLContainer(DockerImageName.parse("postgres:14.9-alpine")).apply {
             withDatabaseName(dbName)
             withUsername(username)
@@ -17,20 +25,10 @@ class TestDataSourceProvider : DataSourceProvider {
         if (!container.isRunning) {
             container.start()
         }
-        dataSource = PGSimpleDataSource().apply {
+        return PGSimpleDataSource().apply {
             setURL(container.jdbcUrl)
             user = username
             this.password = password
         }
-        val flyway = Flyway.configure()
-            .locations("/migrations")
-            .dataSource(dataSource)
-            .defaultSchema(defaultSchema)
-            .load()
-
-        flyway.migrate()
-    }
-    override fun dataSource(): DataSource {
-        return dataSource
     }
 }
