@@ -36,21 +36,19 @@
             <artifactId>tiny-event-sourcing-lib</artifactId>
             <version>${tiny-event-sourcing-lib.version}</version>
         </dependency>
+
         <dependency>
             <groupId>ru.quipy</groupId>
             <artifactId>tiny-postgresql-event-store</artifactId>
             <version>${tiny-postgres-event-store.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
             <version>${spring.boot.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-mongodb</artifactId>
-        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-kotlin</artifactId>
@@ -62,33 +60,32 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>ru.quipy</groupId>-->
-<!--            <artifactId>tiny-event-sourcing-spring-boot-starter</artifactId>-->
-<!--            <version>${tiny-event-sourcing-spring-boot-starter.version}</version>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
+
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
             <version>6.0.12</version>
         </dependency>
+
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
             <version>1.19.1</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
             <version>9.22.3</version>
         </dependency>
+
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
             <version>10.0.1</version>
         </dependency>
+
     </dependencies>
 
     <repositories>
