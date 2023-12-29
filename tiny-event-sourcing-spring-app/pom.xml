@@ -49,6 +49,7 @@
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
         <tiny-event-sourcing-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-event-sourcing-spring-boot-starter.version>
         <tiny-mongo-event-store-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-mongo-event-store-spring-boot-starter.version>
+        <tiny-postgres-event-store-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-postgres-event-store-spring-boot-starter.version>
     </properties>
 
     <dependencyManagement>
@@ -70,10 +71,16 @@
             <version>${tiny-event-sourcing-spring-boot-starter.version}</version>
         </dependency>
 
+<!--        <dependency>-->
+<!--            <artifactId>tiny-mongo-event-store-spring-boot-starter</artifactId>-->
+<!--            <groupId>ru.quipy</groupId>-->
+<!--            <version>${tiny-mongo-event-store-spring-boot-starter.version}</version>-->
+<!--        </dependency>-->
+
         <dependency>
-            <artifactId>tiny-mongo-event-store-spring-boot-starter</artifactId>
+            <artifactId>tiny-postgres-event-store-spring-boot-starter</artifactId>
             <groupId>ru.quipy</groupId>
-            <version>${tiny-mongo-event-store-spring-boot-starter.version}</version>
+            <version>${tiny-postgres-event-store-spring-boot-starter.version}</version>
         </dependency>
 
         <dependency>
@@ -81,10 +88,10 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.boot</groupId>-->
-<!--            <artifactId>spring-boot-starter-data-mongodb</artifactId>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.awaitility</groupId>
