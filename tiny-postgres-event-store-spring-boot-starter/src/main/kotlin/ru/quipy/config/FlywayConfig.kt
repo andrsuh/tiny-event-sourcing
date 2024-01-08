@@ -16,7 +16,7 @@ class FlywayConfig {
     fun flyway(dataSource: DataSource,
         @Value("\${schema:event_sourcing_store}") schema: String) : Flyway {
         return Flyway.configure()
-            .locations("/migrations")
+            .locations("classpath:/migrations")
             .dataSource(dataSource)
             .defaultSchema(schema)
             .load()

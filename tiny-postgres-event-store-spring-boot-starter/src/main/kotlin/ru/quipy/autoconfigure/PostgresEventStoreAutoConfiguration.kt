@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
 import org.springframework.jdbc.core.JdbcTemplate
 import ru.quipy.PostgresClientEventStore
+import ru.quipy.PostgresTemplateEventStore
 import ru.quipy.converter.EntityConverter
 import ru.quipy.converter.JsonEntityConverter
 import ru.quipy.converter.ResultSetToEntityMapper
@@ -29,21 +30,23 @@ class PostgresEventStoreAutoConfiguration {
     @Value("\${schema:event_sourcing_store}")
     private lateinit var schema: String
 
-    @Bean("jacksonObjectMapper")
+    @Bean
     fun objectMapper() : ObjectMapper {
         return jacksonObjectMapper()
     }
-    @Bean("jsonEntityConverter")
+
+    @Bean
     @ConditionalOnBean(ObjectMapper::class)
     fun entityConverter(
-        @Qualifier("jacksonObjectMapper") objectMapper: ObjectMapper
+       objectMapper: ObjectMapper
     ) : EntityConverter {
         return JsonEntityConverter(objectMapper)
     }
-    @Bean("resultSetToEntityMapper")
+
+    @Bean
     @ConditionalOnBean(EntityConverter::class)
     fun resultSetToEntityMapper(
-        @Qualifier("jsonEntityConverter") entityConverter: EntityConverter
+       entityConverter: EntityConverter
     ) : ResultSetToEntityMapper {
         return ResultSetToEntityMapperImpl(entityConverter)
     }
@@ -77,7 +80,7 @@ class PostgresEventStoreAutoConfiguration {
     @Bean("postgresClientEventStore")
     @ConditionalOnBean(QueryExecutor::class, ResultSetToEntityMapper::class)
     fun postgresClientEventStore(
-        @Qualifier("resultSetToEntityMapper") resultSetToEntityMapper: ResultSetToEntityMapper,
+        resultSetToEntityMapper: ResultSetToEntityMapper,
         @Qualifier("exceptionLoggingSqlQueriesExecutor") executor: QueryExecutor,
         entityConverter: EntityConverter
     ) : PostgresClientEventStore {
@@ -98,6 +101,8 @@ class PostgresEventStoreAutoConfiguration {
         mapperFactory: MapperFactory,
         @Value("\${batchInsertSize:1000}") batchInsertSize: Int,
         entityConverter: EntityConverter
-    ): ru.quipy.PostgresTemplateEventStore =
-        ru.quipy.PostgresTemplateEventStore(jdbcTemplate, schema, mapperFactory, batchInsertSize, entityConverter)
+    ): PostgresTemplateEventStore {
+        return PostgresTemplateEventStore(jdbcTemplate, schema, mapperFactory, batchInsertSize, entityConverter)
+    }
+
 }
