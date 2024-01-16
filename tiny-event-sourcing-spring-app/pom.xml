@@ -77,11 +77,25 @@
 <!--            <version>${tiny-mongo-event-store-spring-boot-starter.version}</version>-->
 <!--        </dependency>-->
 
+    <!--postgres dependencies-->
         <dependency>
             <artifactId>tiny-postgres-event-store-spring-boot-starter</artifactId>
             <groupId>ru.quipy</groupId>
             <version>${tiny-postgres-event-store-spring-boot-starter.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>9.22.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <version>10.0.1</version>
+        </dependency>
+    <!--postgres dependencies-->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -173,18 +187,6 @@
             <artifactId>postgresql</artifactId>
             <version>1.19.1</version>
             <scope>test</scope>
-        </dependency>
-
-
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
-            <version>9.22.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-database-postgresql</artifactId>
-            <version>10.0.1</version>
         </dependency>
     </dependencies>
 

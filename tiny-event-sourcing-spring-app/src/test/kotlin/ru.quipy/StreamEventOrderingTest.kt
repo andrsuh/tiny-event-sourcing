@@ -5,9 +5,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import ru.quipy.core.EventSourcingService
@@ -18,11 +15,10 @@ import ru.quipy.projectDemo.createTag
 import ru.quipy.projectDemo.logic.ProjectAggregateState
 import ru.quipy.streams.AggregateSubscriptionsManager
 import java.util.concurrent.TimeUnit
-
 @SpringBootTest(properties = ["event.sourcing.stream-batch-size=3"])
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class StreamEventOrderingTest {
+class StreamEventOrderingTest: BaseTest(testId) {
     companion object {
         const val testId = "3"
     }
@@ -32,14 +28,6 @@ class StreamEventOrderingTest {
 
     @Autowired
     private lateinit var subscriptionsManager: AggregateSubscriptionsManager
-
-    @Autowired
-    lateinit var mongoTemplate: MongoTemplate
-
-    fun cleanDatabase() {
-        mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testId)), "aggregate-project")
-        mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testId)), "snapshots")
-    }
 
     private val sb = StringBuilder()
 

@@ -1,24 +1,23 @@
 package ru.quipy
 
-import ru.quipy.converter.EntityConverter
-import ru.quipy.mappers.MapperFactory
-import ru.quipy.query.Query
-import ru.quipy.query.QueryBuilder
-import ru.quipy.tables.ActiveEventStreamReaderDto
-import ru.quipy.tables.EventRecordDto
-import ru.quipy.tables.EventRecordTable
-import ru.quipy.tables.EventStreamActiveReadersTable
-import ru.quipy.tables.EventStreamReadIndexDto
-import ru.quipy.tables.SnapshotDto
 import org.apache.logging.log4j.LogManager
 import org.springframework.jdbc.core.BatchPreparedStatementSetter
 import org.springframework.jdbc.core.JdbcTemplate
+import ru.quipy.converter.EntityConverter
 import ru.quipy.database.EventStore
 import ru.quipy.domain.ActiveEventStreamReader
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
 import ru.quipy.domain.Snapshot
+import ru.quipy.mappers.MapperFactory
+import ru.quipy.query.Query
+import ru.quipy.query.QueryBuilder
 import ru.quipy.saga.SagaContext
+import ru.quipy.tables.ActiveEventStreamReaderDto
+import ru.quipy.tables.EventRecordDto
+import ru.quipy.tables.EventRecordTable
+import ru.quipy.tables.EventStreamReadIndexDto
+import ru.quipy.tables.SnapshotDto
 import java.sql.PreparedStatement
 import java.sql.SQLException
 import kotlin.reflect.KClass
@@ -30,7 +29,7 @@ class PostgresTemplateEventStore(
     private val batchInsertSize: Int,
     private val entityConverter: EntityConverter) : EventStore {
     companion object {
-        private val logger = LogManager.getLogger(ru.quipy.PostgresTemplateEventStore::class)
+        private val logger = LogManager.getLogger(PostgresTemplateEventStore::class)
     }
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
         jdbcTemplate.execute(
@@ -124,7 +123,7 @@ class PostgresTemplateEventStore(
 
     override fun tryUpdateActiveStreamReader(updatedActiveReader: ActiveEventStreamReader): Boolean {
         return executeQueryReturningBoolean(
-            QueryBuilder.insertOrUpdateWithLatestVersionQuery(eventStoreSchemaName, ActiveEventStreamReaderDto(updatedActiveReader))
+            QueryBuilder.insertOrUpdateByIdAndVersionQuery(eventStoreSchemaName, updatedActiveReader.id, updatedActiveReader.version - 1, ActiveEventStreamReaderDto(updatedActiveReader))
         )
     }
 
@@ -133,8 +132,8 @@ class PostgresTemplateEventStore(
         newActiveReader: ActiveEventStreamReader
     ): Boolean {
         return executeQueryReturningBoolean(
-            QueryBuilder.insertOrUpdateWithLatestVersionQuery(eventStoreSchemaName, ActiveEventStreamReaderDto(newActiveReader))
-                .andWhere("${EventStreamActiveReadersTable.name}.${EventStreamActiveReadersTable.version.name} = $expectedVersion")
+            QueryBuilder.insertOrUpdateByIdAndVersionQuery(eventStoreSchemaName, newActiveReader.id,
+                expectedVersion, ActiveEventStreamReaderDto(newActiveReader))
         )
     }
 
@@ -156,7 +155,7 @@ class PostgresTemplateEventStore(
             jdbcTemplate.execute(query.build())
             true
         } catch (e : Exception) {
-            ru.quipy.PostgresTemplateEventStore.Companion.logger.error(e.stackTrace)
+            logger.error(e.stackTrace)
             false
         }
     }

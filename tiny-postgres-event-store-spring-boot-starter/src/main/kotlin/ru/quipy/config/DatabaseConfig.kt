@@ -16,6 +16,8 @@ class DatabaseConfig {
         @Value("\${jdbc.username:}") username: String,
         @Value("\${jdbc.password:}") password: String): DataSource {
         val hikariConfig = HikariConfig()
+        hikariConfig.maximumPoolSize = 20
+        hikariConfig.idleTimeout = 30000
         hikariConfig.jdbcUrl = databaseUrl
         hikariConfig.username = username
         hikariConfig.password = password

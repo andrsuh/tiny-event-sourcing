@@ -25,11 +25,12 @@ import java.util.*
 @SpringBootTest
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class TransferTransactionAggregateStateTest {
+class TransferTransactionAggregateStateTest: BaseTest(testId) {
     companion object {
         private val testAccountId = UUID.fromString("b88f83bf-9a2a-4091-9cb3-3185f6f65a4b")
         private val testAccount2Id = UUID.fromString("1fccc03e-4ed3-47b7-8f76-8e62efb5e36e")
         private val userId = UUID.fromString("330f9c97-4031-4bd4-ab49-a347719ace25")
+        private const val testId = "4"
     }
 
     @Autowired
@@ -44,21 +45,18 @@ class TransferTransactionAggregateStateTest {
     @Autowired
     private lateinit var bankAccountCacheRepository: BankAccountCacheRepository
 
-    @Autowired
-    lateinit var mongoTemplate: MongoTemplate
-
     @BeforeEach
     fun init() {
         cleanDatabase()
     }
 
-    fun cleanDatabase() {
-        mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testAccountId)), "accounts")
-        mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testAccount2Id)), "accounts")
-        mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testAccountId)), "snapshots")
-        mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testAccount2Id)), "snapshots")
-        mongoTemplate.remove(Query(), "transfers")
-    }
+    // override fun cleanDatabase() {
+    //     mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testAccountId)), "accounts")
+    //     mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testAccount2Id)), "accounts")
+    //     mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testAccountId)), "snapshots")
+    //     mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testAccount2Id)), "snapshots")
+    //     mongoTemplate.remove(Query(), "transfers")
+    // }
 
     @Test
     fun createTwoBankAccountsDepositAndTransfer() {

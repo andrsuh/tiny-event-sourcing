@@ -4,11 +4,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import ru.quipy.bankDemo.accounts.api.AccountAggregate
@@ -20,7 +16,7 @@ import java.util.*
 @SpringBootTest
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class BankAggregateStateTest {
+class BankAggregateStateTest: BaseTest(testId.toString()) {
     companion object {
         private val testId = UUID.randomUUID()
         private val userId = UUID.randomUUID()
@@ -29,18 +25,15 @@ class BankAggregateStateTest {
     @Autowired
     private lateinit var bankESService: EventSourcingService<UUID, AccountAggregate, Account>
 
-    @Autowired
-    lateinit var mongoTemplate: MongoTemplate
-
     @BeforeEach
     fun init() {
         cleanDatabase()
     }
 
-    fun cleanDatabase() {
-        mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testId)), "accounts")
-        mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testId)), "snapshots")
-    }
+    // override fun cleanDatabase() {
+    //     mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testId)), "accounts")
+    //     mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testId)), "snapshots")
+    // }
 
     @Test
     fun createAccount() {

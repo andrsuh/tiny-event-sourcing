@@ -1,5 +1,9 @@
 package ru.quipy.query
 
+import ru.quipy.domain.ActiveEventStreamReader
+import ru.quipy.domain.EventRecord
+import ru.quipy.domain.EventStreamReadIndex
+import ru.quipy.domain.Snapshot
 import ru.quipy.exception.UnknownEntityClassException
 import ru.quipy.query.exception.UnmappedDtoType
 import ru.quipy.query.insert.BatchInsertQuery
@@ -15,10 +19,6 @@ import ru.quipy.tables.EventStreamReadIndexDto
 import ru.quipy.tables.EventStreamReadIndexTable
 import ru.quipy.tables.SnapshotDto
 import ru.quipy.tables.SnapshotTable
-import ru.quipy.domain.ActiveEventStreamReader
-import ru.quipy.domain.EventRecord
-import ru.quipy.domain.EventStreamReadIndex
-import ru.quipy.domain.Snapshot
 import kotlin.reflect.KClass
 
 class QueryBuilder {
@@ -37,7 +37,7 @@ class QueryBuilder {
                 .withColumns(columns = EventRecordTable.insertColumnNames())
                 .withValues(values = eventRecord.values())
         }
-        private fun insertSnapshot(schema: String,snapshot: SnapshotDto) : InsertQuery {
+        private fun insertSnapshot(schema: String, snapshot: SnapshotDto) : InsertQuery {
             return InsertQuery(schema, SnapshotTable.name)
                 .withColumns(columns = SnapshotTable.insertColumnNames())
                 .withValues(values = snapshot.values())

@@ -1,15 +1,15 @@
 package ru.quipy.converter
 
 import ru.quipy.converter.exception.NoMapperForClass
-import ru.quipy.tables.EventRecordTable
-import ru.quipy.tables.EventStreamActiveReadersTable
-import ru.quipy.tables.EventStreamReadIndexTable
-import ru.quipy.tables.SnapshotTable
 import ru.quipy.domain.ActiveEventStreamReader
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
 import ru.quipy.domain.Snapshot
 import ru.quipy.saga.SagaContext
+import ru.quipy.tables.EventRecordTable
+import ru.quipy.tables.EventStreamActiveReadersTable
+import ru.quipy.tables.EventStreamReadIndexTable
+import ru.quipy.tables.SnapshotTable
 import java.sql.ResultSet
 import kotlin.reflect.KClass
 

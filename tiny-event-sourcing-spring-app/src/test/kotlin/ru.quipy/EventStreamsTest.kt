@@ -12,9 +12,6 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import ru.quipy.core.EventSourcingService
@@ -36,7 +33,7 @@ import javax.annotation.PostConstruct
 @ActiveProfiles("test")
 @Import(SubscriptionConfig::class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class EventStreamsTest {
+class EventStreamsTest: BaseTest(testId) {
     companion object {
         const val testId = "2"
     }
@@ -46,14 +43,6 @@ class EventStreamsTest {
 
     @Autowired
     lateinit var tested: TestDemoProjectSubscriber
-
-    @Autowired
-    lateinit var mongoTemplate: MongoTemplate
-
-    fun cleanDatabase() {
-        mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testId)), "aggregate-project")
-        mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testId)), "snapshots")
-    }
 
     @BeforeEach
     fun init() {

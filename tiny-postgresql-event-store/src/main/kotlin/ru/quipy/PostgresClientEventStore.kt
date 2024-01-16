@@ -1,22 +1,21 @@
 package ru.quipy
 
-import ru.quipy.converter.EntityConverter
-import ru.quipy.converter.ResultSetToEntityMapper
-import ru.quipy.executor.QueryExecutor
-import ru.quipy.query.QueryBuilder
-import ru.quipy.tables.ActiveEventStreamReaderDto
-import ru.quipy.tables.EventRecordDto
-import ru.quipy.tables.EventRecordTable
-import ru.quipy.tables.EventStreamActiveReadersTable
-import ru.quipy.tables.EventStreamReadIndexDto
-import ru.quipy.tables.SnapshotDto
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import ru.quipy.converter.EntityConverter
+import ru.quipy.converter.ResultSetToEntityMapper
 import ru.quipy.database.EventStore
 import ru.quipy.domain.ActiveEventStreamReader
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
 import ru.quipy.domain.Snapshot
+import ru.quipy.executor.QueryExecutor
+import ru.quipy.query.QueryBuilder
+import ru.quipy.tables.ActiveEventStreamReaderDto
+import ru.quipy.tables.EventRecordDto
+import ru.quipy.tables.EventRecordTable
+import ru.quipy.tables.EventStreamReadIndexDto
+import ru.quipy.tables.SnapshotDto
 import kotlin.reflect.KClass
 
 class PostgresClientEventStore(
@@ -46,7 +45,9 @@ class PostgresClientEventStore(
 
     override fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot) {
         executor.execute(
-            QueryBuilder.insertOrUpdateWithLatestVersionQuery(eventStoreSchemaName, SnapshotDto(snapshot, tableName, entityConverter))
+            QueryBuilder.insertOrUpdateWithLatestVersionQuery(
+                eventStoreSchemaName,
+                SnapshotDto(snapshot, tableName, entityConverter))
         )
     }
 
