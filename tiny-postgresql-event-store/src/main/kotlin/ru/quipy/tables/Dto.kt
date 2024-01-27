@@ -6,6 +6,7 @@ import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
 import ru.quipy.domain.Snapshot
 import ru.quipy.saga.SagaContext
+import kotlin.reflect.jvm.jvmName
 
 interface Dto {
     fun values() : Array<Any>
@@ -41,17 +42,19 @@ class EventRecordDto(
 class SnapshotDto(
     val id : String,
     val snapshotTableName: String,
+    val aggregateStateClassName: String,
     val snapshot : String,
     var version: Long
 ) : Dto {
     constructor(snapshot: Snapshot, snapshotTableName: String, entityConverter: EntityConverter)
         : this(snapshot.id.toString(),
             snapshotTableName,
+            snapshot.snapshot::class.jvmName,
             entityConverter.serialize(snapshot.snapshot),
             snapshot.version)
 
     override fun values(): Array<Any> {
-        return arrayOf(id, snapshotTableName, snapshot, version)
+        return arrayOf(id, snapshotTableName, aggregateStateClassName, snapshot, version)
     }
 }
 

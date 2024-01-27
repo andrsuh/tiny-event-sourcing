@@ -43,13 +43,15 @@ class SnapshotTable {
         const val name = "snapshot"
         val id = Column(1, "id", String::class)
         val snapshotTableName = Column(2, "snapshot_table_name", String::class)
-        val snapshot = Column(3, "snapshot", String::class)
-        val version = Column(4, "version", Long::class)
+        val aggregateStateClassName = Column(3, "aggregate_state_class_name", String::class)
+        val snapshot = Column(4, "snapshot", String::class)
+        val version = Column(5, "version", Long::class)
 
         fun insertColumnNames() : Array<String> {
             return arrayOf(
                 id.name,
                 snapshotTableName.name,
+                aggregateStateClassName.name,
                 snapshot.name,
                 version.name
             )
@@ -58,6 +60,7 @@ class SnapshotTable {
             return arrayOf(
                 id.name,
                 snapshotTableName.name,
+                aggregateStateClassName.name,
                 snapshot.name,
                 version.name
             )

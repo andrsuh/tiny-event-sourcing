@@ -53,8 +53,8 @@ class ResultSetToEntityMapperImpl(private val entityConverter: EntityConverter) 
     private fun mapToSnapshot(resultSet: ResultSet) : Snapshot {
         return Snapshot(
             resultSet.getString(SnapshotTable.id.index),
-            // entityConverter.toObject(resultSet.getString(SnapshotTable.snapshot.index), AggregateState::class),
-            resultSet.getString(SnapshotTable.snapshot.index), // sadly enough (Snapshot.snapshot should indeed be parametrized)
+            entityConverter.toObject(resultSet.getString(SnapshotTable.snapshot.index),
+                Class.forName(resultSet.getString(SnapshotTable.aggregateStateClassName.index)).kotlin),
             resultSet.getLong(SnapshotTable.version.index)
         )
     }

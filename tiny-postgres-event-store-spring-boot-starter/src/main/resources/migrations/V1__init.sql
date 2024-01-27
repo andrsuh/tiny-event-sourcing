@@ -14,6 +14,7 @@ create table if not exists event_sourcing_store.event_record (
 create table if not exists event_sourcing_store.snapshot (
     id text primary key,
     snapshot_table_name text,
+    aggregate_state_class_name text,
     snapshot text,
     version bigint
 );
