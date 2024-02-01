@@ -21,8 +21,6 @@
         <spring.boot.version>2.6.6</spring.boot.version>
         <kotlin.version>1.6.21</kotlin.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
-        <tiny-event-sourcing-spring-boot-starter.version>2.3.0</tiny-event-sourcing-spring-boot-starter.version>
-        <tiny-mongo-event-store-spring-boot-starter.version>2.3.0</tiny-mongo-event-store-spring-boot-starter.version>
     </properties>
 
     <dependencyManagement>
@@ -41,13 +39,13 @@
         <dependency>
             <artifactId>tiny-event-sourcing-spring-boot-starter</artifactId>
             <groupId>ru.quipy</groupId>
-            <version>${tiny-event-sourcing-spring-boot-starter.version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <artifactId>tiny-mongo-event-store-spring-boot-starter</artifactId>
             <groupId>ru.quipy</groupId>
-            <version>${tiny-mongo-event-store-spring-boot-starter.version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>

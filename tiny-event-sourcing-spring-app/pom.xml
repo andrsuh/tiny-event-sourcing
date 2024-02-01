@@ -8,13 +8,12 @@
     <parent>
         <groupId>ru.quipy</groupId>
         <artifactId>tiny-event-sourcing</artifactId>
-        <version>2.4.0-SHAPSHOT</version>
+        <version>2.5.0</version>
     </parent>
 
     <name>tiny-event-sourcing-spring-app</name>
     <description>Tiny event sourcing framework</description>
     <artifactId>tiny-event-sourcing-spring-app</artifactId>
-    <version>2.4.0-SHAPSHOT</version>
 
     <properties>
         <java.version>11</java.version>
@@ -23,8 +22,6 @@
         <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
         <awaitility.version>4.2.0</awaitility.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
-        <tiny-event-sourcing-spring-boot-starter.version>2.3.0</tiny-event-sourcing-spring-boot-starter.version>
-        <tiny-mongo-event-store-spring-boot-starter.version>2.3.0</tiny-mongo-event-store-spring-boot-starter.version>
     </properties>
 
     <dependencyManagement>
@@ -43,13 +40,13 @@
         <dependency>
             <artifactId>tiny-event-sourcing-spring-boot-starter</artifactId>
             <groupId>ru.quipy</groupId>
-            <version>${tiny-event-sourcing-spring-boot-starter.version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <artifactId>tiny-mongo-event-store-spring-boot-starter</artifactId>
             <groupId>ru.quipy</groupId>
-            <version>${tiny-mongo-event-store-spring-boot-starter.version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>

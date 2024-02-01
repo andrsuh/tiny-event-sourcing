@@ -22,21 +22,25 @@
             </name>
         </developer>
     </developers>
+
     <url>https://github.com/andrsuh/tiny-event-sourcing/tree/master-2.0/tiny-event-sourcing-lib</url>
+
     <scm>
         <connection>scm:git:git://github.com/andrsuh/tiny-event-sourcing.git</connection>
         <developerConnection>scm:git:ssh://github.com:andrsuh/tiny-event-sourcing.git</developerConnection>
         <url>https://github.com/andrsuh/tiny-event-sourcing/tree/master-2.0/tiny-event-sourcing-lib</url>
     </scm>
+
     <licenses>
         <license>
             <name>Apache License 2.0</name>
             <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
+
     <groupId>ru.quipy</groupId>
     <artifactId>tiny-event-sourcing</artifactId>
-    <version>2.4.0-SHAPSHOT</version>
+    <version>2.5.0</version>
 
     <properties>
         <java.version>11</java.version>
