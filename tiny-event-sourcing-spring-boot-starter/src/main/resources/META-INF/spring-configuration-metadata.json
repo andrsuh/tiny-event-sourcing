@@ -82,6 +82,19 @@
           "description": "Disable sagas beans"
         }
       ]
+    },
+    {
+      "name": "event.sourcing.snapshots-enabled",
+      "values": [
+        {
+          "value": false,
+          "description": "Disable snapshots creation and usage for the event sourcing"
+        },
+        {
+          "value": true,
+          "description": "Enable snapshots creation and usage for the event sourcing"
+        }
+      ]
     }
   ]
 }

@@ -8,13 +8,12 @@
     <parent>
         <groupId>ru.quipy</groupId>
         <artifactId>tiny-event-sourcing</artifactId>
-        <version>2.4.0-SHAPSHOT</version>
+        <version>2.5.0</version>
     </parent>
 
     <name>tiny-mongo-event-store</name>
     <description>Tiny event sourcing mongodb event-store operations</description>
     <artifactId>tiny-mongo-event-store</artifactId>
-    <version>2.4.0-SHAPSHOT</version>
 
     <properties>
         <java.version>11</java.version>
@@ -23,14 +22,13 @@
         <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
         <awaitility.version>4.2.0</awaitility.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
-        <tiny-event-sourcing-lib.version>2.3.0</tiny-event-sourcing-lib.version>
     </properties>
 
     <dependencies>
         <dependency>
             <artifactId>tiny-event-sourcing-lib</artifactId>
             <groupId>ru.quipy</groupId>
-            <version>${tiny-event-sourcing-lib.version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>

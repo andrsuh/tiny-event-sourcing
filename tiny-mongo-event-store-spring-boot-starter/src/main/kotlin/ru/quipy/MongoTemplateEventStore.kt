@@ -25,6 +25,8 @@ open class MongoTemplateEventStore : EventStore {
     @Autowired
     lateinit var mongoTemplate: MongoTemplate
 
+    private val indexExistenceCache = mutableMapOf<String, Boolean>()
+
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
         try {
             mongoTemplate.insert(eventRecord, aggregateTableName)
@@ -45,7 +47,20 @@ open class MongoTemplateEventStore : EventStore {
         }
     }
 
-    override fun tableExists(aggregateTableName: String) = mongoTemplate.collectionExists(aggregateTableName)
+    override fun tableExists(aggregateTableName: String): Boolean {
+        val collectionExists = mongoTemplate.collectionExists(aggregateTableName)
+        if (collectionExists && !indexExistenceCache.containsKey(aggregateTableName)) {
+            mongoTemplate.indexOps(aggregateTableName).ensureIndex( // todo sukhoa this is relevant only for EvenrRecords!!!
+                org.springframework.data.mongodb.core.index.Index()
+                    .on("aggregateId", Sort.DEFAULT_DIRECTION)
+                    .on("aggregateVersion", Sort.DEFAULT_DIRECTION)
+                    .on("createdAt", Sort.DEFAULT_DIRECTION)
+            )
+            logger.error("Index created for $aggregateTableName")
+            indexExistenceCache[aggregateTableName] = true
+        }
+        return collectionExists
+    }
 
     override fun updateSnapshotWithLatestVersion(tableName: String, snapshot: Snapshot) {
         mongoTemplate.updateWithLatestVersion(tableName, snapshot)
