@@ -126,12 +126,15 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
         return version to state
     }
 
-    private fun getInitialState(aggregateId: ID): Pair<S, Long> =
-        eventStore.findSnapshotByAggregateId(eventSourcingProperties.snapshotTableName, aggregateId) // sukhoa it is hot. we should create property and find snapshot only if it is enabled
-            ?.let {
-                it.snapshot as S to it.version
-            } ?: (aggregateInfo.emptyStateCreator() to 0L)
+    private fun getInitialState(aggregateId: ID): Pair<S, Long> {
+        val stateFromSnapshot = if (eventSourcingProperties.snapshotsEnabled) {
+            eventStore.findSnapshotByAggregateId(eventSourcingProperties.snapshotTableName, aggregateId)
+        } else null
 
+        return stateFromSnapshot?.let {
+            it.snapshot as S to it.version
+        }  ?: (aggregateInfo.emptyStateCreator() to 0L)
+    }
     private fun makeSnapshotIfNecessary(aggregateId: ID, aggregateState: S, updatedVersion: Long) {
         if (updatedVersion % eventSourcingProperties.snapshotFrequency == 0L) {
             val snapshot = Snapshot(aggregateId, aggregateState, updatedVersion)
