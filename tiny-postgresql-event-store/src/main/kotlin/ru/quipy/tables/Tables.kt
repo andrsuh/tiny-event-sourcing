@@ -20,8 +20,7 @@ class EventRecordTable {
                 aggregateVersion.name,
                 eventTitle.name,
                 payload.name,
-                sagaContext.name,
-                createdAt.name)
+                sagaContext.name)
         }
 
         fun allColumnNames() : Array<String> {

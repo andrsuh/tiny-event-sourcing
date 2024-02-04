@@ -32,12 +32,16 @@ class PostgresTemplateEventStore(
         private val logger = LogManager.getLogger(PostgresTemplateEventStore::class)
     }
     override fun insertEventRecord(aggregateTableName: String, eventRecord: EventRecord) {
-        jdbcTemplate.execute(
-            QueryBuilder.insert(
-                eventStoreSchemaName,
-                EventRecordDto(eventRecord, aggregateTableName, entityConverter)
-            ).build()
-        )
+        try {
+            jdbcTemplate.execute(
+                QueryBuilder.insert(
+                    eventStoreSchemaName,
+                    EventRecordDto(eventRecord, aggregateTableName, entityConverter)
+                ).build()
+            )
+        } catch (e : DuplicateKeyException) {
+            throw DuplicateEventIdException("There is record with such an id. Record cannot be saved $eventRecord", e)
+        }
     }
 
     override fun insertEventRecords(aggregateTableName: String, eventRecords: List<EventRecord>) {
@@ -72,7 +76,12 @@ class PostgresTemplateEventStore(
     }
 
     override fun tableExists(aggregateTableName: String): Boolean {
-        return true
+        var query = QueryBuilder.select(eventStoreSchemaName, EventRecordTable.name)
+            .withColumns(EventRecordTable.aggregateTableName.name)
+            .andWhere("${EventRecordTable.aggregateTableName.name} = \'$aggregateTableName\'")
+            .limit(1)
+
+        return jdbcTemplate.query(query.build()) { rs, _ -> rs.getString(1) }.isNotEmpty()
     }
 
 
@@ -105,6 +114,7 @@ class PostgresTemplateEventStore(
         val query = QueryBuilder.select(eventStoreSchemaName, EventRecordTable.name)
             .andWhere("${EventRecordTable.aggregateTableName.name} = '$aggregateTableName'")
             .andWhere("${EventRecordTable.createdAt.name} > $eventSequenceNum") // id > $eventSequenceNum ??
+            .orderBy(EventRecordTable.createdAt.name, SelectQuery.SortingOrder.ASCENDING)
             .limit(batchSize)
         return jdbcTemplate.query(query.build(), mapperFactory.getMapper(EventRecord::class))
     }
