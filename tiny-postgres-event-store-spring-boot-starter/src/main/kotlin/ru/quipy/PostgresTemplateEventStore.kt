@@ -65,7 +65,6 @@ class PostgresTemplateEventStore(
                         EventRecordTable.sagaContext.index,
                         entityConverter.serialize(item.sagaContext ?: SagaContext())
                     )
-                    preparedStatement.setLong(EventRecordTable.createdAt.index, item.createdAt)
                 }
 
                 override fun getBatchSize(): Int {
