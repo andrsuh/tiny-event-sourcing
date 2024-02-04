@@ -1,5 +1,5 @@
 create schema if not exists event_sourcing_store;
--- create sequence event_sourcing_store.event_record_created_at_sequence;
+create sequence event_sourcing_store.event_record_created_at_sequence;
 create table if not exists event_sourcing_store.event_record (
        id text,
        aggregate_table_name text,
@@ -8,7 +8,7 @@ create table if not exists event_sourcing_store.event_record (
        event_title text,
        payload text,
        saga_context text,
-       createdAt bigint
+       created_at bigint default nextval('event_sourcing_store.event_record_created_at_sequence')
 );
 
 create table if not exists event_sourcing_store.snapshot (
