@@ -28,12 +28,11 @@ class EventRecordDto(
         eventRecord.aggregateVersion,
         eventRecord.eventTitle,
         eventRecord.payload,
-        entityConverter.serialize(eventRecord.sagaContext?: SagaContext()),
-        eventRecord.createdAt)
+        entityConverter.serialize(eventRecord.sagaContext?: SagaContext()))
 
     override fun values(): Array<Any> {
         return arrayOf(
-            id, aggregateTableName, aggregateId, aggregateVersion, eventTitle, payload, sagaContext, createdAt
+            id, aggregateTableName, aggregateId, aggregateVersion, eventTitle, payload, sagaContext
         )
     }
 }

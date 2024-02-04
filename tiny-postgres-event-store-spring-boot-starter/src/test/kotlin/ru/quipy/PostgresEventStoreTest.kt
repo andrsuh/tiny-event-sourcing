@@ -1,18 +1,5 @@
 package ru.quipy
 
-import ru.quipy.config.TestDbConfig
-import ru.quipy.converter.EntityConverter
-import ru.quipy.exception.UnknownEntityClassException
-import ru.quipy.executor.QueryExecutor
-import ru.quipy.query.QueryBuilder
-import ru.quipy.tables.ActiveEventStreamReaderDto
-import ru.quipy.tables.EventRecordDto
-import ru.quipy.tables.EventRecordTable
-import ru.quipy.tables.EventStreamActiveReadersTable
-import ru.quipy.tables.EventStreamReadIndexDto
-import ru.quipy.tables.EventStreamReadIndexTable
-import ru.quipy.tables.SnapshotDto
-import ru.quipy.tables.SnapshotTable
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -22,12 +9,25 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
 import ru.quipy.autoconfigure.PostgresEventStoreAutoConfiguration
 import ru.quipy.config.FlywayConfig
+import ru.quipy.config.TestDbConfig
+import ru.quipy.converter.EntityConverter
 import ru.quipy.database.EventStore
 import ru.quipy.domain.ActiveEventStreamReader
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
 import ru.quipy.domain.Snapshot
+import ru.quipy.exception.UnknownEntityClassException
+import ru.quipy.executor.QueryExecutor
+import ru.quipy.query.QueryBuilder
 import ru.quipy.saga.SagaContext
+import ru.quipy.tables.ActiveEventStreamReaderDto
+import ru.quipy.tables.EventRecordDto
+import ru.quipy.tables.EventRecordTable
+import ru.quipy.tables.EventStreamActiveReadersTable
+import ru.quipy.tables.EventStreamReadIndexDto
+import ru.quipy.tables.EventStreamReadIndexTable
+import ru.quipy.tables.SnapshotDto
+import ru.quipy.tables.SnapshotTable
 
 @SpringBootTest(
     classes = [
@@ -107,8 +107,8 @@ class PostgresEventStoreTest {
 
     @Test
     fun testBatchInsertEventRecordsAndCheckSelectWithConditionsAndLimit() {
-        // insertEventRecordsAndCheckSelect(postgresClientEventStore)
-        // truncateAll()
+        insertEventRecordsAndCheckSelect(postgresClientEventStore)
+        truncateAll()
         insertEventRecordsAndCheckSelect(postgresTemplateEventStore)
     }
 
@@ -126,40 +126,35 @@ class PostgresEventStoreTest {
         testStreamReaders(postgresTemplateEventStore)
     }
     private fun insertEventRecordAndCheck(eventStore: EventStore) {
-        eventStore.insertEventRecord(aggregateTableName, generateEventRecord(1, aggregateId1, aggregateVersion1, timestamp1))
+        eventStore.insertEventRecord(aggregateTableName, generateEventRecord(1, aggregateId1, aggregateVersion1))
         var eventRecord = eventStore.findEventRecordsWithAggregateVersionGraterThan(aggregateTableName, aggregateId1, 0)
         Assertions.assertEquals(1, eventRecord.size)
     }
 
     private fun insertEventRecordsAndCheckSelect(eventStore: EventStore) {
-        eventStore.insertEventRecords(aggregateTableName, generateEventRecords(10, aggregateId1, aggregateVersion1, timestamp1))
-        eventStore.insertEventRecords(aggregateTableName, generateEventRecords(5, aggregateId1, aggregateVersion2, timestamp1))
-        eventStore.insertEventRecords(aggregateTableName, generateEventRecords(10, aggregateId2, aggregateVersion1, timestamp1))
-        eventStore.insertEventRecords(aggregateTableName, generateEventRecords(11, aggregateId1, aggregateVersion1, timestamp2))
-        eventStore.insertEventRecords(aggregateTableName, generateEventRecords(6, aggregateId3, aggregateVersion1, timestamp3))
+        eventStore.insertEventRecords(aggregateTableName, generateEventRecords(10, aggregateId1, aggregateVersion1))
+        eventStore.insertEventRecords(aggregateTableName, generateEventRecords(5, aggregateId1, aggregateVersion2))
+        eventStore.insertEventRecords(aggregateTableName, generateEventRecords(10, aggregateId2, aggregateVersion1))
+        eventStore.insertEventRecords(aggregateTableName, generateEventRecords(11, aggregateId1, aggregateVersion1))
+        eventStore.insertEventRecords(aggregateTableName, generateEventRecords(6, aggregateId3, aggregateVersion1))
 
         Assertions.assertEquals(5, eventStore.findEventRecordsWithAggregateVersionGraterThan(aggregateTableName, aggregateId1, aggregateVersion1).size)
         Assertions.assertEquals(26, eventStore.findEventRecordsWithAggregateVersionGraterThan(aggregateTableName, aggregateId1, aggregateVersion0).size)
         Assertions.assertEquals(0, eventStore.findEventRecordsWithAggregateVersionGraterThan(aggregateTableName, aggregateId1, aggregateVersion2).size)
         Assertions.assertEquals(0, eventStore.findEventRecordsWithAggregateVersionGraterThan(aggregateTableName, aggregateId1, aggregateVersion3).size)
         Assertions.assertEquals(10, eventStore.findEventRecordsWithAggregateVersionGraterThan(aggregateTableName, aggregateId2, aggregateVersion0).size)
-
-        Assertions.assertEquals(17, eventStore.findBatchOfEventRecordAfter(aggregateTableName, timestamp1, 100).size)
-        Assertions.assertEquals(42, eventStore.findBatchOfEventRecordAfter(aggregateTableName, timestamp0, 100).size)
-        Assertions.assertEquals(35, eventStore.findBatchOfEventRecordAfter(aggregateTableName, timestamp0, 35).size)
-        Assertions.assertEquals(0, eventStore.findBatchOfEventRecordAfter(aggregateTableName, timestamp3, 100).size)
     }
 
-    private fun generateEventRecords(number: Int, aggregateId: String, aggregateVersion: Long, timestamp: Long) : List<EventRecord> {
+    private fun generateEventRecords(number: Int, aggregateId: String, aggregateVersion: Long) : List<EventRecord> {
         var ans = mutableListOf<EventRecord>()
         for (i in 1..number) {
-            ans.add(generateEventRecord(i.toLong(), aggregateId, aggregateVersion, timestamp))
+            ans.add(generateEventRecord(i.toLong(), aggregateId, aggregateVersion))
         }
         return ans
     }
-    private fun generateEventRecord(id: Long, aggregateId: String, aggregateVersion: Long, timestamp: Long) : EventRecord {
+    private fun generateEventRecord(id: Long, aggregateId: String, aggregateVersion: Long) : EventRecord {
         return EventRecord(
-            id.toString(), aggregateId, aggregateVersion, "test_event", "{}", SagaContext(), timestamp
+            id.toString(), aggregateId, aggregateVersion, "test_event", "{}", SagaContext()
         )
     }
 
