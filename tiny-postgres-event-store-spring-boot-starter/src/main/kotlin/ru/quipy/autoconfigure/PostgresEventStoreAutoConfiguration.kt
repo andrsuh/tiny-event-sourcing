@@ -87,6 +87,7 @@ class PostgresEventStoreAutoConfiguration {
         return ExceptionLoggingSqlQueriesExecutor(databaseFactory, PostgresClientEventStore.logger)
     }
 
+    // @Primary
     @Bean("postgresClientEventStore")
     @ConditionalOnBean(QueryExecutor::class, ResultSetToEntityMapper::class)
     fun postgresClientEventStore(
