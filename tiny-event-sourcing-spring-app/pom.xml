@@ -65,6 +65,7 @@
 <!--            <artifactId>tiny-mongo-event-store-spring-boot-starter</artifactId>-->
 <!--            <groupId>ru.quipy</groupId>-->
 <!--            <version>${tiny-mongo-event-store-spring-boot-starter.version}</version>-->
+<!--            <scope>test</scope>-->
 <!--        </dependency>-->
 
     <!--postgres dependencies-->
