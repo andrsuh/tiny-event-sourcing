@@ -12,7 +12,7 @@ class EventRecordTable {
         val eventTitle = Column(5, "event_title", String::class)
         val payload = Column(6, "payload", String::class)
         val sagaContext = Column(7, "saga_context", SagaContext::class)
-        val createdAt = Column(8, "createdAt", Long::class)
+        val createdAt = Column(8, "created_at", Long::class)
         fun insertColumnNames() : Array<String> {
             return arrayOf(id.name,
                 aggregateTableName.name,

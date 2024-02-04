@@ -18,8 +18,7 @@ class EventRecordDto(
     val aggregateVersion: Long,
     val eventTitle: String,
     val payload: String,
-    var sagaContext: String,
-    val createdAt: Long = System.currentTimeMillis()
+    var sagaContext: String
 ) : Dto {
     constructor(eventRecord: EventRecord, aggregateTableName: String, entityConverter: EntityConverter)
     : this(
