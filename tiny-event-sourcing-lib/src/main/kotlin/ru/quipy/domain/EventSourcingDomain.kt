@@ -68,3 +68,27 @@ class ActiveEventStreamReader(
     val readPosition: Long,
     val lastInteraction: Long
 ) : Unique<String>, Versioned
+
+interface Topic
+
+abstract class ExternalEvent<T : Topic>(
+    override val id: UUID = UUID.randomUUID(),
+    val name: String,
+    var createdAt: Long = System.currentTimeMillis(),
+) : Unique<UUID>
+
+data class EventAggregation(
+    val eventTitle: String,
+    val payload: String,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
+data class ExternalEventRecord(
+    override val id: String,
+    val eventTitle: String,
+    val payload: String,
+    val createdAt: Long = System.currentTimeMillis()
+) : Unique<String> {
+    constructor()
+            : this("", "", "")
+}

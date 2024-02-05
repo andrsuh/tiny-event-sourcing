@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  mongodb:
+    build: mongo/
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    ports:
+      - 2181
+    volumes:
+      - zookeeper-persistence:/bitnami/zookeeper
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: 'yes'
+    restart: unless-stopped
+
+  kafka:
+    depends_on:
+      - zookeeper
+    image: bitnami/kafka:3.5.1
+    ports:
+      - 9092:9092
+    volumes:
+      - kafka-persistence:/bitnami/kafka
+    environment:
+      KAFKA_BROKER_ID: 1
+      ALLOW_PLAINTEXT_LISTENER: 'yes'
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_LISTENERS: CLIENT://:9093,EXTERNAL://:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT://kafka:9093,EXTERNAL://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: CLIENT
+    restart: unless-stopped
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:0.3.3
+    ports:
+      - 8888:8888
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+      SERVER_PORT: 8888
+
+volumes:
+  mongodb-data:
+  zookeeper-persistence:
+  kafka-persistence:
