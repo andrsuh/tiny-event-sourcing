@@ -11,13 +11,13 @@ import java.math.BigDecimal
 import java.util.*
 
 class TransferTransaction : AggregateState<UUID, TransferTransactionAggregate> {
-    private lateinit var transferId: UUID
-    internal var transactionState = CREATED
+    lateinit var transferId: UUID
+    var transactionState = CREATED
 
-    private lateinit var sourceParticipant: Participant
-    private lateinit var destinationParticipant: Participant
+    lateinit var sourceParticipant: Participant
+    lateinit var destinationParticipant: Participant
 
-    private lateinit var transferAmount: BigDecimal
+    lateinit var transferAmount: BigDecimal
 
     override fun getId() = transferId
 

@@ -12,8 +12,8 @@ import java.util.*
 
 
 class Account : AggregateState<UUID, AccountAggregate> {
-    private lateinit var accountId: UUID
-    private lateinit var holderId: UUID
+    lateinit var accountId: UUID
+    lateinit var holderId: UUID
     var bankAccounts: MutableMap<UUID, BankAccount> = mutableMapOf()
 
     override fun getId() = accountId
