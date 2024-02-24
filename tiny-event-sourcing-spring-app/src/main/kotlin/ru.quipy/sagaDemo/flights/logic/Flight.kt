@@ -8,7 +8,7 @@ import ru.quipy.sagaDemo.flights.api.FlightReservedEvent
 import java.util.*
 
 class Flight : AggregateState<UUID, FlightAggregate> {
-    private lateinit var flightId: UUID
+    lateinit var flightId: UUID
     private var canceled: Boolean = false
 
     override fun getId() = flightId

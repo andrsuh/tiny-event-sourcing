@@ -2,12 +2,16 @@ package ru.quipy.projectDemo.logic
 
 import ru.quipy.core.annotations.StateTransitionFunc
 import ru.quipy.domain.AggregateState
-import ru.quipy.projectDemo.api.*
-import java.util.*
+import ru.quipy.projectDemo.api.ProjectAggregate
+import ru.quipy.projectDemo.api.ProjectCreatedEvent
+import ru.quipy.projectDemo.api.TagAssignedToTaskEvent
+import ru.quipy.projectDemo.api.TagCreatedEvent
+import ru.quipy.projectDemo.api.TaskCreatedEvent
+import java.util.UUID
 
 // Service's business logic
 class ProjectAggregateState: AggregateState<String, ProjectAggregate> {
-    private lateinit var projectId: String
+    lateinit var projectId: String
     var createdAt: Long = System.currentTimeMillis()
     var updatedAt: Long = System.currentTimeMillis()
 
