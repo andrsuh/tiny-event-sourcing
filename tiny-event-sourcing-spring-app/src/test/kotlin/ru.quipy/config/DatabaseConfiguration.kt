@@ -1,6 +1,7 @@
 package ru.quipy.config
 
-import org.postgresql.ds.PGSimpleDataSource
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -25,10 +26,13 @@ class DatabaseConfiguration {
         if (!container.isRunning) {
             container.start()
         }
-        return PGSimpleDataSource().apply {
-            setURL(container.jdbcUrl)
-            user = username
-            this.password = password
-        }
+        val hikariConfig = HikariConfig()
+        hikariConfig.maximumPoolSize = 20
+        hikariConfig.idleTimeout = 30000
+        hikariConfig.jdbcUrl = container.jdbcUrl
+        hikariConfig.username = username
+        hikariConfig.password = password
+
+        return HikariDataSource(hikariConfig)
     }
 }
