@@ -9,7 +9,7 @@ import ru.quipy.sagaDemo.payment.api.PaymentSucceededEvent
 import java.util.*
 
 class Payment : AggregateState<UUID, PaymentAggregate> {
-    private lateinit var paymentId: UUID
+    lateinit var paymentId: UUID
     private var failed: Boolean = false
 
     override fun getId() = paymentId
