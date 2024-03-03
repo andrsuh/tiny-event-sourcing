@@ -77,7 +77,7 @@ class PostgresEventStoreAutoConfiguration {
         return ExceptionLoggingSqlQueriesExecutor(databaseFactory, batchInsertSize, PostgresClientEventStore.logger)
     }
 
-    // @Primary
+    @Primary
     @Bean("postgresClientEventStore")
     @ConditionalOnBean(QueryExecutor::class, ResultSetToEntityMapper::class)
     fun postgresClientEventStore(
@@ -85,7 +85,7 @@ class PostgresEventStoreAutoConfiguration {
         @Qualifier("exceptionLoggingSqlQueriesExecutor") executor: QueryExecutor,
         entityConverter: EntityConverter
     ) : PostgresClientEventStore {
-        return PostgresClientEventStore(schema, resultSetToEntityMapper,entityConverter, executor)
+        return PostgresClientEventStore(schema, resultSetToEntityMapper, entityConverter, executor)
     }
 
     @Bean
@@ -94,7 +94,7 @@ class PostgresEventStoreAutoConfiguration {
         return JdbcTemplate(dataSource)
     }
 
-    @Primary
+    // @Primary
     @Bean("postgresTemplateEventStore")
     @ConditionalOnBean(JdbcTemplate::class, MapperFactory::class, EntityConverter::class)
     fun postgresTemplateEventStore(

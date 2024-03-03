@@ -23,23 +23,18 @@ open class ExceptionLoggingSqlQueriesExecutor(
     }
 
     override fun <T: Query> execute(query: BasicQuery<T>) {
-        try {
-            executeDependingOnQueryType(query)
-        } catch (ex: SQLException) {
-            logger.error(ex.message)
-        }
+        executeDependingOnQueryType(query)
     }
 
-    override fun <T: Query> executeReturningResultSet(query: BasicQuery<T>): ResultSet? {
-        return try {
-            if (query is BatchInsertQuery) {
-                throw UnsupportedOperationException("Cannot return result set executing batch insert")
-            }
-            connectionFactory.getDatabaseConnection().prepareStatement(query.build())
-                .executeQuery()
-        } catch (ex: SQLException) {
-            logger.error(ex.message)
-            null
+    override fun <T: Query, E> executeAndProcessResultSet(query: BasicQuery<T>,
+        processFunction: (ResultSet?) -> E?): E? {
+        if (query is BatchInsertQuery) {
+            throw UnsupportedOperationException("Cannot return result set executing batch insert")
+        }
+        return connectionFactory.getDatabaseConnection().use { connection ->
+            processFunction(
+                connection.prepareStatement(query.build()).executeQuery()
+            )
         }
     }
 
@@ -47,25 +42,25 @@ open class ExceptionLoggingSqlQueriesExecutor(
         when (query) {
             is BatchInsertQuery -> executeBatchInsert(query)
             else -> {
-                val connection = connectionFactory.getDatabaseConnection()
-                connection.prepareStatement(query.build())
+                connectionFactory.getDatabaseConnection().use { connection ->
+                    connection.prepareStatement(query.build())
                     .execute()
-                connection.close()
+                }
             }
         }
     }
 
     open fun executeBatchInsert(query: BatchInsertQuery) {
         var sqls = query.build().split("\n;")
-        val connection = connectionFactory.getDatabaseConnection()
-        val prepared = connection.createStatement()
-        for ((count, sql) in sqls.withIndex()) {
-            prepared.addBatch(sql)
-            if ((count + 1) % batchInsertSize.toLong() == 0L) {
-                prepared.executeBatch()
+        connectionFactory.getDatabaseConnection().use { connection ->
+            val prepared = connection.createStatement()
+            for ((count, sql) in sqls.withIndex()) {
+                prepared.addBatch(sql)
+                if ((count + 1) % batchInsertSize.toLong() == 0L) {
+                    prepared.executeBatch()
+                }
             }
+            prepared.executeBatch()
         }
-        prepared.executeBatch()
-        connection.close()
     }
 }

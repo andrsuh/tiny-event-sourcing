@@ -27,13 +27,12 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.random.Random.Default.nextDouble
 import kotlin.time.Duration.Companion.milliseconds
 
 @SpringBootTest
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class ActiveStreamReaderTest {
+class ActiveStreamReaderTest: BaseTest("ActiveStreamReaderTest") {
     @Autowired
     private lateinit var eventStore: EventStore
 
@@ -45,7 +44,7 @@ class ActiveStreamReaderTest {
         eventReaderHealthCheckPeriod = 50.milliseconds,
         snapshotFrequency = 10
     )
-    private val streamFailingProbability = 1.0
+    private val streamFailingProbability = 1
 
     private val dispatcher =
         ThreadPoolExecutor(16, 16, Long.MAX_VALUE, TimeUnit.MILLISECONDS, LinkedBlockingQueue()).asCoroutineDispatcher()
@@ -76,6 +75,7 @@ class ActiveStreamReaderTest {
 
     @BeforeEach
     fun init() {
+        cleanDatabase()
         registry.register(ProjectAggregate::class, ProjectAggregateState::class) {
             registerStateTransition(ProjectCreatedEvent::class, ProjectAggregateState::projectCreatedApply)
             registerStateTransition(TagCreatedEvent::class, ProjectAggregateState::tagCreatedApply)
@@ -119,9 +119,9 @@ class ActiveStreamReaderTest {
             CoroutineScope(dispatcher).launch {
                 for (i in 1..numberOfTagsPerProject) {
                     demoESService.update(createdEvent.projectId) {
+                        eventsPublished++
                         it.createTag("Tag - $i")
                     }
-                    eventsPublished++
                 }
                 durations.add(System.currentTimeMillis())
             }
@@ -132,12 +132,12 @@ class ActiveStreamReaderTest {
         val eventStreamManager2 =
             AggregateEventStreamManager(registry, eventStore, properties, eventStreamReaderManager)
 
-        val results = ArrayBlockingQueue<StreamHandleResult>(15000)
+        val results = ArrayBlockingQueue<StreamHandleResult>(totalNumberOfEvents * 2) // 10500(всего eventов) * 2 стрима
         val eventCounter = AtomicInteger(0)
         val switchingCounter = AtomicInteger(0)
 
         val stream1 =
-            eventStreamManager1.createEventStream("test-active-subscribers-stream", ProjectAggregate::class).also {
+            eventStreamManager1.createEventStream("test-active-subscribers-stream-1", ProjectAggregate::class).also {
                 CoroutineScope(dispatcher).launch {
                     while (true) {
                         it.handleNextRecord {
@@ -150,7 +150,7 @@ class ActiveStreamReaderTest {
             }
 
         val stream2 =
-            eventStreamManager2.createEventStream("test-active-subscribers-stream", ProjectAggregate::class).also {
+            eventStreamManager2.createEventStream("test-active-subscribers-stream-2", ProjectAggregate::class).also {
                 CoroutineScope(dispatcher).launch {
                     while (true) {
                         it.handleNextRecord {
@@ -162,10 +162,11 @@ class ActiveStreamReaderTest {
                 }
             }
 
+        val random = Random()
         CoroutineScope(dispatcher).launch {
             val compositeStream = CompositeEventStream(stream1, stream2)
             while (true) {
-                if (nextDouble(1.0) > streamFailingProbability) {
+                if (random.nextDouble() > streamFailingProbability) {
                     compositeStream.switchActive()
                     switchingCounter.incrementAndGet()
                 }
@@ -176,7 +177,7 @@ class ActiveStreamReaderTest {
         runBlocking {
             await.atMost(200, TimeUnit.SECONDS).pollDelay(ofMillis(500)).until {
                 println("NUM: ${results.distinctBy { it.eventId }.count()}, ${eventCounter.get()}")
-                results.distinctBy { it.eventId }.count() >= totalNumberOfEvents
+                results.count() >= totalNumberOfEvents * 2
             }
             // todo sukhoa: ofc test should be rewritten to have some reasonable asserts. Also it shows that we loose events :)
             println("First stream processed: ${results.count { it.streamId == 1 }}")
