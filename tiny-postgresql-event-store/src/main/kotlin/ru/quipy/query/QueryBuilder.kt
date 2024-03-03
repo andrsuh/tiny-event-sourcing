@@ -86,7 +86,7 @@ class QueryBuilder {
                 else -> throw UnknownEntityClassException(clazz.simpleName)
             }
             return select(schema, tableName)
-                .andWhere("$tableIdColumnName = '$id'")
+                .andWhere("$tableName.$tableIdColumnName = '$id'")
                 .limit(1)
         }
 
@@ -121,7 +121,7 @@ class QueryBuilder {
 
         private fun insertOrUpdateActiveStreamReaderWithLatestVersionQuery(schema: String, entity: ActiveEventStreamReaderDto) : OnDuplicateKeyUpdateInsertQuery {
             return insertOrUpdateActiveStreamReader(schema, entity)
-                .andWhere("${EventStreamActiveReadersTable.name}.${EventStreamActiveReadersTable.version.name} < ${entity.version}")
+                .andWhere("${EventStreamActiveReadersTable.name}.${EventStreamActiveReadersTable.version.name} = ${entity.version - 1}")
         }
 
         private fun insertOrUpdateStreamReaderWithLatestVersionQuery(schema: String, entity: EventStreamReadIndexDto): OnDuplicateKeyUpdateInsertQuery {
