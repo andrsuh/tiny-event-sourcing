@@ -1,7 +1,6 @@
 package ru.quipy.autoconfigure
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
@@ -30,10 +29,10 @@ class PostgresEventStoreAutoConfiguration {
     @Value("\${schema:event_sourcing_store}")
     private lateinit var schema: String
 
-    @Bean
-    fun objectMapper() : ObjectMapper {
-        return jacksonObjectMapper()
-    }
+    // @Bean
+    // fun objectMapper() : ObjectMapper {
+    //     return jacksonObjectMapper()
+    // }
 
     @Bean
     @ConditionalOnBean(ObjectMapper::class)
