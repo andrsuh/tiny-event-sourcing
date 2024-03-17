@@ -29,7 +29,7 @@ abstract class Event<A : Aggregate>(
     val name: String,
     var sagaContext: SagaContext = SagaContext(),
     override var version: Long = 0L, // this is aggregate version actually or the event count number
-    var createdAt: Long
+    var createdAt: Long = System.currentTimeMillis(),
 ) : Versioned, Unique<UUID>
 
 @Suppress("unused")
