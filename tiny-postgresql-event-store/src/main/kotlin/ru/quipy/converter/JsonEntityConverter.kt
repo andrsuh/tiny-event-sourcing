@@ -1,7 +1,6 @@
 package ru.quipy.converter
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import kotlin.reflect.KClass
 
 class JsonEntityConverter(private val objectMapper: ObjectMapper) : EntityConverter {
