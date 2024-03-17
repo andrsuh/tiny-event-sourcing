@@ -1,7 +1,6 @@
 package ru.quipy
 
 import org.apache.logging.log4j.LogManager
-import org.springframework.dao.DataAccessException
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.jdbc.core.BatchPreparedStatementSetter
 import org.springframework.jdbc.core.JdbcTemplate
@@ -48,7 +47,7 @@ open class PostgresTemplateEventStore(
                     EventRecordDto(eventRecord, aggregateTableName, entityConverter)
                 ).build()
             )
-        } catch (e : DataAccessException) {
+        } catch (e : DuplicateKeyException) {
             throw DuplicateEventIdException("There is record with such an id. Record cannot be saved $eventRecord", e)
         }
     }
@@ -83,7 +82,7 @@ open class PostgresTemplateEventStore(
                     }
                 })
             }
-        } catch (e : SQLException) {
+        } catch (e :  DuplicateKeyException) {
             throw DuplicateEventIdException(
                 "There is record with such an id. Record set cannot be saved $eventRecords",
                 e

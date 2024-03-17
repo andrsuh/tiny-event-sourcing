@@ -1,8 +1,5 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  ru.quipy.config.FlywayConfig,\
   ru.quipy.autoconfigure.PostgresEventStoreAutoConfiguration
 spring.autoconfigure.exclude=\
-  org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration$FlywayConfiguration,\
   org.springframework.boot.autoconfigure.jdbc.JdbcTemplateConfiguration,\
-  org.springframework.boot.autoconfigure.jdbc.DataSourceConfiguration,\
-  org.springframework.boot.autoconfigure.flyway.*
+  org.springframework.boot.autoconfigure.jdbc.DataSourceConfiguration$Hikari

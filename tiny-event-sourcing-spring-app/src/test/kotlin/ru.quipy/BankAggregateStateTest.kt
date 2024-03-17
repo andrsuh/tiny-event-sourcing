@@ -30,11 +30,6 @@ class BankAggregateStateTest: BaseTest(testId.toString()) {
         cleanDatabase()
     }
 
-    // override fun cleanDatabase() {
-    //     mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testId)), "accounts")
-    //     mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testId)), "snapshots")
-    // }
-
     @Test
     fun createAccount() {
         bankESService.create {

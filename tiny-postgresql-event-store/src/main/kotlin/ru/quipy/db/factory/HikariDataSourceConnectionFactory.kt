@@ -1,9 +1,9 @@
 package ru.quipy.db.factory
 
-import ru.quipy.db.DataSourceProvider
+import ru.quipy.db.HikariDatasourceProvider
 import java.sql.Connection
 
-class ConnectionFactoryImpl(private val dataSourceProvider: DataSourceProvider) : ConnectionFactory {
+class HikariDataSourceConnectionFactory(private val dataSourceProvider: HikariDatasourceProvider) : ConnectionFactory {
     override fun getDatabaseConnection(): Connection {
         return this.dataSourceProvider.dataSource().connection
     }

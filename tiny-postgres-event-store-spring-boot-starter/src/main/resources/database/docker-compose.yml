@@ -11,6 +11,4 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - ${POSTGRES_DB_PORT}:${POSTGRES_DB_PORT}
-    volumes:
-      - ../database/V1__init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped

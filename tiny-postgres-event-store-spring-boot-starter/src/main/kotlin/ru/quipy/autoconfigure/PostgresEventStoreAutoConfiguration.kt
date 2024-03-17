@@ -1,23 +1,27 @@
 package ru.quipy.autoconfigure
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.zaxxer.hikari.HikariDataSource
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Primary
 import org.springframework.jdbc.core.JdbcTemplate
 import ru.quipy.PostgresClientEventStore
 import ru.quipy.PostgresTemplateEventStore
+import ru.quipy.config.DatabaseConfig
+import ru.quipy.config.LiquibaseConfig
 import ru.quipy.converter.EntityConverter
 import ru.quipy.converter.JsonEntityConverter
 import ru.quipy.converter.ResultSetToEntityMapper
 import ru.quipy.converter.ResultSetToEntityMapperImpl
-import ru.quipy.db.DataSourceProvider
-import ru.quipy.db.DatasourceProviderImpl
+import ru.quipy.db.HikariDatasourceProvider
 import ru.quipy.db.factory.ConnectionFactory
-import ru.quipy.db.factory.ConnectionFactoryImpl
+import ru.quipy.db.factory.HikariDataSourceConnectionFactory
 import ru.quipy.executor.ExceptionLoggingSqlQueriesExecutor
 import ru.quipy.executor.QueryExecutor
 import ru.quipy.mappers.MapperFactory
@@ -25,14 +29,18 @@ import ru.quipy.mappers.MapperFactoryImpl
 import javax.sql.DataSource
 
 @Configuration
+@Import(
+    DatabaseConfig::class,
+    LiquibaseConfig::class
+)
 class PostgresEventStoreAutoConfiguration {
     @Value("\${schema:event_sourcing_store}")
     private lateinit var schema: String
 
-    // @Bean
-    // fun objectMapper() : ObjectMapper {
-    //     return jacksonObjectMapper()
-    // }
+    @Bean
+    fun objectMapper() : ObjectMapper {
+        return jacksonObjectMapper()
+    }
 
     @Bean
     @ConditionalOnBean(ObjectMapper::class)
@@ -57,14 +65,14 @@ class PostgresEventStoreAutoConfiguration {
     }
     @Bean
     @ConditionalOnBean(DataSource::class)
-    fun dataSourceProvider(dataSource: DataSource) : DataSourceProvider {
-        return DatasourceProviderImpl(dataSource)
+    fun hikariDataSourceProvider(dataSource: HikariDataSource) : HikariDatasourceProvider {
+        return HikariDatasourceProvider(dataSource)
     }
 
     @Bean
-    @ConditionalOnBean(DataSourceProvider::class)
-    fun connectionFactory(dataSourceProvider: DataSourceProvider) : ConnectionFactory {
-        return ConnectionFactoryImpl(dataSourceProvider)
+    @ConditionalOnBean(HikariDatasourceProvider::class)
+    fun connectionFactory(hikariDataSourceProvider: HikariDatasourceProvider) : HikariDataSourceConnectionFactory {
+        return HikariDataSourceConnectionFactory(hikariDataSourceProvider)
     }
 
     @Bean("exceptionLoggingSqlQueriesExecutor")
@@ -76,7 +84,7 @@ class PostgresEventStoreAutoConfiguration {
         return ExceptionLoggingSqlQueriesExecutor(databaseFactory, batchInsertSize, PostgresClientEventStore.logger)
     }
 
-    @Primary
+    // @Primary
     @Bean("postgresClientEventStore")
     @ConditionalOnBean(QueryExecutor::class, ResultSetToEntityMapper::class)
     fun postgresClientEventStore(
@@ -93,7 +101,7 @@ class PostgresEventStoreAutoConfiguration {
         return JdbcTemplate(dataSource)
     }
 
-    // @Primary
+    @Primary
     @Bean("postgresTemplateEventStore")
     @ConditionalOnBean(JdbcTemplate::class, MapperFactory::class, EntityConverter::class)
     fun postgresTemplateEventStore(

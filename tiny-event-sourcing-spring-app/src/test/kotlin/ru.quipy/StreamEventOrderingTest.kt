@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
+import ru.quipy.core.EventSourcingProperties
 import ru.quipy.core.EventSourcingService
 import ru.quipy.projectDemo.api.ProjectAggregate
 import ru.quipy.projectDemo.api.TagCreatedEvent
@@ -15,14 +16,17 @@ import ru.quipy.projectDemo.createTag
 import ru.quipy.projectDemo.logic.ProjectAggregateState
 import ru.quipy.streams.AggregateSubscriptionsManager
 import java.util.concurrent.TimeUnit
-@SpringBootTest(properties = ["event.sourcing.stream-batch-size=3"])
+
+@SpringBootTest
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class StreamEventOrderingTest: BaseTest(testId) {
     companion object {
-        const val testId = "3"
+        const val testId = "StreamEventOrderingTest"
     }
-
+    private val properties: EventSourcingProperties = EventSourcingProperties(
+        streamBatchSize = 3
+    )
     @Autowired
     private lateinit var esService: EventSourcingService<String, ProjectAggregate, ProjectAggregateState>
 
