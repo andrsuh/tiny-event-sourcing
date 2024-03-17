@@ -8,12 +8,15 @@ import org.mockito.Mockito.atMostOnce
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argWhere
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.ContextConfiguration
+import ru.quipy.config.DockerPostgresDataSourceInitializer
 import ru.quipy.core.EventSourcingService
 import ru.quipy.projectDemo.addTask
 import ru.quipy.projectDemo.api.ProjectAggregate
@@ -31,7 +34,11 @@ import javax.annotation.PostConstruct
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Import(SubscriptionConfig::class)
+@ContextConfiguration(
+    initializers = [DockerPostgresDataSourceInitializer::class],
+    classes = [SubscriptionConfig::class]
+)
+@EnableAutoConfiguration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class EventStreamsTest: BaseTest(testId) {
     companion object {

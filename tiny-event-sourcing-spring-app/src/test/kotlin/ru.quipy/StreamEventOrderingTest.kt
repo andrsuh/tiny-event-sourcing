@@ -4,9 +4,12 @@ import org.awaitility.kotlin.await
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.ContextConfiguration
+import ru.quipy.config.DockerPostgresDataSourceInitializer
 import ru.quipy.core.EventSourcingProperties
 import ru.quipy.core.EventSourcingService
 import ru.quipy.projectDemo.api.ProjectAggregate
@@ -19,6 +22,9 @@ import java.util.concurrent.TimeUnit
 
 @SpringBootTest
 @ActiveProfiles("test")
+@ContextConfiguration(
+    initializers = [DockerPostgresDataSourceInitializer::class])
+@EnableAutoConfiguration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class StreamEventOrderingTest: BaseTest(testId) {
     companion object {
