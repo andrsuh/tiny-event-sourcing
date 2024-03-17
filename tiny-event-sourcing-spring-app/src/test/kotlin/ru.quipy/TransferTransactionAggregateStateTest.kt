@@ -5,18 +5,18 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.ContextConfiguration
 import ru.quipy.bankDemo.accounts.api.AccountAggregate
 import ru.quipy.bankDemo.accounts.logic.Account
 import ru.quipy.bankDemo.transfers.api.TransferTransactionAggregate
 import ru.quipy.bankDemo.transfers.logic.TransferTransaction
 import ru.quipy.bankDemo.transfers.projections.BankAccountCacheRepository
 import ru.quipy.bankDemo.transfers.service.TransactionService
+import ru.quipy.config.DockerPostgresDataSourceInitializer
 import ru.quipy.core.EventSourcingService
 import java.math.BigDecimal
 import java.time.Duration
@@ -24,6 +24,9 @@ import java.util.*
 
 @SpringBootTest
 @ActiveProfiles("test")
+@ContextConfiguration(
+    initializers = [DockerPostgresDataSourceInitializer::class])
+@EnableAutoConfiguration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class TransferTransactionAggregateStateTest: BaseTest(testId) {
     companion object {
@@ -50,14 +53,14 @@ class TransferTransactionAggregateStateTest: BaseTest(testId) {
         cleanDatabase()
     }
 
-    override fun cleanDatabase() {
-        super.cleanDatabase()
-        mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testAccountId)), "accounts")
-        mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testAccount2Id)), "accounts")
-        mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testAccountId)), "snapshots")
-        mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testAccount2Id)), "snapshots")
-        mongoTemplate.remove(Query(), "transfers")
-    }
+    // override fun cleanDatabase() {
+    //     super.cleanDatabase()
+    //     mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testAccountId)), "accounts")
+    //     mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testAccount2Id)), "accounts")
+    //     mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testAccountId)), "snapshots")
+    //     mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testAccount2Id)), "snapshots")
+    //     mongoTemplate.remove(Query(), "transfers")
+    // }
 
     @Test
     fun createTwoBankAccountsDepositAndTransfer() {
