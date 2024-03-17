@@ -1,8 +1,9 @@
 package ru.quipy
 
+import org.postgresql.util.PSQLException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.dao.DataAccessException
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.transaction.annotation.Transactional
 import ru.quipy.converter.EntityConverter
 import ru.quipy.converter.ResultSetToEntityMapper
@@ -25,7 +26,6 @@ import ru.quipy.tables.EventStreamActiveReadersTable
 import ru.quipy.tables.EventStreamReadIndexDto
 import ru.quipy.tables.SnapshotDto
 import java.sql.ResultSet
-import java.sql.SQLException
 import kotlin.reflect.KClass
 
 open class PostgresClientEventStore(
@@ -44,7 +44,7 @@ open class PostgresClientEventStore(
                     eventStoreSchemaName,
                     EventRecordDto(eventRecord, aggregateTableName, entityConverter))
             )
-        } catch (e : SQLException) {
+        } catch (e : DuplicateKeyException) {
             throw DuplicateEventIdException("There is record with such an id. Record cannot be saved $eventRecord", e)
         }
 
@@ -56,7 +56,7 @@ open class PostgresClientEventStore(
             executor.execute(
                 QueryBuilder.batchInsert(eventStoreSchemaName, EventRecordTable.name, eventRecords.map { EventRecordDto(it, aggregateTableName, entityConverter) })
             )
-        } catch (e : SQLException) {
+        } catch (e :  DuplicateKeyException) {
             throw DuplicateEventIdException(
                 "There is record with such an id. Record set cannot be saved $eventRecords",
                 e
@@ -158,7 +158,7 @@ open class PostgresClientEventStore(
                     val query = QueryBuilder.insert(eventStoreSchemaName, DtoCreator.create(entity, tableName, entityConverter))
                     executor.execute(query)
                     true
-                } catch (e: DataAccessException) {
+                } catch (e: PSQLException) {
                     logger.info("Entity concurrent update led to clashing. Entity: $entity, table name: $tableName", e)
                     continue
                 }

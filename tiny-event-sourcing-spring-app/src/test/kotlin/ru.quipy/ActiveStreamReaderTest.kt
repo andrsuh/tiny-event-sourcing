@@ -44,7 +44,7 @@ class ActiveStreamReaderTest: BaseTest("ActiveStreamReaderTest") {
         eventReaderHealthCheckPeriod = 50.milliseconds,
         snapshotFrequency = 10
     )
-    private val streamFailingProbability = 1
+    private val streamNotFailingProbability = 0.95
 
     private val dispatcher =
         ThreadPoolExecutor(16, 16, Long.MAX_VALUE, TimeUnit.MILLISECONDS, LinkedBlockingQueue()).asCoroutineDispatcher()
@@ -137,7 +137,7 @@ class ActiveStreamReaderTest: BaseTest("ActiveStreamReaderTest") {
         val switchingCounter = AtomicInteger(0)
 
         val stream1 =
-            eventStreamManager1.createEventStream("test-active-subscribers-stream-1", ProjectAggregate::class).also {
+            eventStreamManager1.createEventStream("test-active-subscribers-stream", ProjectAggregate::class).also {
                 CoroutineScope(dispatcher).launch {
                     while (true) {
                         it.handleNextRecord {
@@ -150,7 +150,7 @@ class ActiveStreamReaderTest: BaseTest("ActiveStreamReaderTest") {
             }
 
         val stream2 =
-            eventStreamManager2.createEventStream("test-active-subscribers-stream-2", ProjectAggregate::class).also {
+            eventStreamManager2.createEventStream("test-active-subscribers-stream", ProjectAggregate::class).also {
                 CoroutineScope(dispatcher).launch {
                     while (true) {
                         it.handleNextRecord {
@@ -166,7 +166,7 @@ class ActiveStreamReaderTest: BaseTest("ActiveStreamReaderTest") {
         CoroutineScope(dispatcher).launch {
             val compositeStream = CompositeEventStream(stream1, stream2)
             while (true) {
-                if (random.nextDouble() > streamFailingProbability) {
+                if (random.nextDouble() > streamNotFailingProbability) {
                     compositeStream.switchActive()
                     switchingCounter.incrementAndGet()
                 }
@@ -177,7 +177,7 @@ class ActiveStreamReaderTest: BaseTest("ActiveStreamReaderTest") {
         runBlocking {
             await.atMost(200, TimeUnit.SECONDS).pollDelay(ofMillis(500)).until {
                 println("NUM: ${results.distinctBy { it.eventId }.count()}, ${eventCounter.get()}")
-                results.count() >= totalNumberOfEvents * 2
+                results.distinctBy { it.eventId }.count() == totalNumberOfEvents
             }
             // todo sukhoa: ofc test should be rewritten to have some reasonable asserts. Also it shows that we loose events :)
             println("First stream processed: ${results.count { it.streamId == 1 }}")
@@ -211,10 +211,10 @@ class ActiveStreamReaderTest: BaseTest("ActiveStreamReaderTest") {
 
         eventStoreStreamReaderManager.tryUpdateReaderState("test-stream", reader, readingIndex = 0L)
 
-        val waitTimeSeconds =
-            properties.maxActiveReaderInactivityPeriod.inWholeSeconds + properties.eventReaderHealthCheckPeriod.inWholeSeconds
+        val waitTimeMillis =
+            properties.maxActiveReaderInactivityPeriod.inWholeMilliseconds + properties.eventReaderHealthCheckPeriod.inWholeMilliseconds
 
-        await.atMost(waitTimeSeconds, TimeUnit.SECONDS).until {
+        await.atMost(waitTimeMillis, TimeUnit.MILLISECONDS).until {
             !eventStoreStreamReaderManager.hasActiveReader("test-stream")
         }
     }

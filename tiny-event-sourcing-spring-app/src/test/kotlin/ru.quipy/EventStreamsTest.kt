@@ -35,7 +35,7 @@ import javax.annotation.PostConstruct
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class EventStreamsTest: BaseTest(testId) {
     companion object {
-        const val testId = "2"
+        const val testId = "EventStreamsTest"
     }
 
     @Autowired

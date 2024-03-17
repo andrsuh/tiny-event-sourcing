@@ -51,7 +51,7 @@ open class ExceptionLoggingSqlQueriesExecutor(
     }
 
     open fun executeBatchInsert(query: BatchInsertQuery) {
-        var sqls = query.build().split("\n;")
+        var sqls = query.build().split("\n")
         connectionFactory.getDatabaseConnection().use { connection ->
             val prepared = connection.createStatement()
             for ((count, sql) in sqls.withIndex()) {
