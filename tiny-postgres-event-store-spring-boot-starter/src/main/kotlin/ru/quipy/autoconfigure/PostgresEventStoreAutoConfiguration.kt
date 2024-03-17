@@ -1,5 +1,6 @@
 package ru.quipy.autoconfigure
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.zaxxer.hikari.HikariDataSource
@@ -40,6 +41,7 @@ class PostgresEventStoreAutoConfiguration {
     @Bean
     fun objectMapper() : ObjectMapper {
         return jacksonObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     }
 
     @Bean
