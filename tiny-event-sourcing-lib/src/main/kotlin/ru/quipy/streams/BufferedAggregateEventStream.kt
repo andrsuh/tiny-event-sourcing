@@ -54,6 +54,8 @@ class BufferedAggregateEventStream<A : Aggregate>(
                         delay(500)
                     }
 
+                    val startTs = System.currentTimeMillis()
+
                     val eventsBatch = eventReader.read(streamBatchSize)
 
                     if (eventsBatch.isEmpty()) {
@@ -68,6 +70,10 @@ class BufferedAggregateEventStream<A : Aggregate>(
                             eventStreamNotifier.onRecordHandledSuccessfully(streamName, eventRecord.eventTitle)
                             eventReader.acknowledgeRecord(eventRecord)
                         }
+                    }
+                    val executionTime = System.currentTimeMillis() - startTs
+                    if (executionTime < streamReadPeriod) {
+                        delay(streamReadPeriod - executionTime)
                     }
                 }
             }.also {
@@ -120,7 +126,7 @@ class BufferedAggregateEventStream<A : Aggregate>(
     override fun isSuspended() = suspended.get()
 
     private suspend fun feedToHandling(event: EventRecord, beforeNextPerform: () -> Unit) {
-        for (attemptNum in 1..retryConfig.maxAttempts) {
+        for (attemptNum in 1..retryConfig.maxAttempts) { // todo sukhoa BUG
             eventsChannel.sendEvent(event)
 
             if (eventsChannel.receiveConfirmation()) {
