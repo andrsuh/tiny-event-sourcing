@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.ContextConfiguration
@@ -53,14 +55,14 @@ class TransferTransactionAggregateStateTest: BaseTest(testId) {
         cleanDatabase()
     }
 
-    // override fun cleanDatabase() {
-    //     super.cleanDatabase()
-    //     mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testAccountId)), "accounts")
-    //     mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testAccount2Id)), "accounts")
-    //     mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testAccountId)), "snapshots")
-    //     mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testAccount2Id)), "snapshots")
-    //     mongoTemplate.remove(Query(), "transfers")
-    // }
+    override fun cleanDatabase() {
+        super.cleanDatabase()
+        mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testAccountId)), "accounts")
+        mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testAccount2Id)), "accounts")
+        mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testAccountId)), "snapshots")
+        mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testAccount2Id)), "snapshots")
+        mongoTemplate.remove(Query(), "transfers")
+    }
 
     @Test
     fun createTwoBankAccountsDepositAndTransfer() {
