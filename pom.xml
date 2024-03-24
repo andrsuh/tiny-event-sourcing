@@ -11,6 +11,8 @@
         <module>tiny-event-sourcing-spring-boot-starter</module>
         <module>tiny-mongo-event-store-spring-boot-starter</module>
         <module>tiny-event-sourcing-spring-app</module>
+        <module>tiny-postgresql-event-store</module>
+        <module>tiny-postgres-event-store-spring-boot-starter</module>
     </modules>
 
     <name>tiny-event-sourcing</name>

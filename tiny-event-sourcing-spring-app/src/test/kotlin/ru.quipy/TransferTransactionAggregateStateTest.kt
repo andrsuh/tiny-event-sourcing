@@ -5,18 +5,20 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.ContextConfiguration
 import ru.quipy.bankDemo.accounts.api.AccountAggregate
 import ru.quipy.bankDemo.accounts.logic.Account
 import ru.quipy.bankDemo.transfers.api.TransferTransactionAggregate
 import ru.quipy.bankDemo.transfers.logic.TransferTransaction
 import ru.quipy.bankDemo.transfers.projections.BankAccountCacheRepository
 import ru.quipy.bankDemo.transfers.service.TransactionService
+import ru.quipy.config.DockerPostgresDataSourceInitializer
 import ru.quipy.core.EventSourcingService
 import java.math.BigDecimal
 import java.time.Duration
@@ -24,12 +26,16 @@ import java.util.*
 
 @SpringBootTest
 @ActiveProfiles("test")
+@ContextConfiguration(
+    initializers = [DockerPostgresDataSourceInitializer::class])
+@EnableAutoConfiguration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class TransferTransactionAggregateStateTest {
+class TransferTransactionAggregateStateTest: BaseTest(testId) {
     companion object {
         private val testAccountId = UUID.fromString("b88f83bf-9a2a-4091-9cb3-3185f6f65a4b")
         private val testAccount2Id = UUID.fromString("1fccc03e-4ed3-47b7-8f76-8e62efb5e36e")
         private val userId = UUID.fromString("330f9c97-4031-4bd4-ab49-a347719ace25")
+        private const val testId = "TransferTransactionAggregateStateTest"
     }
 
     @Autowired
@@ -44,15 +50,13 @@ class TransferTransactionAggregateStateTest {
     @Autowired
     private lateinit var bankAccountCacheRepository: BankAccountCacheRepository
 
-    @Autowired
-    lateinit var mongoTemplate: MongoTemplate
-
     @BeforeEach
     fun init() {
         cleanDatabase()
     }
 
-    fun cleanDatabase() {
+    override fun cleanDatabase() {
+        super.cleanDatabase()
         mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testAccountId)), "accounts")
         mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testAccount2Id)), "accounts")
         mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testAccountId)), "snapshots")

@@ -1,0 +1,14 @@
+version: '3.9'
+services:
+  db:
+    hostname: event_sourcing_db
+    image: postgres:14.9-alpine
+    env_file:
+      - ./.env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - ${POSTGRES_DB_PORT}:${POSTGRES_DB_PORT}
+    restart: unless-stopped

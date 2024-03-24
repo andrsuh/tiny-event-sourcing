@@ -7,9 +7,12 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.ContextConfiguration
+import ru.quipy.config.DockerPostgresDataSourceInitializer
 import ru.quipy.core.*
 import ru.quipy.database.EventStore
 import ru.quipy.mapper.EventMapper
@@ -27,13 +30,15 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.random.Random.Default.nextDouble
 import kotlin.time.Duration.Companion.milliseconds
 
 @SpringBootTest
+@ContextConfiguration(
+    initializers = [DockerPostgresDataSourceInitializer::class])
+@EnableAutoConfiguration
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class ActiveStreamReaderTest {
+class ActiveStreamReaderTest: BaseTest("ActiveStreamReaderTest") {
     @Autowired
     private lateinit var eventStore: EventStore
 
@@ -45,7 +50,7 @@ class ActiveStreamReaderTest {
         eventReaderHealthCheckPeriod = 50.milliseconds,
         snapshotFrequency = 10
     )
-    private val streamFailingProbability = 1.0
+    private val streamNotFailingProbability = 0.95
 
     private val dispatcher =
         ThreadPoolExecutor(16, 16, Long.MAX_VALUE, TimeUnit.MILLISECONDS, LinkedBlockingQueue()).asCoroutineDispatcher()
@@ -76,6 +81,7 @@ class ActiveStreamReaderTest {
 
     @BeforeEach
     fun init() {
+        cleanDatabase()
         registry.register(ProjectAggregate::class, ProjectAggregateState::class) {
             registerStateTransition(ProjectCreatedEvent::class, ProjectAggregateState::projectCreatedApply)
             registerStateTransition(TagCreatedEvent::class, ProjectAggregateState::tagCreatedApply)
@@ -119,9 +125,9 @@ class ActiveStreamReaderTest {
             CoroutineScope(dispatcher).launch {
                 for (i in 1..numberOfTagsPerProject) {
                     demoESService.update(createdEvent.projectId) {
+                        eventsPublished++
                         it.createTag("Tag - $i")
                     }
-                    eventsPublished++
                 }
                 durations.add(System.currentTimeMillis())
             }
@@ -132,7 +138,7 @@ class ActiveStreamReaderTest {
         val eventStreamManager2 =
             AggregateEventStreamManager(registry, eventStore, properties, eventStreamReaderManager)
 
-        val results = ArrayBlockingQueue<StreamHandleResult>(15000)
+        val results = ArrayBlockingQueue<StreamHandleResult>(totalNumberOfEvents * 2) // 10500(всего eventов) * 2 стрима
         val eventCounter = AtomicInteger(0)
         val switchingCounter = AtomicInteger(0)
 
@@ -162,10 +168,11 @@ class ActiveStreamReaderTest {
                 }
             }
 
+        val random = Random()
         CoroutineScope(dispatcher).launch {
             val compositeStream = CompositeEventStream(stream1, stream2)
             while (true) {
-                if (nextDouble(1.0) > streamFailingProbability) {
+                if (random.nextDouble() > streamNotFailingProbability) {
                     compositeStream.switchActive()
                     switchingCounter.incrementAndGet()
                 }
@@ -176,7 +183,7 @@ class ActiveStreamReaderTest {
         runBlocking {
             await.atMost(200, TimeUnit.SECONDS).pollDelay(ofMillis(500)).until {
                 println("NUM: ${results.distinctBy { it.eventId }.count()}, ${eventCounter.get()}")
-                results.distinctBy { it.eventId }.count() >= totalNumberOfEvents
+                results.distinctBy { it.eventId }.count() == totalNumberOfEvents
             }
             // todo sukhoa: ofc test should be rewritten to have some reasonable asserts. Also it shows that we loose events :)
             println("First stream processed: ${results.count { it.streamId == 1 }}")
@@ -210,10 +217,10 @@ class ActiveStreamReaderTest {
 
         eventStoreStreamReaderManager.tryUpdateReaderState("test-stream", reader, readingIndex = 0L)
 
-        val waitTimeSeconds =
-            properties.maxActiveReaderInactivityPeriod.inWholeSeconds + properties.eventReaderHealthCheckPeriod.inWholeSeconds
+        val waitTimeMillis =
+            properties.maxActiveReaderInactivityPeriod.inWholeMilliseconds + properties.eventReaderHealthCheckPeriod.inWholeMilliseconds
 
-        await.atMost(waitTimeSeconds, TimeUnit.SECONDS).until {
+        await.atMost(waitTimeMillis, TimeUnit.MILLISECONDS).until {
             !eventStoreStreamReaderManager.hasActiveReader("test-stream")
         }
     }

@@ -14,14 +14,13 @@ import ru.quipy.eventstore.converter.JacksonMongoEntityConverter
 import ru.quipy.eventstore.factory.MongoClientFactory
 
 @Configuration
-class EventStoreAutoConfiguration {
-
-    @Bean
+class MongoEventStoreAutoConfiguration {
+    @Bean("mongoTemplateEventStore")
     @ConditionalOnBean(MongoTemplate::class)
     @ConditionalOnMissingBean
     fun mongoTemplateEventStore(): EventStore = MongoTemplateEventStore()
 
-    @Bean
+    @Bean("mongoClientEventStore")
     @ConditionalOnBean(MongoClientFactory::class)
     @ConditionalOnMissingBean
     fun mongoClientEventStore(databaseFactory: MongoClientFactory): EventStore {

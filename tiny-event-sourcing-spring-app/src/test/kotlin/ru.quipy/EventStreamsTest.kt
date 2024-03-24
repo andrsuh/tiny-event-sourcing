@@ -8,15 +8,15 @@ import org.mockito.Mockito.atMostOnce
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argWhere
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.ContextConfiguration
+import ru.quipy.config.DockerPostgresDataSourceInitializer
 import ru.quipy.core.EventSourcingService
 import ru.quipy.projectDemo.addTask
 import ru.quipy.projectDemo.api.ProjectAggregate
@@ -34,11 +34,15 @@ import javax.annotation.PostConstruct
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Import(SubscriptionConfig::class)
+@ContextConfiguration(
+    initializers = [DockerPostgresDataSourceInitializer::class],
+    classes = [SubscriptionConfig::class]
+)
+@EnableAutoConfiguration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class EventStreamsTest {
+class EventStreamsTest: BaseTest(testId) {
     companion object {
-        const val testId = "2"
+        const val testId = "EventStreamsTest"
     }
 
     @Autowired
@@ -46,14 +50,6 @@ class EventStreamsTest {
 
     @Autowired
     lateinit var tested: TestDemoProjectSubscriber
-
-    @Autowired
-    lateinit var mongoTemplate: MongoTemplate
-
-    fun cleanDatabase() {
-        mongoTemplate.remove(Query.query(Criteria.where("aggregateId").`is`(testId)), "aggregate-project")
-        mongoTemplate.remove(Query.query(Criteria.where("_id").`is`(testId)), "snapshots")
-    }
 
     @BeforeEach
     fun init() {
