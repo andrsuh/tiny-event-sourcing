@@ -2,9 +2,8 @@ package ru.quipy.query.insert
 
 import ru.quipy.query.BasicQuery
 import ru.quipy.query.exception.InvalidQueryStateException
-import java.sql.Connection
 
-class BatchInsertQuery(schema: String, relation: String, private val batchSize: Long)
+class BatchInsertQuery(schema: String, relation: String)
     : BasicQuery<BatchInsertQuery>(schema, relation) {
     private val batches = ArrayList<ArrayList<Any>>()
     override fun withValues(vararg values: Any): BatchInsertQuery {

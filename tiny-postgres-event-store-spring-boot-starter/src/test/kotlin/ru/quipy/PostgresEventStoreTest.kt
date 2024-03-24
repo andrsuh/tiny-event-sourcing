@@ -87,7 +87,7 @@ class PostgresEventStoreTest {
     @Autowired
     private lateinit var entityConverter: EntityConverter;
 
-    @Value("\${defaultSchema:event_sourcing_store}")
+    @Value("\${tiny-es.storage.schema:event_sourcing_store}")
     private lateinit var schema: String
 
     @BeforeEach

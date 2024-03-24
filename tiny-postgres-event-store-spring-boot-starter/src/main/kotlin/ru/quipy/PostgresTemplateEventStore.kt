@@ -34,7 +34,6 @@ open class PostgresTemplateEventStore(
     private val jdbcTemplate: JdbcTemplate,
     private val eventStoreSchemaName: String,
     private val mapperFactory: MapperFactory,
-    private val batchInsertSize: Int,
     private val entityConverter: EntityConverter) : EventStore {
     companion object {
         private val logger = LogManager.getLogger(PostgresTemplateEventStore::class)
@@ -58,30 +57,27 @@ open class PostgresTemplateEventStore(
             EventRecordTable.name,
             eventRecords.map { EventRecordDto(it, aggregateTableName, entityConverter) }
         ).getTemplate()
-        val batches = eventRecords.chunked(batchInsertSize)
         try {
-            for (batch in batches) {
-                jdbcTemplate.batchUpdate(template, object : BatchPreparedStatementSetter {
-                    @Throws(SQLException::class)
-                    override fun setValues(preparedStatement: PreparedStatement, i: Int) {
-                        val item = batch[i]
-                        preparedStatement.setString(EventRecordTable.id.index, item.id)
-                        preparedStatement.setString(EventRecordTable.aggregateTableName.index, aggregateTableName)
-                        preparedStatement.setString(EventRecordTable.aggregateId.index, item.aggregateId.toString())
-                        preparedStatement.setLong(EventRecordTable.aggregateVersion.index, item.aggregateVersion)
-                        preparedStatement.setLong(EventRecordTable.eventTitle.index, item.aggregateVersion)
-                        preparedStatement.setString(EventRecordTable.payload.index, item.payload)
-                        preparedStatement.setString(
-                            EventRecordTable.sagaContext.index,
-                            entityConverter.serialize(item.sagaContext ?: SagaContext())
-                        )
-                    }
+            jdbcTemplate.batchUpdate(template, object : BatchPreparedStatementSetter {
+                @Throws(SQLException::class)
+                override fun setValues(preparedStatement: PreparedStatement, i: Int) {
+                    val item = eventRecords[i]
+                    preparedStatement.setString(EventRecordTable.id.index, item.id)
+                    preparedStatement.setString(EventRecordTable.aggregateTableName.index, aggregateTableName)
+                    preparedStatement.setString(EventRecordTable.aggregateId.index, item.aggregateId.toString())
+                    preparedStatement.setLong(EventRecordTable.aggregateVersion.index, item.aggregateVersion)
+                    preparedStatement.setLong(EventRecordTable.eventTitle.index, item.aggregateVersion)
+                    preparedStatement.setString(EventRecordTable.payload.index, item.payload)
+                    preparedStatement.setString(
+                        EventRecordTable.sagaContext.index,
+                        entityConverter.serialize(item.sagaContext ?: SagaContext())
+                    )
+                }
 
-                    override fun getBatchSize(): Int {
-                        return batch.size
-                    }
-                })
-            }
+                override fun getBatchSize(): Int {
+                    return eventRecords.size
+                }
+            })
         } catch (e :  DuplicateKeyException) {
             throw DuplicateEventIdException(
                 "There is record with such an id. Record set cannot be saved $eventRecords",

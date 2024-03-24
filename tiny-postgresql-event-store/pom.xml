@@ -14,6 +14,8 @@
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
         <jackson-module-kotlin.version>2.14.2</jackson-module-kotlin.version>
         <tiny-event-sourcing-lib.version>2.3.0-SNAPSHOT</tiny-event-sourcing-lib.version>
+        <tiny-postgres-event-store.postgres.version>42.7.0</tiny-postgres-event-store.postgres.version>
+        <tiny-postgres-event-store.hikari.version>5.0.1</tiny-postgres-event-store.hikari.version>
     </properties>
 
     <dependencies>
@@ -26,13 +28,20 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.5.4</version>
+            <version>${tiny-postgres-event-store.postgres.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
-            <version>5.0.1</version>
+            <version>${tiny-postgres-event-store.hikari.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+            <version>6.0.12</version>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -40,12 +49,6 @@
             <artifactId>junit-jupiter</artifactId>
             <version>5.10.0</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-tx</artifactId>
-            <version>6.0.12</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
 
