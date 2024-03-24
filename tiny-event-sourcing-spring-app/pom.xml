@@ -46,20 +46,11 @@
             <version>${project.version}</version>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <artifactId>tiny-mongo-event-store-spring-boot-starter</artifactId>-->
-<!--            <groupId>ru.quipy</groupId>-->
-<!--            <version>${tiny-mongo-event-store-spring-boot-starter.version}</version>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
-
-    <!--postgres dependencies-->
         <dependency>
             <artifactId>tiny-postgres-event-store-spring-boot-starter</artifactId>
             <groupId>ru.quipy</groupId>
             <version>${tiny-postgres-event-store-spring-boot-starter.version}</version>
         </dependency>
-    <!--postgres dependencies-->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
