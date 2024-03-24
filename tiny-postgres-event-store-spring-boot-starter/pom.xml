@@ -2,12 +2,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>ru.quipy</groupId>
+        <artifactId>tiny-event-sourcing</artifactId>
+        <version>2.6.0</version>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
     <groupId>ru.quipy</groupId>
     <artifactId>tiny-postgres-event-store-spring-boot-starter</artifactId>
-
-    <version>2.3.0-SNAPSHOT</version>
 
     <properties>
         <java.version>11</java.version>
@@ -15,15 +19,13 @@
         <kotlin.version>1.6.21</kotlin.version>
         <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
-        <tiny-event-sourcing-lib.version>2.3.0-SNAPSHOT</tiny-event-sourcing-lib.version>
-        <tiny-event-sourcing-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-event-sourcing-spring-boot-starter.version>
-        <tiny-postgres-event-store.version>2.3.0-SNAPSHOT</tiny-postgres-event-store.version>
         <tiny-postgres-event-store.postgres.version>42.7.0</tiny-postgres-event-store.postgres.version>
         <tiny-postgres-event-store.liquibase.version>4.9.1</tiny-postgres-event-store.liquibase.version>
         <tiny-postgres-event-store.hikari.version>5.0.1</tiny-postgres-event-store.hikari.version>
         <tiny-postgres-event-store.jackson.version>2.16.0</tiny-postgres-event-store.jackson.version>
         <tiny-postgres-event-store.spring.jdbc.version>6.0.12</tiny-postgres-event-store.spring.jdbc.version>
     </properties>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -39,13 +41,13 @@
         <dependency>
             <groupId>ru.quipy</groupId>
             <artifactId>tiny-event-sourcing-lib</artifactId>
-            <version>${tiny-event-sourcing-lib.version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>ru.quipy</groupId>
             <artifactId>tiny-postgresql-event-store</artifactId>
-            <version>${tiny-postgres-event-store.version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
