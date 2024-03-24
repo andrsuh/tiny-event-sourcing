@@ -7,6 +7,7 @@ import com.zaxxer.hikari.HikariDataSource
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -35,10 +36,11 @@ import javax.sql.DataSource
     LiquibaseConfig::class
 )
 class PostgresEventStoreAutoConfiguration {
-    @Value("\${schema:event_sourcing_store}")
+    @Value("\${tiny-es.storage.schema:event_sourcing_store}")
     private lateinit var schema: String
 
     @Bean
+    @ConditionalOnMissingBean(ObjectMapper::class)
     fun objectMapper() : ObjectMapper {
         return jacksonObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -80,13 +82,11 @@ class PostgresEventStoreAutoConfiguration {
     @Bean("exceptionLoggingSqlQueriesExecutor")
     @ConditionalOnBean(ConnectionFactory::class)
     fun executor(
-        databaseFactory: ConnectionFactory,
-        @Value("\${batchInsertSize:1000}") batchInsertSize: Int
+        databaseFactory: ConnectionFactory
     ) : QueryExecutor {
-        return ExceptionLoggingSqlQueriesExecutor(databaseFactory, batchInsertSize, PostgresClientEventStore.logger)
+        return ExceptionLoggingSqlQueriesExecutor(databaseFactory, PostgresClientEventStore.logger)
     }
 
-    // @Primary
     @Bean("postgresClientEventStore")
     @ConditionalOnBean(QueryExecutor::class, ResultSetToEntityMapper::class)
     fun postgresClientEventStore(
@@ -109,9 +109,8 @@ class PostgresEventStoreAutoConfiguration {
     fun postgresTemplateEventStore(
         jdbcTemplate: JdbcTemplate,
         mapperFactory: MapperFactory,
-        @Value("\${batchInsertSize:1000}") batchInsertSize: Int,
         entityConverter: EntityConverter
     ): PostgresTemplateEventStore {
-        return PostgresTemplateEventStore(jdbcTemplate, schema, mapperFactory, batchInsertSize, entityConverter)
+        return PostgresTemplateEventStore(jdbcTemplate, schema, mapperFactory, entityConverter)
     }
 }

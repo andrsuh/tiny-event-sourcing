@@ -53,7 +53,7 @@ class QueryBuilder {
                 .withValues(values = eventStreamReadIndex.values())
         }
         fun batchInsert(schema: String, relation: String, dtos: List<EventRecordDto>) : BatchInsertQuery {
-            val query = BatchInsertQuery(schema, relation, 1000)
+            val query = BatchInsertQuery(schema, relation)
                 .withColumns(columns = EventRecordTable.insertColumnNames())
             dtos.forEach { dto ->  query.withValues(values = dto.values())}
             return query

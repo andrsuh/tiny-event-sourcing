@@ -18,6 +18,11 @@
         <tiny-event-sourcing-lib.version>2.3.0-SNAPSHOT</tiny-event-sourcing-lib.version>
         <tiny-event-sourcing-spring-boot-starter.version>2.3.0-SNAPSHOT</tiny-event-sourcing-spring-boot-starter.version>
         <tiny-postgres-event-store.version>2.3.0-SNAPSHOT</tiny-postgres-event-store.version>
+        <tiny-postgres-event-store.postgres.version>42.7.0</tiny-postgres-event-store.postgres.version>
+        <tiny-postgres-event-store.liquibase.version>4.9.1</tiny-postgres-event-store.liquibase.version>
+        <tiny-postgres-event-store.hikari.version>5.0.1</tiny-postgres-event-store.hikari.version>
+        <tiny-postgres-event-store.jackson.version>2.16.0</tiny-postgres-event-store.jackson.version>
+        <tiny-postgres-event-store.spring.jdbc.version>6.0.12</tiny-postgres-event-store.spring.jdbc.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -52,9 +57,34 @@
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-kotlin</artifactId>
-            <version>2.16.0</version>
+            <version>${tiny-postgres-event-store.jackson.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>${tiny-postgres-event-store.spring.jdbc.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+            <version>${tiny-postgres-event-store.liquibase.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${tiny-postgres-event-store.postgres.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>${tiny-postgres-event-store.hikari.version}</version>
+        </dependency>
+
+<!--        test dependencies-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -62,33 +92,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-jdbc</artifactId>
-            <version>6.0.12</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
             <version>1.19.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.liquibase</groupId>
-            <artifactId>liquibase-core</artifactId>
-            <version>4.9.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>42.7.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.zaxxer</groupId>
-            <artifactId>HikariCP</artifactId>
-            <version>5.0.1</version>
         </dependency>
     </dependencies>
 

@@ -10,7 +10,6 @@ import java.sql.SQLException
 
 open class ExceptionLoggingSqlQueriesExecutor(
     private val connectionFactory: ConnectionFactory,
-    private val batchInsertSize: Int,
     private val logger: Logger) : QueryExecutor {
     override fun <T: Query> executeReturningBoolean(query: BasicQuery<T>): Boolean {
         return try {
@@ -54,11 +53,8 @@ open class ExceptionLoggingSqlQueriesExecutor(
         var sqls = query.build().split("\n")
         connectionFactory.getDatabaseConnection().use { connection ->
             val prepared = connection.createStatement()
-            for ((count, sql) in sqls.withIndex()) {
+            for (sql in sqls) {
                 prepared.addBatch(sql)
-                if ((count + 1) % batchInsertSize.toLong() == 0L) {
-                    prepared.executeBatch()
-                }
             }
             prepared.executeBatch()
         }
