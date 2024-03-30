@@ -2,4 +2,5 @@ org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
   ru.quipy.autoconfigure.PostgresEventStoreAutoConfiguration
 spring.autoconfigure.exclude=\
   org.springframework.boot.autoconfigure.jdbc.JdbcTemplateConfiguration,\
-  org.springframework.boot.autoconfigure.jdbc.DataSourceConfiguration$Hikari
+  org.springframework.boot.autoconfigure.jdbc.DataSourceConfiguration.Hikari,\
+  org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration
