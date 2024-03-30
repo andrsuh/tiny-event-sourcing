@@ -20,9 +20,9 @@ class DockerPostgresDataSourceInitializer : ApplicationContextInitializer<Config
 
         TestPropertySourceUtils.addInlinedPropertiesToEnvironment(
             configurableApplicationContext,
-            "jdbc.connectionString=" + postgresContainer.jdbcUrl,
-            "jdbc.username=" + postgresContainer.username,
-            "jdbc.password=" + postgresContainer.password
+            "spring.datasource.hikari.jdbc-url=" + postgresContainer.jdbcUrl,
+            "spring.datasource.hikari.username=" + postgresContainer.username,
+            "spring.datasource.hikari.password=" + postgresContainer.password
         )
     }
 

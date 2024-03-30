@@ -18,17 +18,24 @@ class LiquibaseConfig {
     fun liquibaseTinyEs(dataSource: DataSource,
         @Value("\${tiny-es.storage.schema:event_sourcing_store}") schema: String): SpringLiquibase {
         try {
-            dataSource.connection
-                .createStatement()
+            dataSource.connection.use { connection ->
+                connection.createStatement()
                 .execute("CREATE SCHEMA IF NOT EXISTS $schema;")
+            }
         } catch (e: SQLException) {
             throw RuntimeException(e)
         }
         val liquibase = SpringLiquibase()
         liquibase.resourceLoader = FileSystemResourceLoader()
         liquibase.liquibaseSchema = schema
+        liquibase.defaultSchema = schema
         liquibase.changeLog = "classpath:liquibase/changelog.sql"
         liquibase.dataSource = dataSource
+        liquibase.setChangeLogParameters(
+            mapOf(
+                Pair("schema", schema)
+            )
+        )
         return liquibase
     }
 }
