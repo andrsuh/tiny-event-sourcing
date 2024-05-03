@@ -2,7 +2,6 @@ package ru.quipy.config
 
 import liquibase.integration.spring.SpringLiquibase
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
@@ -12,10 +11,10 @@ import javax.sql.DataSource
 
 @Configuration
 class LiquibaseConfig {
+
     @Bean
     @Primary
-    @ConditionalOnBean(DataSource::class)
-    fun liquibaseTinyEs(dataSource: DataSource,
+    fun liquibase(dataSource: DataSource,
         @Value("\${tiny-es.storage.schema:event_sourcing_store}") schema: String): SpringLiquibase {
         try {
             dataSource.connection.use { connection ->
