@@ -22,7 +22,7 @@
         <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
         <awaitility.version>4.2.0</awaitility.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
-    </properties>
+      </properties>
 
     <dependencyManagement>
         <dependencies>
