@@ -13,8 +13,6 @@
         <module>tiny-event-sourcing-spring-app</module>
         <module>tiny-postgresql-event-store</module>
         <module>tiny-postgres-event-store-spring-boot-starter</module>
-        <module>tiny-event-sourcing-app</module>
-        <module>tiny-event-sourcing-app-base</module>
     </modules>
 
     <name>tiny-event-sourcing</name>
@@ -44,7 +42,7 @@
 
     <groupId>ru.quipy</groupId>
     <artifactId>tiny-event-sourcing</artifactId>
-    <version>2.6.4</version>
+    <version>2.6.2</version>
 
     <properties>
         <java.version>11</java.version>
