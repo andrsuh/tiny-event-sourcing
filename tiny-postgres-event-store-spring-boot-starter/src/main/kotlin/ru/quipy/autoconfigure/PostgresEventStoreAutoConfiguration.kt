@@ -23,7 +23,7 @@ import ru.quipy.converter.ResultSetToEntityMapper
 import ru.quipy.converter.ResultSetToEntityMapperImpl
 import ru.quipy.db.HikariDatasourceProvider
 import ru.quipy.db.factory.ConnectionFactory
-import ru.quipy.db.factory.HikariDataSourceConnectionFactory
+import ru.quipy.db.factory.DataSourceConnectionFactoryImpl
 import ru.quipy.executor.ExceptionLoggingSqlQueriesExecutor
 import ru.quipy.executor.QueryExecutor
 import ru.quipy.mappers.MapperFactory
@@ -75,8 +75,8 @@ class PostgresEventStoreAutoConfiguration {
 
     @Bean
     @ConditionalOnBean(HikariDatasourceProvider::class)
-    fun connectionFactory(hikariDataSourceProvider: HikariDatasourceProvider) : HikariDataSourceConnectionFactory {
-        return HikariDataSourceConnectionFactory(hikariDataSourceProvider)
+    fun connectionFactory(hikariDataSourceProvider: HikariDatasourceProvider) : DataSourceConnectionFactoryImpl {
+        return DataSourceConnectionFactoryImpl(hikariDataSourceProvider)
     }
 
     @Bean("exceptionLoggingSqlQueriesExecutor")

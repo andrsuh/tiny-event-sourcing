@@ -1,7 +1,5 @@
 package ru.quipy.eventstore
 
-import com.mongodb.ErrorCategory
-import com.mongodb.MongoCommandException
 import com.mongodb.client.model.Filters.*
 import com.mongodb.client.model.FindOneAndReplaceOptions
 import com.mongodb.client.model.InsertManyOptions
