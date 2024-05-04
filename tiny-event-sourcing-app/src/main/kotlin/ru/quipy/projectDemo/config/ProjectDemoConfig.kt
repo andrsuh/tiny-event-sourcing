@@ -1,11 +1,15 @@
 package ru.quipy.projectDemo.config
 
 import org.slf4j.LoggerFactory
-import ru.quipy.application.component.Component
+import ru.quipy.application.Component
 import ru.quipy.core.AggregateRegistry
 import ru.quipy.core.EventSourcingServiceFactory
 import ru.quipy.projectDemo.api.ProjectAggregate
+import ru.quipy.projectDemo.api.TagAssignedToTaskEvent
+import ru.quipy.projectDemo.api.TagCreatedEvent
+import ru.quipy.projectDemo.api.TaskCreatedEvent
 import ru.quipy.projectDemo.logic.ProjectAggregateState
+import ru.quipy.projectDemo.logic.tagAssignedApply
 import ru.quipy.projectDemo.projections.AnnotationBasedProjectEventsSubscriber
 import ru.quipy.streams.AggregateEventStreamManager
 import ru.quipy.streams.AggregateSubscriptionsManager
@@ -21,6 +25,12 @@ class ProjectDemoConfig(
     private val logger = LoggerFactory.getLogger(ProjectDemoConfig::class.java)
 
     override fun postConstruct() {
+       aggregateRegistry.register(ProjectAggregate::class, ProjectAggregateState::class) {
+           registerStateTransition(TagCreatedEvent::class, ProjectAggregateState::tagCreatedApply)
+           registerStateTransition(TaskCreatedEvent::class, ProjectAggregateState::taskCreatedApply)
+           registerStateTransition(TagAssignedToTaskEvent::class, ProjectAggregateState::tagAssignedApply)
+       }
+
         subscriptionsManager.subscribe<ProjectAggregate>(projectEventSubscriber)
 
         eventStreamManager.maintenance {

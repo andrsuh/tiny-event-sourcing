@@ -1,6 +1,6 @@
 package ru.quipy.bankDemo.transfers.service
 
-import ru.quipy.application.component.BaseComponent
+import ru.quipy.application.BaseComponent
 import ru.quipy.bankDemo.transfers.api.TransferTransactionAggregate
 import ru.quipy.bankDemo.transfers.api.TransferTransactionCreatedEvent
 import ru.quipy.bankDemo.transfers.db.BankAccountCacheRepository

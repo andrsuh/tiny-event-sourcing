@@ -2,7 +2,7 @@ package ru.quipy.projectDemo.projections
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import ru.quipy.application.component.BaseComponent
+import ru.quipy.application.BaseComponent
 import ru.quipy.projectDemo.api.ProjectAggregate
 import ru.quipy.projectDemo.api.TagCreatedEvent
 import ru.quipy.projectDemo.api.TaskCreatedEvent

@@ -7,5 +7,4 @@ import java.util.UUID
 interface BankAccountCacheRepository {
     fun save(bankAccount: BankAccount)
     fun findById(id: UUID) : Optional<BankAccount>
-    fun existsById(bankAccountId: UUID) : Boolean
 }
