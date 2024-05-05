@@ -19,27 +19,24 @@ import ru.quipy.core.EventSourcingService
 import java.util.UUID
 
 class BankContext private constructor() {
-    private lateinit var components: List<Component>
+    lateinit var components: List<Component>
+    lateinit var accountBoundedContextConfig: AccountBoundedContextConfig
+    lateinit var transactionsSubscriber: TransactionsSubscriber
+    lateinit var accountEventSourcingService: EventSourcingService<UUID, AccountAggregate, Account>
 
-    private lateinit var accountBoundedContextConfig: AccountBoundedContextConfig
-    private lateinit var transactionsSubscriber: TransactionsSubscriber
-    private lateinit var accountEventSourcingService: EventSourcingService<UUID, AccountAggregate, Account>
+    lateinit var transactionCoundedContextConfig: TransactionCoundedContextConfig
+    lateinit var bankAccountsExistenceCache: BankAccountsExistenceCache
 
-    private lateinit var transactionCoundedContextConfig: TransactionCoundedContextConfig
-    private lateinit var bankAccountsExistenceCache: BankAccountsExistenceCache
-
-    private lateinit var bankAccountCacheRepository: BankAccountCacheRepository
-    private lateinit var transactionService : TransactionService
-    private lateinit var bankAccountsSubscriber: BankAccountsSubscriber
-    private lateinit var transactionEventSourcingService: EventSourcingService<UUID, TransferTransactionAggregate, TransferTransaction>
+    lateinit var bankAccountCacheRepository: BankAccountCacheRepository
+    lateinit var transactionService : TransactionService
+    lateinit var bankAccountsSubscriber: BankAccountsSubscriber
+    lateinit var transactionEventSourcingService: EventSourcingService<UUID, TransferTransactionAggregate, TransferTransaction>
     constructor(tinyEsLibConfig: TinyEsLibConfig, mongoDatabase: MongoDatabase) : this() {
         accountBoundedContextConfig = AccountBoundedContextConfig(tinyEsLibConfig.eventSourcingServiceFactory)
         accountEventSourcingService = accountBoundedContextConfig.accountEsService()
         transactionsSubscriber = TransactionsSubscriber(tinyEsLibConfig.subscriptionsManager, accountEventSourcingService)
 
         transactionCoundedContextConfig = TransactionCoundedContextConfig(tinyEsLibConfig.eventSourcingServiceFactory)
-
-        mongoDatabase.createCollection("bank-account")
         bankAccountCacheRepository = BankAccountCacheRepositoryImpl(mongoDatabase)
 
         bankAccountsExistenceCache = BankAccountsExistenceCache(bankAccountCacheRepository, tinyEsLibConfig.subscriptionsManager)
