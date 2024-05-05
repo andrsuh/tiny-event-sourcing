@@ -5,12 +5,11 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
-import org.springframework.core.io.FileSystemResourceLoader
 import java.sql.SQLException
 import javax.sql.DataSource
 
 @Configuration
-class LiquibaseConfig {
+class LiquibaseSpringConfig {
 
     @Bean
     @Primary
@@ -25,7 +24,7 @@ class LiquibaseConfig {
             throw RuntimeException(e)
         }
         val liquibase = SpringLiquibase()
-        liquibase.resourceLoader = FileSystemResourceLoader()
+        liquibase.resourceLoader = LiquibaseConfig().getResourceReader()
         liquibase.liquibaseSchema = schema
         liquibase.defaultSchema = schema
         liquibase.changeLog = "classpath:liquibase/changelog.sql"

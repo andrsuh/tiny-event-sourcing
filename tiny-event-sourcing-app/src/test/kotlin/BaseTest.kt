@@ -1,7 +1,7 @@
 package ru.quipy
 
 import com.mongodb.client.MongoDatabase
-import ru.quipy.application.context.Context
+import ru.quipy.application.Context
 import ru.quipy.bankDemo.accounts.api.AccountAggregate
 import ru.quipy.bankDemo.accounts.logic.Account
 import ru.quipy.bankDemo.transfers.api.TransferTransactionAggregate

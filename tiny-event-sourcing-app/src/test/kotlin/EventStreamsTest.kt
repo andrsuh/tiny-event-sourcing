@@ -8,7 +8,7 @@ import org.mockito.Mockito
 import org.mockito.Mockito.any
 import org.mockito.Mockito.atMostOnce
 import org.mockito.kotlin.argWhere
-import ru.quipy.application.component.Component
+import ru.quipy.application.Component
 import ru.quipy.core.EventSourcingProperties
 import ru.quipy.projectDemo.addTask
 import ru.quipy.projectDemo.api.ProjectAggregate

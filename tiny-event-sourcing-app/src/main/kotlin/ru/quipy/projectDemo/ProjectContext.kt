@@ -7,16 +7,17 @@ import ru.quipy.projectDemo.projections.AnnotationBasedProjectEventsSubscriber
 import ru.quipy.projectDemo.projections.ProjectEventsSubscriber
 
 class ProjectContext private constructor() {
-    private lateinit var annotationBasedProjectEventsSubscriber: AnnotationBasedProjectEventsSubscriber
-    private lateinit var components: List<Component>
-    private lateinit var projectEventsSubscriber: ProjectEventsSubscriber
-    private lateinit var projectDemoConfig: ProjectDemoConfig
+    lateinit var annotationBasedProjectEventsSubscriber: AnnotationBasedProjectEventsSubscriber
+    lateinit var components: List<Component>
+    lateinit var projectEventsSubscriber: ProjectEventsSubscriber
+    lateinit var projectDemoConfig: ProjectDemoConfig
 
     constructor(tinyEsLibConfig: TinyEsLibConfig) : this() {
         annotationBasedProjectEventsSubscriber = AnnotationBasedProjectEventsSubscriber()
         projectDemoConfig = projectDemoConfig(tinyEsLibConfig)
         projectEventsSubscriber = ProjectEventsSubscriber(tinyEsLibConfig.subscriptionsManager)
-        components = mutableListOf(projectDemoConfig, annotationBasedProjectEventsSubscriber, projectEventsSubscriber)
+
+        components = mutableListOf(projectDemoConfig, projectEventsSubscriber, annotationBasedProjectEventsSubscriber)
         components.forEach { it.postConstruct() }
     }
 
