@@ -55,6 +55,12 @@
             <version>5.10.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+            <version>4.9.1</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <repositories>

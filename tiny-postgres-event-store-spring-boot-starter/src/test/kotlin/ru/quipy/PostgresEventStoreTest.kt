@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
 import ru.quipy.autoconfigure.PostgresEventStoreAutoConfiguration
-import ru.quipy.config.LiquibaseConfig
+import ru.quipy.config.LiquibaseSpringConfig
 import ru.quipy.config.TestDbConfig
 import ru.quipy.converter.EntityConverter
 import ru.quipy.database.EventStore
@@ -33,7 +33,7 @@ import java.util.UUID
 @SpringBootTest(
     classes = [
         TestDbConfig::class,
-        LiquibaseConfig::class,
+        LiquibaseSpringConfig::class,
         PostgresEventStoreAutoConfiguration::class
     ]
 )

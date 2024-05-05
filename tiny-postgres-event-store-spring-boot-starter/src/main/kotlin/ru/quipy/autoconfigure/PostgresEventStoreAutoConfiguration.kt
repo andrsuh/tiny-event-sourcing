@@ -16,7 +16,7 @@ import org.springframework.jdbc.core.JdbcTemplate
 import ru.quipy.PostgresClientEventStore
 import ru.quipy.PostgresTemplateEventStore
 import ru.quipy.config.DatabaseConfig
-import ru.quipy.config.LiquibaseConfig
+import ru.quipy.config.LiquibaseSpringConfig
 import ru.quipy.converter.EntityConverter
 import ru.quipy.converter.JsonEntityConverter
 import ru.quipy.converter.ResultSetToEntityMapper
@@ -33,7 +33,7 @@ import javax.sql.DataSource
 @Configuration
 @Import(
     DatabaseConfig::class,
-    LiquibaseConfig::class
+    LiquibaseSpringConfig::class
 )
 class PostgresEventStoreAutoConfiguration {
     @Value("\${tiny-es.storage.schema:event_sourcing_store}")
