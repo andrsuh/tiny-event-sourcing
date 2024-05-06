@@ -1,4 +1,4 @@
-package ru.quipy.application
+package ru.quipy.application.context
 
 import com.mongodb.ConnectionString
 import com.mongodb.MongoClientSettings
@@ -8,6 +8,7 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.bson.UuidRepresentation
 import ru.quipy.TinyEsLibConfig
+import ru.quipy.application.config.TinyEsDependencyConfig
 import ru.quipy.bankDemo.BankContext
 import ru.quipy.config.LiquibaseConfig
 import ru.quipy.core.EventSourcingProperties

@@ -1,4 +1,4 @@
-package ru.quipy.application
+package ru.quipy.application.config
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper

@@ -1,7 +1,7 @@
 package ru.quipy.projectDemo.config
 
 import org.slf4j.LoggerFactory
-import ru.quipy.application.Component
+import ru.quipy.application.component.Component
 import ru.quipy.core.AggregateRegistry
 import ru.quipy.core.EventSourcingServiceFactory
 import ru.quipy.projectDemo.api.ProjectAggregate
