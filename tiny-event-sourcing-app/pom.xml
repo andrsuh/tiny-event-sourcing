@@ -21,7 +21,6 @@
         <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
         <awaitility.version>4.2.0</awaitility.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
-        <tiny-postgres-event-store.hikari.version>5.0.1</tiny-postgres-event-store.hikari.version>
     </properties>
 
     <dependencies>

@@ -2,7 +2,7 @@ package ru.quipy.bankDemo
 
 import com.mongodb.client.MongoDatabase
 import ru.quipy.TinyEsLibConfig
-import ru.quipy.application.Component
+import ru.quipy.application.component.Component
 import ru.quipy.bankDemo.accounts.api.AccountAggregate
 import ru.quipy.bankDemo.accounts.config.AccountBoundedContextConfig
 import ru.quipy.bankDemo.accounts.logic.Account

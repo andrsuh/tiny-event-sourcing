@@ -2,7 +2,7 @@ package ru.quipy.bankDemo.accounts.subscribers
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import ru.quipy.application.Component
+import ru.quipy.application.component.Component
 import ru.quipy.bankDemo.accounts.api.AccountAggregate
 import ru.quipy.bankDemo.accounts.logic.Account
 import ru.quipy.bankDemo.transfers.api.TransactionConfirmedEvent

@@ -1,7 +1,7 @@
 package ru.quipy.projectDemo
 
 import ru.quipy.TinyEsLibConfig
-import ru.quipy.application.Component
+import ru.quipy.application.component.Component
 import ru.quipy.projectDemo.config.ProjectDemoConfig
 import ru.quipy.projectDemo.projections.AnnotationBasedProjectEventsSubscriber
 import ru.quipy.projectDemo.projections.ProjectEventsSubscriber
