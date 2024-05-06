@@ -1,5 +1,6 @@
 package ru.quipy.application
 
+import ru.quipy.application.context.Context
 import ru.quipy.core.EventSourcingProperties
 import java.util.Properties
 
