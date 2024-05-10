@@ -13,8 +13,8 @@ class EventSourcingProperties (
     var autoScanEnabled: Boolean = false,
     var scanPackage: String? = null,
     var spinLockMaxAttempts: Int = 25,
-    var maxActiveReaderInactivityPeriod: Duration = 5.minutes,
+    var maxActiveReaderInactivityPeriod: Duration = 5.seconds,
     var recordReadIndexCommitPeriod: Int = 10,
-    val eventReaderHealthCheckPeriod: Duration = 5.seconds,
+    val eventReaderHealthCheckPeriod: Duration = 3.seconds,
     var sagasEnabled: Boolean = true,
 )
