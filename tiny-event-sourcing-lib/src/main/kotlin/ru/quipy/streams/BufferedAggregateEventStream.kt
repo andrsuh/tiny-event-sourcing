@@ -54,8 +54,6 @@ class BufferedAggregateEventStream<A : Aggregate>(
                         delay(500)
                     }
 
-                    val startTs = System.currentTimeMillis()
-
                     val eventsBatch = eventReader.read(streamBatchSize)
 
                     if (eventsBatch.isEmpty()) {
@@ -64,16 +62,12 @@ class BufferedAggregateEventStream<A : Aggregate>(
                     }
 
                     eventsBatch.forEach { eventRecord ->
-                        logger.trace("Processing event from batch: $eventRecord.")
+                        logger.trace("Processing event from batch: {}.", eventRecord)
 
                         feedToHandling(eventRecord) {
                             eventStreamNotifier.onRecordHandledSuccessfully(streamName, eventRecord.eventTitle)
                             eventReader.acknowledgeRecord(eventRecord)
                         }
-                    }
-                    val executionTime = System.currentTimeMillis() - startTs
-                    if (executionTime < streamReadPeriod) {
-                        delay(streamReadPeriod - executionTime)
                     }
                 }
             }.also {
@@ -82,13 +76,13 @@ class BufferedAggregateEventStream<A : Aggregate>(
 
     override suspend fun handleNextRecord(eventProcessingFunction: suspend (EventRecord) -> Boolean) {
         val receivedRecord = eventsChannel.receiveEvent()
-        logger.trace("Event $receivedRecord was received for handling")
+        logger.trace("Event {} was received for handling", receivedRecord)
 
         try {
             eventProcessingFunction(receivedRecord).also {
                 if (!it) logger.info("Processing function return false for event record: $receivedRecord")
 
-                logger.trace("Sending confirmation on receiving event $receivedRecord")
+                logger.trace("Sending confirmation on receiving event {}", receivedRecord)
                 eventsChannel.sendConfirmation(isConfirmed = it)
             }
         } catch (e: Exception) {

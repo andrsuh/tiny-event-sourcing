@@ -2,6 +2,7 @@
 --changeset vekajp:es-001
 
 create sequence if not exists ${schema}.event_record_created_at_sequence;
+
 create table if not exists ${schema}.event_record
 (
     id                   text primary key,
@@ -14,6 +15,10 @@ create table if not exists ${schema}.event_record
     created_at           bigint default nextval('${schema}.event_record_created_at_sequence'),
     unique (aggregate_id, aggregate_version)
 );
+
+CREATE INDEX idx_created_at ON event_sourcing_store.event_record(aggregate_table_name, created_at);
+CREATE INDEX idx_aggregate_id_version ON event_sourcing_store.event_record(aggregate_table_name, aggregate_id, aggregate_version);
+
 create table if not exists ${schema}.snapshot
 (
     id                         text primary key,

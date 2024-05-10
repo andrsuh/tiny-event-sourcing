@@ -20,9 +20,6 @@ class AggregateEventStreamManager(
 ) {
     private val eventStreamListener: EventStreamListenerImpl = EventStreamListenerImpl()// todo sukhoa make injectable
 
-    private val eventStoreReaderDispatcher = Executors.newFixedThreadPool(16).asCoroutineDispatcher()
-    private val eventStreamsDispatcher = Executors.newFixedThreadPool(32).asCoroutineDispatcher() // todo sukhoa fix
-
     private val eventStreams = ConcurrentHashMap<String, AggregateEventStream<*>>()
 
     fun <A : Aggregate> createEventStream(
@@ -39,7 +36,7 @@ class AggregateEventStreamManager(
             aggregateInfo as AggregateRegistry.BasicAggregateInfo<Aggregate>,
             eventSourcingProperties,
             eventStreamListener,
-            eventStoreReaderDispatcher
+            Executors.newFixedThreadPool(1).asCoroutineDispatcher() // eventStoreReaderDispatcher
         )
 
         val eventsChannel = EventsChannel()
@@ -53,7 +50,7 @@ class AggregateEventStreamManager(
                 eventStoreReader,
                 retryConfig,
                 eventStreamListener,
-                eventStreamsDispatcher
+                Executors.newFixedThreadPool(1).asCoroutineDispatcher() // eventStreamsDispatcher
             )
         )
 

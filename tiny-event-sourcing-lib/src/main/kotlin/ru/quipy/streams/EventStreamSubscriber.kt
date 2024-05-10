@@ -45,17 +45,17 @@ class EventStreamSubscriber<A : Aggregate>(
     private val logger: Logger = LoggerFactory.getLogger(EventStreamSubscriber::class.java)
 
     private val subscriptionCoroutine: Job = CoroutineScope(
-        CoroutineName("handlingCoroutine") + Executors.newSingleThreadExecutor()
-            .asCoroutineDispatcher() // todo sukhoa customize
+        CoroutineName("handlingCoroutine") + Executors.newSingleThreadExecutor().asCoroutineDispatcher()
     ).launch {
         while (active) {
             aggregateEventStream.handleNextRecord { eventRecord ->
                 try {
-                    val event = payloadToEvent(eventRecord.payload, eventRecord.eventTitle)
-                    logger.trace("Event record $eventRecord was converted to event $event")
-
-                    val eventHandler = handlers[event::class]
-                    eventHandler?.invoke(event)
+                    val eventType = nameToEventClassFunc(eventRecord.eventTitle)
+                    handlers[eventType]?.let { handler ->
+                        val event = payloadToEvent(eventRecord.payload, eventType)
+                        logger.trace("Event record {} was converted to event {}", eventRecord, event)
+                        handler.invoke(event)
+                    }
                     true
                 } catch (e: Exception) {
                     logger.error("Unexpected exception while handling event in subscriber. Stream: ${aggregateEventStream.streamName}, event record: $eventRecord", e)
@@ -65,9 +65,9 @@ class EventStreamSubscriber<A : Aggregate>(
         }
     }
 
-    private fun payloadToEvent(payload: String, eventTitle: String): Event<A> = eventMapper.toEvent(
+    private fun payloadToEvent(payload: String, eventType: KClass<Event<A>>): Event<A> = eventMapper.toEvent(
         payload,
-        nameToEventClassFunc(eventTitle)
+        eventType
     )
 
     /**

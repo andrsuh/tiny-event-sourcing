@@ -3,6 +3,7 @@ package ru.quipy.saga.aggregate.stream
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import ru.quipy.core.AggregateRegistry
+import ru.quipy.core.EventSourcingProperties
 import ru.quipy.core.EventSourcingService
 import ru.quipy.domain.Aggregate
 import ru.quipy.saga.SagaContext
@@ -11,6 +12,8 @@ import ru.quipy.saga.SagaStep
 import ru.quipy.saga.aggregate.api.SagaStepAggregate
 import ru.quipy.saga.aggregate.logic.SagaStepAggregateState
 import ru.quipy.streams.*
+import ru.quipy.streams.annotation.RetryConf
+import ru.quipy.streams.annotation.RetryFailedStrategy
 import java.util.*
 import java.util.concurrent.Executors
 
@@ -23,7 +26,8 @@ import java.util.concurrent.Executors
 class SagaEventStream(
     private val aggregateRegistry: AggregateRegistry,
     private val eventsStreamManager: AggregateEventStreamManager,
-    private val sagaStepEsService: EventSourcingService<UUID, SagaStepAggregate, SagaStepAggregateState>
+    private val sagaStepEsService: EventSourcingService<UUID, SagaStepAggregate, SagaStepAggregateState>,
+    private val props: EventSourcingProperties,
 ) {
     @Volatile
     private var active = true
@@ -31,12 +35,17 @@ class SagaEventStream(
     private val logger = LoggerFactory.getLogger(SagaEventStream::class.java)
 
     fun init() {
+        if (props.sagasEnabled.not()) {
+            return
+        }
+
         val aggregates = aggregateRegistry.getAllAggregates()
         // todo sukhoa
         aggregates.filter { it != SagaStepAggregate::class }
             .forEach {
                 val streamName = "saga::" + it.simpleName
-                val aggregateStream = eventsStreamManager.createEventStream(streamName, it)
+                val aggregateStream = eventsStreamManager.createEventStream(
+                    streamName, it, RetryConf(0, RetryFailedStrategy.SKIP_EVENT))
 
                 launchSagaEventStream(streamName, aggregateStream)
             }

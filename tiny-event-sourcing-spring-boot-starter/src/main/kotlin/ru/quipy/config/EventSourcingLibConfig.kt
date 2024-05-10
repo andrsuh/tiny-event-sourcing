@@ -138,6 +138,7 @@ class EventSourcingLibConfig {
     fun sagaEventStream(
         aggregateRegistry: AggregateRegistry,
         eventStreamManager: AggregateEventStreamManager,
-        sagaStepEsService: EventSourcingService<UUID, SagaStepAggregate, SagaStepAggregateState>
-    ) = SagaEventStream(aggregateRegistry, eventStreamManager, sagaStepEsService)
+        sagaStepEsService: EventSourcingService<UUID, SagaStepAggregate, SagaStepAggregateState>,
+        configProperties: EventSourcingProperties,
+    ) = SagaEventStream(aggregateRegistry, eventStreamManager, sagaStepEsService, configProperties)
 }
