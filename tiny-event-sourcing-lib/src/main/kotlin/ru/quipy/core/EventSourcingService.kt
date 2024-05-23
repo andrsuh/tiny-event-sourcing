@@ -206,8 +206,9 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
                 .getStateTransitionFunction(newEvent.name)
                 .performTransition(aggregateState, newEvent)
             newEvent.version = ++updatedVersion
-            if (eventSourcingProperties.sagasEnabled)
+            if (eventSourcingProperties.sagasEnabled) {
                 newEvent.sagaContext = sagaContext
+            }
         }
 
         val aggregateId = aggregateState.getId()

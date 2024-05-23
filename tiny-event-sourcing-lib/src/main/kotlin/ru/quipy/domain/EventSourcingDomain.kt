@@ -27,7 +27,7 @@ fun interface AggregateStateTransitionFunction<A : Aggregate, E : Event<A>, S : 
 abstract class Event<A : Aggregate>(
     override val id: UUID = UUID.randomUUID(),
     val name: String,
-    var sagaContext: SagaContext = SagaContext(),
+    var sagaContext: SagaContext? = null,
     override var version: Long = 0L, // this is aggregate version actually or the event count number
     var createdAt: Long = System.currentTimeMillis(),
 ) : Versioned, Unique<UUID>
@@ -39,7 +39,7 @@ data class EventRecord(
     val aggregateVersion: Long,
     val eventTitle: String,
     val payload: String,
-    var sagaContext: SagaContext? = SagaContext(),
+    var sagaContext: SagaContext? = null,
     val createdAt: Long = System.currentTimeMillis()
 ) : Unique<String>
 
@@ -51,7 +51,7 @@ class Snapshot(
 ) : Versioned, Unique<Any>
 
 
-class EventStreamReadIndex(
+data class EventStreamReadIndex(
     override val id: String, // name of the stream
     val readIndex: Long,
     override var version: Long

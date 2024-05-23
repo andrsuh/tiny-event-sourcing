@@ -27,7 +27,7 @@ class FlightSubscriber (
                     .performSagaStep("TRIP_RESERVATION", "finish reservation")
                     .performSagaStep("TRIP_RESERVATION2", "finish reservation2")
                     .performSagaStep("TRIP_RESERVATION3", "finish reservation3")
-                    .sagaContext
+                    .sagaContext()
 
                 tripEsService.update(event.flightReservationId, sagaContext) { it.confirmTrip(event.flightReservationId) }
             }

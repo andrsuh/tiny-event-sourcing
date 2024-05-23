@@ -119,7 +119,7 @@ class BufferedAggregateEventStream<A : Aggregate>(
 
     override fun isSuspended() = suspended.get()
 
-    private suspend fun feedToHandling(event: EventRecord, beforeNextPerform: () -> Unit) {
+    private suspend fun feedToHandling(event: EventRecord, beforeNextPerform: suspend () -> Unit) {
         for (attemptNum in 1..retryConfig.maxAttempts) { // todo sukhoa BUG
             eventsChannel.sendEvent(event)
 

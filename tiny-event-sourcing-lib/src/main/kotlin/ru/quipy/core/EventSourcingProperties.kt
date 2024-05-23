@@ -1,7 +1,6 @@
 package ru.quipy.core
 
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class EventSourcingProperties (
@@ -14,7 +13,8 @@ class EventSourcingProperties (
     var scanPackage: String? = null,
     var spinLockMaxAttempts: Int = 25,
     var maxActiveReaderInactivityPeriod: Duration = 5.seconds,
-    var recordReadIndexCommitPeriod: Int = 10,
+    var readerCommitPeriodMessages: Int = 100,
+    var readerCommitPeriodMillis: Long = 1000,
     val eventReaderHealthCheckPeriod: Duration = 3.seconds,
     var sagasEnabled: Boolean = true,
 )

@@ -45,7 +45,7 @@ class ResultSetToEntityMapperImpl(private val entityConverter: EntityConverter) 
             resultSet.getLong(EventRecordTable.aggregateVersion.index),
             resultSet.getString(EventRecordTable.eventTitle.index),
             resultSet.getString(EventRecordTable.payload.index),
-            entityConverter.toObject(resultSet.getString(EventRecordTable.sagaContext.index), SagaContext::class),
+            entityConverter.toNullableObject(resultSet.getString(EventRecordTable.sagaContext.index), SagaContext::class),
             resultSet.getLong(EventRecordTable.createdAt.index)
         )
     }

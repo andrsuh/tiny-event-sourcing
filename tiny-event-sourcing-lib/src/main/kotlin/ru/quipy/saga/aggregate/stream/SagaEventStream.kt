@@ -14,6 +14,7 @@ import ru.quipy.saga.aggregate.logic.SagaStepAggregateState
 import ru.quipy.streams.*
 import ru.quipy.streams.annotation.RetryConf
 import ru.quipy.streams.annotation.RetryFailedStrategy
+import ru.quipy.utils.NamedThreadFactory
 import java.util.*
 import java.util.concurrent.Executors
 
@@ -31,7 +32,7 @@ class SagaEventStream(
 ) {
     @Volatile
     private var active = true
-    private val dispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+    private val dispatcher = Executors.newSingleThreadExecutor(NamedThreadFactory("saga-reader")).asCoroutineDispatcher()
     private val logger = LoggerFactory.getLogger(SagaEventStream::class.java)
 
     fun init() {

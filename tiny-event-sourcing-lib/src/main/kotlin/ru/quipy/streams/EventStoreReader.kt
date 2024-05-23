@@ -1,6 +1,8 @@
 package ru.quipy.streams
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import ru.quipy.core.AggregateRegistry
@@ -10,8 +12,9 @@ import ru.quipy.domain.ActiveEventStreamReader
 import ru.quipy.domain.Aggregate
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
+import ru.quipy.utils.NamedThreadFactory
 import java.util.*
-import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.Executors
 
 /**
  * Allows to read batches of event-records from some underlying storage (event bus, event store).
@@ -25,7 +28,7 @@ interface EventReader {
      * Used to inform that the given record is successfully consumed.
      * NOTE!!! The records should be acked in the same order they were read from the stream
      */
-    fun acknowledgeRecord(eventRecord: EventRecord)
+    suspend fun acknowledgeRecord(eventRecord: EventRecord)
 
     /**
      * We can "replay" events in the stream by resetting it to desired reading index
@@ -47,7 +50,9 @@ class EventStoreReader(
 
     private val eventStoreTableName = aggregateInfo.aggregateEventsTableName
 
-    private val commitIndexEachNMessages = config.recordReadIndexCommitPeriod
+    private val readerCommitPeriodMessages = config.readerCommitPeriodMessages
+    private val readerCommitPeriodMillis = config.readerCommitPeriodMillis
+
     private val healthcheckPeriodInMillis =
         config.eventReaderHealthCheckPeriod.inWholeMilliseconds + kotlin.random.Random.nextLong(config.eventReaderHealthCheckPeriod.inWholeMilliseconds / 5)
 
@@ -58,7 +63,11 @@ class EventStoreReader(
     private val logger: Logger = LoggerFactory.getLogger(EventStoreReader::class.java)
 
     private val readerId = UUID.randomUUID().toString()
-    private val version: AtomicLong = AtomicLong(1L)
+
+    @Volatile
+    private var lastCommittedTs: Long = 0L
+    @Volatile
+    private var lastCommittedIndex: Long = 0L
 
     // Relevant in cluster mode when there are multiple instances of the app and respectively the multiple instances of the
     // readers at the same time. Only one of them can be "active" at any time
@@ -70,13 +79,55 @@ class EventStoreReader(
 
     private var healthCheckJob: Job = launchEventStoreReaderHealthCheckJob()
 
+    @Volatile
     private var eventStoreReadIndex: EventStreamReadIndex =
         EventStreamReadIndex(streamName, readIndex = 0L, version = 0L)
 
     // This variable can signal that someone requested the "reset" of the stream.
     // Reset enable the stream to "replay" events that have already been processed
     private var indexResetInfo: ReadIndexResetInfo = NO_RESET_REQUIRED
+    @Volatile
     private var processedRecords = 0L
+
+    private val readIndexMutex = Mutex()
+
+    private val eventStreamCompletionHandler: CompletionHandler = { th: Throwable? ->
+        if (th != null) {
+            logger.error(
+                "Unexpected error in reader commit coroutine ${streamName}. Relaunching...",
+                th
+            )
+
+            readerCommitJob = launchJob()
+        } else {
+            logger.warn("Stopped reader commit coroutine $streamName")
+        }
+    }
+
+    @Volatile
+    private var readerCommitJob: Job = launchJob()
+    private fun launchJob() =
+        CoroutineScope(CoroutineName("reader-commit-$streamName-coroutine") + Executors.newSingleThreadExecutor(
+            NamedThreadFactory("$streamName-reader-committer")
+        ).asCoroutineDispatcher()).launch {
+            while (true) {
+                if (!meIsActiveReader || lastCommittedIndex == eventStoreReadIndex.readIndex) {
+                    delay(readerCommitPeriodMillis)
+                    continue
+                }
+
+                if (processedRecords % readerCommitPeriodMessages == 0L
+                    || System.currentTimeMillis() - lastCommittedTs > readerCommitPeriodMillis
+                ) {
+                    commitReadIndex()
+                } else {
+                    delay(readerCommitPeriodMillis)
+                    continue
+                }
+            }
+        }.also {
+            it.invokeOnCompletion(eventStreamCompletionHandler)
+        }
 
     override suspend fun read(batchSize: Int): List<EventRecord> {
         if (!meIsActiveReader) {
@@ -93,15 +144,14 @@ class EventStoreReader(
         return eventRecords
     }
 
-    override fun acknowledgeRecord(eventRecord: EventRecord) {
+    override suspend fun acknowledgeRecord(eventRecord: EventRecord) {
         if (!meIsActiveReader || eventRecord.createdAt < eventStoreReadIndex.readIndex) return
 
-        val processedRecordTs = eventRecord.createdAt
+        readIndexMutex.withLock {
+            eventStoreReadIndex = eventStoreReadIndex.copy(readIndex = eventRecord.createdAt)
+        }
 
-        eventStoreReadIndex = EventStreamReadIndex(streamName, processedRecordTs, eventStoreReadIndex.version)
-
-        if (processedRecords++ % commitIndexEachNMessages == 0L)
-            commitReadIndex(processedRecordTs)
+        processedRecords++
     }
 
     override fun resetReadIndex(resetInfo: ReadIndexResetInfo) {
@@ -125,14 +175,23 @@ class EventStoreReader(
         healthCheckJob = launchEventStoreReaderHealthCheckJob()
     }
 
-    private fun commitReadIndex(index: Long) {
-        EventStreamReadIndex(streamName, index, eventStoreReadIndex.version + 1L).also {
-            logger.debug("Committing index for $streamName-$readerId, index: ${index}, updated version: ${it.version}")
+    private suspend fun commitReadIndex() {
+        val cachedIndex = eventStoreReadIndex
+
+        EventStreamReadIndex(streamName, cachedIndex.readIndex, cachedIndex.version + 1L).let {
+            logger.warn("Committing index for $streamName-$readerId, index: ${it.readIndex}, updated version: ${it.version}")
             eventStore.commitStreamReadIndex(it)
+            readIndexMutex.withLock {
+                // update only the version as the index could have been increased by reading process
+                eventStoreReadIndex = eventStoreReadIndex.copy(version = it.version)
+            }
+            lastCommittedTs = System.currentTimeMillis()
+            lastCommittedIndex = it.readIndex
+
             eventStreamNotifier.onReadIndexCommitted(streamName, it.readIndex)
         }
 
-        syncReaderIndex()
+//        syncReaderIndex()
     }
 
     private fun launchEventStoreReaderHealthCheckJob(): Job {
@@ -191,6 +250,7 @@ class EventStoreReader(
         }
     }
 
+    // todo sukhoa looks like not used Supposed to be used when we need to "replay" things
     private fun checkAndResetIndexIfRequired() {
         if (indexResetInfo != NO_RESET_REQUIRED) {
             val updatedReadIndex =

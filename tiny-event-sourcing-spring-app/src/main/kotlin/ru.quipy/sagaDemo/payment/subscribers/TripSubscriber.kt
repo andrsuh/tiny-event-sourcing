@@ -27,7 +27,7 @@ class TripSubscriber(
                     .withContextGiven(event.sagaContext)
                     .launchSaga("TRIP_RESERVATION2", "process payment2")
                     .performSagaStep("TRIP_RESERVATION", "process payment")
-                    .sagaContext
+                    .sagaContext()
 
                 paymentEsService.create(sagaContext) { it.processPayment(event.tripId,100) }
             }

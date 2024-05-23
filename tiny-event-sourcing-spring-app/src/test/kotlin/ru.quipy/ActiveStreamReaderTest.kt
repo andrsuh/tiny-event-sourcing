@@ -44,7 +44,7 @@ class ActiveStreamReaderTest: BaseTest("ActiveStreamReaderTest") {
 
     private val properties: EventSourcingProperties = EventSourcingProperties(
         streamBatchSize = 10,
-        recordReadIndexCommitPeriod = 1,
+        readerCommitPeriodMessages = 1,
         streamReadPeriod = 50, // todo sukhoa actually this is polling period id case batch is empty
         maxActiveReaderInactivityPeriod = 300.milliseconds,
         eventReaderHealthCheckPeriod = 50.milliseconds,

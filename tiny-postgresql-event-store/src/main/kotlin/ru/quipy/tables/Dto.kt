@@ -5,7 +5,6 @@ import ru.quipy.domain.ActiveEventStreamReader
 import ru.quipy.domain.EventRecord
 import ru.quipy.domain.EventStreamReadIndex
 import ru.quipy.domain.Snapshot
-import ru.quipy.saga.SagaContext
 import kotlin.reflect.jvm.jvmName
 
 interface Dto {
@@ -28,7 +27,8 @@ class EventRecordDto(
         eventRecord.aggregateVersion,
         eventRecord.eventTitle,
         eventRecord.payload,
-        entityConverter.serialize(eventRecord.sagaContext?: SagaContext()))
+        eventRecord.sagaContext?.let {  entityConverter.serialize(it)} ?: "null"
+    )
 
     override fun values(): Array<Any> {
         return arrayOf(

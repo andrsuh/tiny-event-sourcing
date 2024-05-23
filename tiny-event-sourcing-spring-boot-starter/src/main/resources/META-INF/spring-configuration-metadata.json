@@ -26,6 +26,18 @@
       "defaultValue": 1000
     },
     {
+      "name": "event.sourcing.reader-commit-period-messages",
+      "type": "java.lang.Integer",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": 1000
+    },
+    {
+      "name": "event.sourcing.reader-commit-period-millis",
+      "type": "java.lang.Integer",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": 1000
+    },
+    {
       "name": "event.sourcing.stream-batch-size",
       "type": "java.lang.Integer",
       "sourceType": "ru.quipy.core.EventSourcingProperties",
@@ -54,6 +66,12 @@
       "type": "java.lang.Boolean",
       "sourceType": "ru.quipy.core.EventSourcingProperties",
       "defaultValue": true
+    },
+    {
+      "name": "event.sourcing.snapshots-enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": false
     }
   ],
   "hints": [

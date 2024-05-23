@@ -7,6 +7,7 @@ import ru.quipy.domain.Aggregate
 import ru.quipy.domain.Event
 import ru.quipy.mapper.EventMapper
 import ru.quipy.streams.EventStreamSubscriber.EventStreamSubscriptionBuilder
+import ru.quipy.utils.NamedThreadFactory
 import java.util.concurrent.Executors
 import kotlin.reflect.KClass
 
@@ -45,7 +46,9 @@ class EventStreamSubscriber<A : Aggregate>(
     private val logger: Logger = LoggerFactory.getLogger(EventStreamSubscriber::class.java)
 
     private val subscriptionCoroutine: Job = CoroutineScope(
-        CoroutineName("handlingCoroutine") + Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+        CoroutineName("handlingCoroutine")
+                + Executors.newSingleThreadExecutor(NamedThreadFactory("${aggregateEventStream.streamName}-sbscr"))
+            .asCoroutineDispatcher()
     ).launch {
         while (active) {
             aggregateEventStream.handleNextRecord { eventRecord ->

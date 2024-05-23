@@ -7,6 +7,7 @@ import ru.quipy.database.EventStore
 import ru.quipy.domain.Aggregate
 import ru.quipy.streams.annotation.RetryConf
 import ru.quipy.streams.annotation.RetryFailedStrategy
+import ru.quipy.utils.NamedThreadFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import kotlin.reflect.KClass
@@ -36,7 +37,7 @@ class AggregateEventStreamManager(
             aggregateInfo as AggregateRegistry.BasicAggregateInfo<Aggregate>,
             eventSourcingProperties,
             eventStreamListener,
-            Executors.newFixedThreadPool(1).asCoroutineDispatcher() // eventStoreReaderDispatcher
+            Executors.newSingleThreadExecutor(NamedThreadFactory("$streamName-store-reader")).asCoroutineDispatcher() // eventStoreReaderDispatcher
         )
 
         val eventsChannel = EventsChannel()
@@ -50,7 +51,7 @@ class AggregateEventStreamManager(
                 eventStoreReader,
                 retryConfig,
                 eventStreamListener,
-                Executors.newFixedThreadPool(1).asCoroutineDispatcher() // eventStreamsDispatcher
+                Executors.newSingleThreadExecutor(NamedThreadFactory("$streamName-stream-reader")).asCoroutineDispatcher() // eventStreamsDispatcher
             )
         )
 

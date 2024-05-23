@@ -8,7 +8,7 @@ import java.util.*
 class SagaManager(
     private val sagaStepEsService: EventSourcingService<UUID, SagaStepAggregate, SagaStepAggregateState>
 ) {
-    fun withContextGiven(sagaContext: SagaContext) = SagaInvoker(sagaContext)
+    fun withContextGiven(sagaContext: SagaContext?) = SagaInvoker(sagaContext)
 
     fun launchSaga(sagaName: String, stepName: String) =
         SagaInvoker(SagaContext()).launchSaga(sagaName, stepName)
@@ -71,19 +71,24 @@ class SagaManager(
     }
 
     inner class SagaInvoker(
-        val sagaContext: SagaContext,
+        private val sagaContext: SagaContext?,
         private var currentSagaStepId: UUID? = null
     ) {
         fun launchSaga(sagaName: String, stepName: String): SagaInvoker {
-            val updatedContext = launchSaga(sagaName, stepName, currentSagaStepId, sagaContext)
+            val updatedContext = launchSaga(sagaName, stepName, currentSagaStepId, sagaContext ?: SagaContext())
             currentSagaStepId = updatedContext.ctx[sagaName]!!.sagaStepId
             return SagaInvoker(updatedContext, currentSagaStepId)
         }
 
         fun performSagaStep(sagaName: String, stepName: String): SagaInvoker {
+            if (sagaContext == null)
+                throw IllegalArgumentException("The saga context is not initialized")
+
             val updatedContext = performSagaStep(sagaName, stepName, currentSagaStepId, sagaContext)
             currentSagaStepId = updatedContext.ctx[sagaName]!!.sagaStepId
             return SagaInvoker(updatedContext, currentSagaStepId)
         }
+
+        fun sagaContext() = sagaContext ?: SagaContext()
     }
 }

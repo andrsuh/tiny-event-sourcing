@@ -27,7 +27,7 @@ class PaymentSubscriber (
                     .launchSaga("TRIP_RESERVATION3", "reservation flight3")
                     .performSagaStep("TRIP_RESERVATION", "reservation flight")
                     .performSagaStep("TRIP_RESERVATION2", "reservation flight2")
-                    .sagaContext
+                    .sagaContext()
 
                 flightEsService.create(sagaContext) { it.reserveFlight(event.paymentId) }
             }

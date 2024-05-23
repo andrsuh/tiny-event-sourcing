@@ -11,4 +11,10 @@ class JsonEntityConverter(private val objectMapper: ObjectMapper) : EntityConver
     override fun <T : Any> toObject(converted: String, clazz: KClass<T>): T {
         return objectMapper.readValue(converted, clazz.java)
     }
+
+    override fun <T : Any> toNullableObject(converted: String, clazz: KClass<T>): T? {
+        return objectMapper.readValue(converted, clazz.java)
+    }
+
+
 }

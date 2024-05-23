@@ -24,7 +24,7 @@ class PaymentTripSubscriber (
             `when`(PaymentCanceledEvent::class) { event ->
                 val sagaContext = sagaManager
                     .withContextGiven(event.sagaContext)
-                    .performSagaStep("TRIP_RESERVATION", "payment failed").sagaContext
+                    .performSagaStep("TRIP_RESERVATION", "payment failed").sagaContext()
 
                 tripEsService.update(event.paymentId, sagaContext) { it.cancelTrip(event.paymentId) }
             }
