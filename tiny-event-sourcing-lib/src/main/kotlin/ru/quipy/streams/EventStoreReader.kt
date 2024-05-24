@@ -179,7 +179,7 @@ class EventStoreReader(
         val cachedIndex = eventStoreReadIndex
 
         EventStreamReadIndex(streamName, cachedIndex.readIndex, cachedIndex.version + 1L).let {
-            logger.warn("Committing index for $streamName-$readerId, index: ${it.readIndex}, updated version: ${it.version}")
+            logger.trace("Committing index for $streamName-$readerId, index: ${it.readIndex}, updated version: ${it.version}")
             eventStore.commitStreamReadIndex(it)
             readIndexMutex.withLock {
                 // update only the version as the index could have been increased by reading process
@@ -190,8 +190,6 @@ class EventStoreReader(
 
             eventStreamNotifier.onReadIndexCommitted(streamName, it.readIndex)
         }
-
-//        syncReaderIndex()
     }
 
     private fun launchEventStoreReaderHealthCheckJob(): Job {
