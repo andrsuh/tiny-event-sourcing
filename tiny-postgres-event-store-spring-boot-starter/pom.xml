@@ -19,7 +19,7 @@
         <kotlin.version>1.6.21</kotlin.version>
         <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
-        <tiny-postgres-event-store.postgres.version>2.7.1</tiny-postgres-event-store.postgres.version>
+        <tiny-postgres-event-store.postgres.version>42.7.0</tiny-postgres-event-store.postgres.version>
         <tiny-postgres-event-store.liquibase.version>4.9.1</tiny-postgres-event-store.liquibase.version>
         <tiny-postgres-event-store.hikari.version>5.0.1</tiny-postgres-event-store.hikari.version>
         <tiny-postgres-event-store.jackson.version>2.16.0</tiny-postgres-event-store.jackson.version>
