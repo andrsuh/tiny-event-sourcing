@@ -30,14 +30,14 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
             ?: throw IllegalArgumentException("Aggregate $aggregateClass is not registered")
 
     fun <E : Event<A>> create(sagaContext: SagaContext = SagaContext(), command: (a: S) -> E): E {
-        val emptyAggregateState = aggregateInfo.emptyStateCreator.invoke()
+        val emptyAggregateState = aggregateInfo.emptyStateCreator()
         return tryUpdate(emptyAggregateState, 0, command, sagaContext)
     }
 
     @OptIn(ExperimentalTypeInference::class)
     @OverloadResolutionByLambdaReturnType
     fun <E : Event<A>> create(sagaContext: SagaContext = SagaContext(), command: (a: S) -> List<E>): List<E> {
-        val emptyAggregateState = aggregateInfo.emptyStateCreator.invoke()
+        val emptyAggregateState = aggregateInfo.emptyStateCreator()
         return tryUpdate(emptyAggregateState, 0, command, sagaContext)
     }
 
@@ -150,6 +150,7 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
         updateFunction: (aggregateState: S, version: Long) -> R
     ): R {
         var numOfAttempts = 0
+        var prevReadStateVersion = 0L
         while (true) { // spinlock
             val (currentVersion, aggregateState) = getVersionedState(aggregateId)
 
@@ -158,12 +159,18 @@ class EventSourcingService<ID : Any, A : Aggregate, S : AggregateState<ID, A>>(
             }
 
             try {
+                if (prevReadStateVersion == currentVersion) { // repeated read returned the same version, no sense to update
+                    throw EventRecordOptimisticLockException("Optimistic lock exception. Failed to save event records", null, emptyList())
+                }
+                prevReadStateVersion = currentVersion
+
                 return updateFunction(aggregateState, currentVersion)
             } catch (e: EventRecordOptimisticLockException) {
                 logger.info("Optimistic lock exception. Failed to save event records id: ${e.eventRecords.map { it.id }}")
                 if (numOfAttempts++ >= eventSourcingProperties.spinLockMaxAttempts)
                     throw IllegalStateException("Too many attempts to save event records: ${e.eventRecords}")
 
+                Thread.sleep(eventSourcingProperties.spinLockDelayMillis) // increase probability for the following update to succeed
                 continue
             }
         }

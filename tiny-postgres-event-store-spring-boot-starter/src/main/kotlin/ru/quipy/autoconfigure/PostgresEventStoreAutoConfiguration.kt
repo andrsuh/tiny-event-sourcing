@@ -21,6 +21,7 @@ import ru.quipy.converter.EntityConverter
 import ru.quipy.converter.JsonEntityConverter
 import ru.quipy.converter.ResultSetToEntityMapper
 import ru.quipy.converter.ResultSetToEntityMapperImpl
+import ru.quipy.core.EventSourcingProperties
 import ru.quipy.db.HikariDatasourceProvider
 import ru.quipy.db.factory.ConnectionFactory
 import ru.quipy.db.factory.DataSourceConnectionFactoryImpl
@@ -104,8 +105,9 @@ class PostgresEventStoreAutoConfiguration {
     fun postgresTemplateEventStore(
         jdbcTemplate: JdbcTemplate,
         mapperFactory: MapperFactory,
-        entityConverter: EntityConverter
+        entityConverter: EntityConverter,
+        props: EventSourcingProperties,
     ): PostgresTemplateEventStore {
-        return PostgresTemplateEventStore(jdbcTemplate, schema, mapperFactory, entityConverter)
+        return PostgresTemplateEventStore(jdbcTemplate, schema, mapperFactory, entityConverter, props)
     }
 }

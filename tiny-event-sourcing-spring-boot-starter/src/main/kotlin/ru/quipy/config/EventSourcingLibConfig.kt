@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import ru.quipy.core.*
 import ru.quipy.database.EventStore
+import ru.quipy.mapper.EventMapper
 import ru.quipy.mapper.JsonEventMapper
 import ru.quipy.saga.SagaManager
 import ru.quipy.saga.aggregate.api.*
@@ -32,7 +33,7 @@ class EventSourcingLibConfig {
 
     @Bean
     @ConditionalOnMissingBean
-    fun eventMapper(jsonObjectMapper: ObjectMapper) = JsonEventMapper(jsonObjectMapper)
+    fun eventMapper(jsonObjectMapper: ObjectMapper): EventMapper = JsonEventMapper(jsonObjectMapper)
 
     @Bean
     @ConfigurationProperties(prefix = "event.sourcing")
@@ -87,7 +88,7 @@ class EventSourcingLibConfig {
     fun subscriptionManager(
         eventStreamManager: AggregateEventStreamManager,
         aggregateRegistry: AggregateRegistry,
-        eventMapper: JsonEventMapper
+        eventMapper: EventMapper
     ) = AggregateSubscriptionsManager(
         eventStreamManager,
         aggregateRegistry,
@@ -100,7 +101,7 @@ class EventSourcingLibConfig {
     fun eventSourcingServiceFactory(
         eventSourcingProperties: EventSourcingProperties,
         aggregateRegistry: AggregateRegistry,
-        eventMapper: JsonEventMapper,
+        eventMapper: EventMapper,
         eventStore: EventStore
     ) = EventSourcingServiceFactory(
         aggregateRegistry, eventMapper, eventStore, eventSourcingProperties
@@ -117,7 +118,7 @@ class EventSourcingLibConfig {
     )
     fun sagaStepEsService(
         aggregateRegistry: AggregateRegistry,
-        eventMapper: JsonEventMapper,
+        eventMapper: EventMapper,
         configProperties: EventSourcingProperties,
         eventStore: EventStore
     ) = EventSourcingService<UUID, SagaStepAggregate, SagaStepAggregateState>(

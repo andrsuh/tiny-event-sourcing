@@ -62,6 +62,12 @@
       "defaultValue": 25
     },
     {
+      "name": "event.sourcing.spin-lock-delay-millis",
+      "type": "java.lang.Integer",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": 20
+    },
+    {
       "name": "event.sourcing.sagas-enabled",
       "type": "java.lang.Boolean",
       "sourceType": "ru.quipy.core.EventSourcingProperties",
@@ -72,6 +78,24 @@
       "type": "java.lang.Boolean",
       "sourceType": "ru.quipy.core.EventSourcingProperties",
       "defaultValue": false
+    },
+    {
+      "name": "event.sourcing.batch-enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "event.sourcing.batch-size",
+      "type": "java.lang.Integer",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": 1
+    },
+    {
+      "name": "event.sourcing.batch-period-millis",
+      "type": "java.lang.Integer",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": 50
     }
   ],
   "hints": [
