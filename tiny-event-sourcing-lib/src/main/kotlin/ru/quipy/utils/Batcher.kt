@@ -12,7 +12,7 @@ import kotlin.time.Duration.Companion.milliseconds
 class Batcher(
     private val batchCommandSize: Int,
     private val batchWindow: Duration,
-    private val batchUpdater: (List<String>) -> Unit
+    private val batchUpdater: (List<String>) -> Array<Int>
 ) {
     private val lock = ReentrantLock()
 
@@ -24,7 +24,7 @@ class Batcher(
         "event-store",
         "batch-execute",
         Executors.newSingleThreadExecutor(NamedThreadFactory("batcher-executor")),
-        delayer = Delayer.InvocationRatePreservingDelay(5.milliseconds),
+        delayer = Delayer.InvocationRatePreservingDelay(2.milliseconds),
     ) { _, _ ->
         if (collectingBatch.size >= batchCommandSize || System.currentTimeMillis() - collectingStartedAt >= batchWindow.inWholeMilliseconds) {
             executeBatch()
@@ -46,24 +46,27 @@ class Batcher(
     }
 
     private fun executeBatch() {
+        var copyCommands: List<Command>
         lock.withLock {
-            val copyCommands = collectingBatch.toList()
+            copyCommands = collectingBatch.toList()
             if (collectingBatch.isNotEmpty()) {
                 collectingBatch.clear()
                 collectingStartedAt = System.currentTimeMillis()
                 idSet.clear()
             }
+        }
 
-            if (copyCommands.isEmpty()) return
+        if (copyCommands.isEmpty()) return
 
-            try {
-                batchUpdater(copyCommands.map { it.statement }.toList())
-                copyCommands.forEach { it.completableFuture.complete(true) }
-            } catch (e: Exception) {
-                val batchStatement = copyCommands.joinToString(";") { it.statement }
-                logger.error("Batch execution failed Statement: $batchStatement", e)
-                copyCommands.forEach { it.completableFuture.completeExceptionally(e) }
+        try {
+            val errored = batchUpdater(copyCommands.map { it.statement }.toList()).toSet()
+            copyCommands.forEachIndexed { i, c ->
+                c.completableFuture.complete(!errored.contains(i))
             }
+        } catch (e: Exception) {
+            val batchStatement = copyCommands.joinToString(";") { it.statement }
+            logger.error("Batch execution failed Statement: $batchStatement", e)
+            copyCommands.forEach { it.completableFuture.completeExceptionally(e) }
         }
     }
 

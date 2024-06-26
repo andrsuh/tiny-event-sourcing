@@ -21,4 +21,9 @@ class EventSourcingProperties (
     var batchEnabled: Boolean = false,
     var batchSize: Int = 1,
     var batchPeriodMillis: Long = 50,
+    var batchMode: String = BatchMode.STORED_PROCEDURE.name,
 )
+
+enum class BatchMode {
+    JDBC_BATCH, STORED_PROCEDURE
+}

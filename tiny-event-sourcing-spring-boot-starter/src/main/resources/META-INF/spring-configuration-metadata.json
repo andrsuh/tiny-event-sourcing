@@ -96,6 +96,12 @@
       "type": "java.lang.Integer",
       "sourceType": "ru.quipy.core.EventSourcingProperties",
       "defaultValue": 50
+    },
+    {
+      "name": "event.sourcing.batch-mode",
+      "type": "java.lang.String",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": "STORED_PROCEDURE"
     }
   ],
   "hints": [
