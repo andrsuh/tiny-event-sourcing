@@ -46,20 +46,18 @@ create table if not exists ${schema}.event_stream_active_readers
 
 CREATE OR REPLACE FUNCTION ${schema}.execute_batch(
     p_commands TEXT[]
-) RETURNS INT[] AS $$
+) RETURNS INT[] LANGUAGE plpgsql AS '
 DECLARE
-    p_results INT[] := '{}';
-        i INT;
+    p_results INT[] := ''{}'';
+    i INT;
 BEGIN
-            FOR i IN array_lower(p_commands, 1) .. array_upper(p_commands, 1) LOOP
-    BEGIN
-        EXECUTE p_commands[i];
-                EXCEPTION
+    FOR i IN array_lower(p_commands, 1) .. array_upper(p_commands, 1) LOOP
+            BEGIN
+                EXECUTE p_commands[i];
+            EXCEPTION
                 WHEN OTHERS THEN
                     p_results := array_append(p_results, i);
-    END;
-END LOOP;
-RETURN p_results;
-END;
-$$ LANGUAGE plpgsql;
-
+            END;
+        END LOOP;
+    RETURN p_results;
+END;';

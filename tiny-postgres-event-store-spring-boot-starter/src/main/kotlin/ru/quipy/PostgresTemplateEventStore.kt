@@ -57,7 +57,7 @@ open class PostgresTemplateEventStore(
             if (props.batchEnabled) {
                 val res = batcher.delayedExecution(eventRecord.id, statement).get()
                 if (!res) {
-                    logger.error("Failed to insert statement: $statement")
+                    logger.warn("Failed to insert event within batch. Retrying: $statement")
                     throw DuplicateEventIdException("Batch returned error for: $eventRecord", null)
                 }
             } else {

@@ -54,19 +54,19 @@ class Batcher(
                 collectingStartedAt = System.currentTimeMillis()
                 idSet.clear()
             }
-        }
 
-        if (copyCommands.isEmpty()) return
+            if (copyCommands.isEmpty()) return
 
-        try {
-            val errored = batchUpdater(copyCommands.map { it.statement }.toList()).toSet()
-            copyCommands.forEachIndexed { i, c ->
-                c.completableFuture.complete(!errored.contains(i))
+            try {
+                val errored = batchUpdater(copyCommands.map { it.statement }.toList()).toSet()
+                copyCommands.forEachIndexed { i, c ->
+                    c.completableFuture.complete(!errored.contains(i))
+                }
+            } catch (e: Exception) {
+                val batchStatement = copyCommands.joinToString(";") { it.statement }
+                logger.error("Batch execution failed Statement: $batchStatement", e)
+                copyCommands.forEach { it.completableFuture.completeExceptionally(e) }
             }
-        } catch (e: Exception) {
-            val batchStatement = copyCommands.joinToString(";") { it.statement }
-            logger.error("Batch execution failed Statement: $batchStatement", e)
-            copyCommands.forEach { it.completableFuture.completeExceptionally(e) }
         }
     }
 
