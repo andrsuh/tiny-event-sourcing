@@ -17,6 +17,6 @@ class DockerPostgresDataSourceInitializer {
         properties.setProperty("datasource.jdbc-url", postgresContainer.jdbcUrl)
         properties.setProperty("datasource.username", postgresContainer.username)
         properties.setProperty("datasource.password", postgresContainer.password)
-        properties.setProperty("tiny-es.storage.schema", "event_sourcing_store")
+        properties.setProperty("event.sourcing.db-schema", "event_sourcing_store")
     }
 }

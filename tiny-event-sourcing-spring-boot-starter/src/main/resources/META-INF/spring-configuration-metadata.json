@@ -102,6 +102,12 @@
       "type": "java.lang.String",
       "sourceType": "ru.quipy.core.EventSourcingProperties",
       "defaultValue": "STORED_PROCEDURE"
+    },
+    {
+      "name": "event.sourcing.db-schema",
+      "type": "java.lang.String",
+      "sourceType": "ru.quipy.core.EventSourcingProperties",
+      "defaultValue": "event_sourcing_store"
     }
   ],
   "hints": [

@@ -25,7 +25,7 @@ class Context private constructor() {
     lateinit var bankContext: BankContext
     constructor(properties: Properties, eventSourcingProperties: EventSourcingProperties) : this() {
         this.dataSource = dataSource(properties)
-        LiquibaseConfig().liquibase(dataSource, properties.getProperty("tiny-es.storage.schema"))
+        LiquibaseConfig().liquibase(dataSource, properties.getProperty("event.sourcing.db-schema"))
 
         this.mongoDatabase = mongoDatabase(properties)
 

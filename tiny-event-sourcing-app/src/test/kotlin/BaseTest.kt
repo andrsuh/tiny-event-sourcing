@@ -61,7 +61,7 @@ open class BaseTest(private val testId: String) {
             val tinyEsLibConfig = context.tinyEsLibConfig
 
             mongoDatabase = context.mongoDatabase
-            schema = properties.getProperty("tiny-es.storage.schema")
+            schema = properties.getProperty("event.sourcing.db-schema")
             databaseConnectionFactory = DataSourceConnectionFactoryImpl(DatasourceProviderImpl(context.dataSource))
             eventStreamManager = tinyEsLibConfig.eventStreamManager
             eventStreamReaderManager = tinyEsLibConfig.eventStreamReaderManager

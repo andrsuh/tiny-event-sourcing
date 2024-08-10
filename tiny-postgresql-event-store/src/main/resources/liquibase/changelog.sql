@@ -16,8 +16,8 @@ create table if not exists ${schema}.event_record
     unique (aggregate_id, aggregate_version)
 );
 
-CREATE INDEX idx_created_at ON event_sourcing_store.event_record(aggregate_table_name, created_at);
-CREATE INDEX idx_aggregate_id_version ON event_sourcing_store.event_record(aggregate_id, aggregate_version);
+CREATE INDEX idx_created_at ON ${schema}.event_record(aggregate_table_name, created_at);
+CREATE INDEX idx_aggregate_id_version ON ${schema}.event_record(aggregate_id, aggregate_version);
 
 create table if not exists ${schema}.snapshot
 (

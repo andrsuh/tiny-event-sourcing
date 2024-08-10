@@ -14,7 +14,7 @@ class LiquibaseSpringConfig {
     @Bean
     @Primary
     fun liquibase(dataSource: DataSource,
-        @Value("\${tiny-es.storage.schema:event_sourcing_store}") schema: String): SpringLiquibase {
+        @Value("\${event.sourcing.db-schema:event_sourcing_store}") schema: String): SpringLiquibase {
         try {
             dataSource.connection.use { connection ->
                 connection.createStatement()

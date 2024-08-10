@@ -37,7 +37,7 @@ import javax.sql.DataSource
     LiquibaseSpringConfig::class
 )
 class PostgresEventStoreAutoConfiguration {
-    @Value("\${tiny-es.storage.schema:event_sourcing_store}")
+    @Value("\${event.sourcing.db-schema:event_sourcing_store}")
     private lateinit var schema: String
 
     @Bean

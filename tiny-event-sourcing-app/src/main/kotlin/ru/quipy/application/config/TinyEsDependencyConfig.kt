@@ -49,7 +49,7 @@ class TinyEsDependencyConfig private constructor() {
         }
         aggregateRegistry.init()
 
-        val schema = properties.getProperty("tiny-es.storage.schema")
+        val schema = properties.getProperty("event.sourcing.db-schema")
         val entityConverter = JsonEntityConverter(objectMapper)
         val resultSetToEntityMapper = ResultSetToEntityMapperImpl(entityConverter)
         val datasourceProvider = DatasourceProviderImpl(dataSource)

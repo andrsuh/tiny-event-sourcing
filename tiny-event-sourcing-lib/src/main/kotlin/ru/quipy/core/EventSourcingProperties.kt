@@ -21,6 +21,7 @@ class EventSourcingProperties (
     var batchSize: Int = 1,
     var batchPeriodMillis: Long = 50,
     var batchMode: String = BatchMode.STORED_PROCEDURE.name,
+    var dbSchema: String = "event_sourcing_store"
 )
 
 enum class BatchMode {

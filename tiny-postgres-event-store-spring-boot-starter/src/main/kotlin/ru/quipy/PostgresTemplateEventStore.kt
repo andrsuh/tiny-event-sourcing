@@ -71,7 +71,7 @@ open class PostgresTemplateEventStore(
     private fun executeSqlCommands(commands: List<String>): Array<Int> {
         val result = jdbcTemplate.call(
             { con ->
-                val cs = con.prepareCall("{? = call $PROCEDURE_NAME(?)}")
+                val cs = con.prepareCall("{? = call ${props.dbSchema}.$PROCEDURE_NAME(?)}")
                 cs.registerOutParameter(1, Types.ARRAY)
                 cs.setArray(2, con.createArrayOf("text", commands.toTypedArray()))
                 cs
