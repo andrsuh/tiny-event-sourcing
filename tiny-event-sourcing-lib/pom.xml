@@ -7,7 +7,7 @@
     <parent>
         <groupId>ru.quipy</groupId>
         <artifactId>tiny-event-sourcing</artifactId>
-        <version>2.7.4</version>
+        <version>2.7.5</version>
     </parent>
 
     <name>tiny-event-sourcing-lib</name>
@@ -15,10 +15,8 @@
     <artifactId>tiny-event-sourcing-lib</artifactId>
 
     <properties>
-        <kotlin.version>1.6.21</kotlin.version>
+        <spring.version>6.2.7</spring.version>
         <jackson-core.version>2.13.3</jackson-core.version>
-        <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
-        <jackson-module-kotlin.version>2.12.2</jackson-module-kotlin.version>
     </properties>
 
     <dependencies>
@@ -32,14 +30,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>5.3.20</version>
-        </dependency>
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
-            <scope>test</scope>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>
@@ -71,10 +62,18 @@
             <artifactId>reflections</artifactId>
             <version>0.10.2</version>
         </dependency>
+
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
-            <version>5.3.18</version>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.12.1</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

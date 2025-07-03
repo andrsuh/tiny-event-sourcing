@@ -8,7 +8,7 @@
     <parent>
         <groupId>ru.quipy</groupId>
         <artifactId>tiny-event-sourcing</artifactId>
-        <version>2.7.4</version>
+        <version>2.7.5</version>
     </parent>
 
     <name>tiny-mongo-event-store</name>
@@ -18,10 +18,9 @@
     <properties>
         <java.version>11</java.version>
         <spring.boot.version>2.6.6</spring.boot.version>
-        <kotlin.version>1.6.21</kotlin.version>
-        <kotlinx-coroutines-core.version>1.5.2</kotlinx-coroutines-core.version>
         <awaitility.version>4.2.0</awaitility.version>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
+        <mongo-driver.version>4.7.1</mongo-driver.version>
     </properties>
 
     <dependencies>
@@ -34,7 +33,13 @@
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
-            <version>4.7.1</version>
+            <version>${mongo-driver.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-kotlin</artifactId>
+            <version>${jackson-module-kotlin.version}</version>
         </dependency>
     </dependencies>
 

@@ -11,7 +11,7 @@ import ru.quipy.projectDemo.logic.ProjectAggregateState
 import ru.quipy.projectDemo.projections.AnnotationBasedProjectEventsSubscriber
 import ru.quipy.streams.AggregateEventStreamManager
 import ru.quipy.streams.AggregateSubscriptionsManager
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 
 @Configuration
 class ProjectDemoConfig {

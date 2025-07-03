@@ -11,7 +11,7 @@ import ru.quipy.bankDemo.transfers.api.TransactionConfirmedEvent
 import ru.quipy.core.EventSourcingService
 import ru.quipy.streams.AggregateSubscriptionsManager
 import java.util.*
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 
 @Component
 class TransactionsSubscriber(

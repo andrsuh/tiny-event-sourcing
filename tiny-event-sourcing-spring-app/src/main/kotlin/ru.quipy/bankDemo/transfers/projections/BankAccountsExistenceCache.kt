@@ -11,7 +11,7 @@ import ru.quipy.bankDemo.accounts.api.AccountAggregate
 import ru.quipy.bankDemo.accounts.api.BankAccountCreatedEvent
 import ru.quipy.streams.AggregateSubscriptionsManager
 import java.util.*
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 
 @Component
 class BankAccountsExistenceCache(

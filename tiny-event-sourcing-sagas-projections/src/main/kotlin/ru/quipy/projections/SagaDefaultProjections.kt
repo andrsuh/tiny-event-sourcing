@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository
 import ru.quipy.saga.aggregate.api.DefaultSagaProcessedEvent
 import ru.quipy.saga.aggregate.api.SagaStepAggregate
 import ru.quipy.streams.AggregateSubscriptionsManager
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 
 @Component
 class SagaDefaultProjections(

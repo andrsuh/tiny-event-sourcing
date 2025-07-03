@@ -9,7 +9,7 @@ import ru.quipy.projectDemo.api.TagAssignedToTaskEvent
 import ru.quipy.projectDemo.api.TagCreatedEvent
 import ru.quipy.projectDemo.api.TaskCreatedEvent
 import ru.quipy.streams.AggregateSubscriptionsManager
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 
 @Service
 class ProjectEventsSubscriber {

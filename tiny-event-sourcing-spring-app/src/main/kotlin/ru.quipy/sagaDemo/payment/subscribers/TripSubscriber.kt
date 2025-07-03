@@ -10,7 +10,7 @@ import ru.quipy.sagaDemo.trips.api.TripAggregate
 import ru.quipy.sagaDemo.trips.api.TripReservationStartedEvent
 import ru.quipy.streams.AggregateSubscriptionsManager
 import java.util.*
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 
 @Component
 class TripSubscriber(

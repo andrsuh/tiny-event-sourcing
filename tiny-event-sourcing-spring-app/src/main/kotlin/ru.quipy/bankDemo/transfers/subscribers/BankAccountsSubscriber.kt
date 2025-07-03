@@ -5,13 +5,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import ru.quipy.bankDemo.accounts.api.*
 import ru.quipy.bankDemo.transfers.api.TransferTransactionAggregate
-import ru.quipy.bankDemo.transfers.api.TransferTransactionCreatedEvent
-import ru.quipy.bankDemo.accounts.logic.Account
 import ru.quipy.bankDemo.transfers.logic.TransferTransaction
 import ru.quipy.core.EventSourcingService
 import ru.quipy.streams.AggregateSubscriptionsManager
 import java.util.*
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 
 @Component
 class BankAccountsSubscriber(

@@ -9,7 +9,7 @@ import ru.quipy.sagaDemo.payment.api.PaymentAggregate
 import ru.quipy.sagaDemo.payment.api.PaymentSucceededEvent
 import ru.quipy.streams.AggregateSubscriptionsManager
 import java.util.*
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 
 @Component
 class PaymentSubscriber (

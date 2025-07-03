@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository
 import ru.quipy.saga.aggregate.api.*
 import ru.quipy.streams.AggregateSubscriptionsManager
 import java.util.*
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 
 @Component
 class SagaProjections(

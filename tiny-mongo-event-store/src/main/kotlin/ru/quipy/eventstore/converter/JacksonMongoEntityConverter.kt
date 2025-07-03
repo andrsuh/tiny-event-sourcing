@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator
 import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder
-import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.bson.Document
 import kotlin.reflect.KClass
 
@@ -23,7 +23,7 @@ class JacksonMongoEntityConverter : MongoEntityConverter {
     private val objectMapper: ObjectMapper = initMapper()
 
     private fun initMapper(): ObjectMapper {
-        val mapper = ObjectMapper()
+        val mapper = jacksonObjectMapper()
         mapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true)
         mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
 
@@ -39,8 +39,6 @@ class JacksonMongoEntityConverter : MongoEntityConverter {
         typeResolver.typeProperty(TYPE_PROPERTY_KEY)
 
         mapper.setDefaultTyping(typeResolver)
-        mapper.registerModule(KotlinModule())
-
         return mapper
     }
 

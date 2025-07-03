@@ -6,10 +6,10 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.zaxxer.hikari.HikariDataSource
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Primary
 import org.springframework.jdbc.core.JdbcTemplate
@@ -31,7 +31,7 @@ import ru.quipy.mappers.MapperFactory
 import ru.quipy.mappers.MapperFactoryImpl
 import javax.sql.DataSource
 
-@Configuration
+@AutoConfiguration
 @Import(
     DatabaseConfig::class,
     LiquibaseSpringConfig::class

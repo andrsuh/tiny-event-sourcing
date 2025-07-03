@@ -30,7 +30,7 @@ import ru.quipy.streams.annotation.RetryFailedStrategy.SKIP_EVENT
 import ru.quipy.streams.annotation.SubscribeEvent
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 
 @SpringBootTest
 @ActiveProfiles("test")

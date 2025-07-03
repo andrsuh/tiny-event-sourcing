@@ -3,12 +3,12 @@ package ru.quipy.config
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import ru.quipy.core.*
 import ru.quipy.database.EventStore
 import ru.quipy.mapper.EventMapper
@@ -23,7 +23,7 @@ import ru.quipy.streams.EventStoreStreamReaderManager
 import ru.quipy.streams.EventStreamReaderManager
 import java.util.*
 
-@Configuration
+@AutoConfiguration
 class EventSourcingLibConfig {
     @Bean
     @ConditionalOnMissingBean
@@ -57,7 +57,6 @@ class EventSourcingLibConfig {
         }
         return aggregateRegistry
     }
-
 
     @Bean
     @ConditionalOnBean(EventStore::class)
