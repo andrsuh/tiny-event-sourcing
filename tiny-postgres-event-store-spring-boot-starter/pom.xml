@@ -9,6 +9,7 @@
         <version>2.7.5</version>
     </parent>
 
+    <name>tiny-postgres-event-store-spring-boot-starter</name>
     <modelVersion>4.0.0</modelVersion>
     <groupId>ru.quipy</groupId>
     <artifactId>tiny-postgres-event-store-spring-boot-starter</artifactId>
