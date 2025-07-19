@@ -2,7 +2,7 @@ name: Release to Maven Central
 
 on:
   push:
-    branches: ["master", "master-2.0", "fix-workflow-release"]
+    branches: ["master", "master-2.0"]
 
 jobs:
   build:
